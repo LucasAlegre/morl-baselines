@@ -1,4 +1,4 @@
-# morl-baselines
+# MORL Baselines
 
 This repository aims at containing standard MORL algorithms, compatible with the [mo-gym](https://github.com/LucasAlegre/mo-gym) API.
 
@@ -6,7 +6,7 @@ This repository aims at containing standard MORL algorithms, compatible with the
 
 | Person  | Algo                | Paper                                | Existing implem                    | Done?   |
 |---------|---------------------|--------------------------------------|------------------------------------|---------|
-| Florian | Envelope Q-Learning | https://arxiv.org/pdf/1908.08342.pdf | https://github.com/RunzheYang/MORL |         |
+| Florian / Lucas | Envelope Q-Learning | https://arxiv.org/pdf/1908.08342.pdf | https://github.com/RunzheYang/MORL |         |
 
 ## Misc/utils ideas
 - [ ] Dump Pareto front every x timesteps into a file (reporting)
@@ -17,3 +17,15 @@ This repository aims at containing standard MORL algorithms, compatible with the
 
 ## Contributions
 Just add entries in the table above so we know who is on what. Then a proper PR with the implementation.
+
+## Citing the Project
+
+```bibtex
+@misc{morl_baselines,
+    ...
+}
+```
+
+## Maintainers
+
+MORL-Baselines is currently maintained by [Lucas N. Alegre](https://www.inf.ufrgs.br/~lnalegre/) (@LucasAlegre), Florian Felten (@ffelten), ...
