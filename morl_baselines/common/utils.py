@@ -34,6 +34,20 @@ def polyak_update(
             th.add(target_param.data, param.data, alpha=tau, out=target_param.data)
 
 
+def get_grad_norm(params: Iterable[th.nn.Parameter]) -> th.Tensor:
+    """This is how the grad norm is computed inside torch.nn.clip_grad_norm_()"""
+    parameters = [p for p in params if p.grad is not None]
+    if len(parameters) == 0:
+        return th.tensor(0.)
+    device = parameters[0].grad.device
+    total_norm = th.norm(th.stack([th.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0)
+    return total_norm
+
+
+def huber(x, min_priority=0.01):
+    return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
+
+
 def linearly_decaying_epsilon(initial_epsilon, decay_period, step, warmup_steps, final_epsilon):
     """Returns the current epsilon for the agent's epsilon-greedy policy.
     This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
