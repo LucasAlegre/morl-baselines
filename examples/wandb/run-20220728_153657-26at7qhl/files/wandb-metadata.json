@@ -1,0 +1,22 @@
+{
+    "os": "macOS-12.3.1-x86_64-i386-64bit",
+    "python": "3.9.13",
+    "heartbeatAt": "2022-07-28T13:36:58.360781",
+    "startedAt": "2022-07-28T13:36:57.120727",
+    "docker": null,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/Users/florian.felten/Documents/morl-baselines/examples/pgmorl_halfcheetah.py",
+    "codePath": "examples/pgmorl_halfcheetah.py",
+    "git": {
+        "remote": "https://github.com/LucasAlegre/morl-baselines.git",
+        "commit": "c5c411762cf92de9e9f2236dcf2a5fd29308b239"
+    },
+    "email": "",
+    "root": "/Users/florian.felten/Documents/morl-baselines",
+    "host": "MP0770",
+    "username": "florian.felten",
+    "executable": "/usr/local/opt/python@3.9/bin/python3.9"
+}

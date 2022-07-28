@@ -1,16 +1,18 @@
+from typing import Union
+
 import numpy as np
 import torch as th
 
 
 class ReplayBuffer:
     def __init__(
-        self,
-        obs_shape,
-        action_dim,
-        rew_dim=1,
-        max_size=100000,
-        obs_dtype=np.float32,
-        action_dtype=np.float32,
+            self,
+            obs_shape,
+            action_dim,
+            rew_dim=1,
+            max_size=100000,
+            obs_dtype=np.float32,
+            action_dtype=np.float32,
     ):
         self.max_size = max_size
         self.ptr, self.size = 0, 0
@@ -67,3 +69,45 @@ class ReplayBuffer:
 
     def __len__(self):
         return self.size
+
+
+class PPOReplayBuffer:
+    def __init__(self, size: int, num_envs: int, obs_shape: tuple, action_shape: tuple, reward_dim: int, device: Union[th.device, str] = "auto"):
+        self.size = size
+        self.ptr = 0
+        self.num_envs = num_envs
+        self.obs = th.zeros((self.size, self.num_envs) + obs_shape).to(device)
+        self.actions = th.zeros((self.size, self.num_envs) + action_shape).to(device)
+        self.logprobs = th.zeros((self.size, self.num_envs)).to(device)
+        self.rewards = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
+        self.dones = th.zeros((self.size, self.num_envs)).to(device)
+        self.values = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
+
+    def add(self, obs, actions, logprobs, rewards, dones, values):
+        self.obs[self.ptr] = obs
+        self.actions[self.ptr] = actions
+        self.logprobs[self.ptr] = logprobs
+        self.rewards[self.ptr] = rewards
+        self.dones[self.ptr] = dones
+        self.values[self.ptr] = values
+        self.ptr = (self.ptr + 1) % self.size
+
+    def get(self, step):
+        return (
+            self.obs[step],
+            self.actions[step],
+            self.logprobs[step],
+            self.rewards[step],
+            self.dones[step],
+            self.values[step]
+        )
+
+    def get_all(self):
+        return (
+            self.obs,
+            self.actions,
+            self.logprobs,
+            self.rewards,
+            self.dones,
+            self.values
+        )

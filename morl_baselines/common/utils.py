@@ -22,9 +22,9 @@ def layer_init(layer, method="orthogonal", weight_gain: float = 1, bias_const: f
 
 @th.no_grad()
 def polyak_update(
-    params: Iterable[th.nn.Parameter],
-    target_params: Iterable[th.nn.Parameter],
-    tau: float,
+        params: Iterable[th.nn.Parameter],
+        target_params: Iterable[th.nn.Parameter],
+        tau: float,
 ) -> None:
     for param, target_param in zip(params, target_params):
         if tau == 1:
