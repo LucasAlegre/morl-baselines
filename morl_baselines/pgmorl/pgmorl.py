@@ -1,345 +1,141 @@
 import random
-import time
+from copy import deepcopy
 
 import gym
 import numpy as np
 import mo_gym
-import wandb
-from mo_gym import utils
 import torch as th
-from torch import nn, optim
-from torch.distributions import Normal
-from torch.nn import Sequential
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
+from scipy.optimize import least_squares
 
-from torch.utils.tensorboard import SummaryWriter
-
-from morl_baselines.common.buffer import PPOReplayBuffer
+from morl_baselines.common.indicators import sparsity, hypervolume
+from morl_baselines.common.pareto import ParetoArchive
+from morl_baselines.mo_algorithms.mo_ppo import make_env, MOPPONet, MOPPOAgent
 from morl_baselines.common.morl_algorithm import MORLAlgorithm
-from morl_baselines.common.networks import mlp
-from morl_baselines.common.utils import layer_init
-
-# This code has been adapted from the PPO implementation of clean RL
-# https://github.com/vwxyzjn/cleanrl/blob/master/cleanrl/ppo_continuous_action.py
+from morl_baselines.common.utils import get_weights
 
 
-def make_env(env_id, seed, idx, run_name, gamma):
-    def thunk():
-        env = mo_gym.make(env_id)
-        reward_dim = env.reward_space.shape[0]
-        if idx == 0:
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}", episode_trigger=lambda e: e % 1000 == 0)
-        env = gym.wrappers.ClipAction(env)
-        env = gym.wrappers.NormalizeObservation(env)
-        env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
-        for o in range(reward_dim):
-            env = mo_gym.utils.MONormalizeReward(env, idx=o, gamma=gamma)
-            env = mo_gym.utils.MOClipReward(env, idx=o, min_r=-10, max_r=10)
-        env.seed(seed)
-        env.action_space.seed(seed)
-        env.observation_space.seed(seed)
-        return env
-
-    return thunk
-
-
-# def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
-#     th.nn.init.orthogonal_(layer.weight, std)
-#     th.nn.init.constant_(layer.bias, bias_const)
-#     return layer
-
-hidden_init = lambda layer: layer_init(layer, weight_gain=np.sqrt(2), bias_const=0.)
-critic_init = lambda layer: layer_init(layer, weight_gain=1.)
-value_init = lambda layer: layer_init(layer, weight_gain=.01)
-
-class MOPPONet(nn.Module):
-    def __init__(self, obs_shape: tuple, action_shape: tuple, reward_dim: int, net_arch: List = [64, 64]):
-        super().__init__()
-        self.obs_shape = obs_shape
-        self.action_shape = action_shape
-        self.reward_dim = reward_dim
-        self.net_arch = net_arch
-
-        # S -> ... -> |R|
-        self.critic = mlp(input_dim=np.array(self.obs_shape).prod(), output_dim=self.reward_dim, net_arch=net_arch,
-                          activation_fn=nn.Tanh)
-        self.critic.apply(hidden_init)
-        critic_init(list(self.critic.modules())[-1])
-
-        # S -> ... -> A (continuous)
-        self.actor_mean = mlp(input_dim=np.array(self.obs_shape).prod(), output_dim=np.array(self.action_shape).prod(),
-                              net_arch=net_arch, activation_fn=nn.Tanh)
-        self.actor_mean.apply(layer_init)
-        value_init(list(self.actor_mean.modules())[-1])
-        self.actor_logstd = nn.Parameter(th.zeros(1, np.array(self.action_shape).prod()))
-
-    def get_value(self, x):
-        return self.critic(x)
-
-    def get_action_and_value(self, x, action=None):
-        action_mean = self.actor_mean(x)
-        action_logstd = self.actor_logstd.expand_as(action_mean)
-        action_std = th.exp(action_logstd)
-        probs = Normal(action_mean, action_std)
-        if action is None:
-            action = probs.sample()
-        return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)
-
-
-class MOPPOAgent:
-    def __init__(
-            self,
-            id: int,
-            networks: MOPPONet,
-            weights: np.ndarray,
-            envs: gym.vector.SyncVectorEnv,
-            writer: SummaryWriter,
-            steps_per_iteration: int = 2048,
-            num_minibatches: int = 32,
-            update_epochs: int = 10,
-            learning_rate: float = 3e-4,
-            gamma: float = .995,
-            anneal_lr: bool = False,
-            clip_coef: float = .2,
-            ent_coef: float = 0.,
-            vf_coef: float = .5,
-            clip_vloss: bool = True,
-            max_grad_norm: float = .5,
-            norm_adv: bool = True,
-            target_kl: Optional[float] = None,
-            gae: bool = True,
-            gae_lambda: float = .95,
-            device: Union[th.device, str] = "auto",
-    ):
-        self.id = id
-        self.envs = envs
-        self.num_envs = envs.num_envs
-        self.networks = networks
-        self.device = device
-
-        # PPO Parameters
-        self.steps_per_iteration = steps_per_iteration
-        self.weights = th.from_numpy(weights).to(self.device)
-        self.batch_size = int(self.num_envs * self.steps_per_iteration)
-        self.minibatch_size = int(self.batch_size // num_minibatches)
-        self.update_epochs = update_epochs
-        self.learning_rate = learning_rate
-        self.gamma = gamma
-        self.anneal_lr = anneal_lr
-        self.clip_coef = clip_coef
-        self.vf_coef = vf_coef
-        self.ent_coef = ent_coef
-        self.max_grad_norm = max_grad_norm
-        self.norm_adv = norm_adv
-        self.target_kl = target_kl
-        self.clip_vloss = clip_vloss
-        self.gae_lambda = gae_lambda
-        self.writer = writer
-        self.gae = gae
-
-        self.optimizer = optim.Adam(networks.parameters(), lr=self.learning_rate, eps=1e-5)
-        self.global_step = 0
-
-        # Storage setup (the batch)
-        self.batch = PPOReplayBuffer(self.steps_per_iteration, self.num_envs, self.networks.obs_shape,
-                                     self.networks.action_shape, self.networks.reward_dim, self.device)
-
-    def __collect_samples(self, obs, done):
+class PerformancePredictor:
+    def __init__(self, neighborhood_threshold: float = 0.1, sigma: float = 0.03, A_bound_min: float = 1.,
+                 A_bound_max: float = 500., f_scale: float = 20.):
         """
-        Fills the batch with {self.steps_per_iteration} samples collected from the environments
-        :param obs: current observations
-        :param done: current dones
-        :return: next observation and dones
+        Stores the performance deltas along with the used weights after each generation.
+        Then, uses these stored samples to perform a regression for predicting the performance of using a given weight
+        to train a given policy.
         """
-        for step in range(0, self.steps_per_iteration):
-            self.global_step += 1 * self.num_envs
-            # Compute best action
-            with th.no_grad():
-                action, logprob, _, value = self.networks.get_action_and_value(obs)
-                value = value.view(self.num_envs, self.networks.reward_dim)  # TODO check this
+        # Memory
+        self.previous_performance = []
+        self.next_performance = []
+        self.used_weight = []
 
-            # Perform action on the environment
-            next_obs, reward, next_done, info = self.envs.step(action.cpu().numpy())
-            reward = th.tensor(reward).to(self.device).view(self.num_envs, self.networks.reward_dim)
-            # storing to batch
-            self.batch.add(obs, action, logprob, reward, done, value)
+        # Prediction model parameters
+        self.neighborhood_threshold = neighborhood_threshold
+        self.A_bound_min = A_bound_min
+        self.A_bound_max = A_bound_max
+        self.f_scale = f_scale
+        self.sigma = sigma
 
-            # Next iteration
-            obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(next_done).to(self.device)
+    def add(self, weight: np.ndarray, eval_before_pg: np.ndarray, eval_after_pg: np.ndarray):
+        self.previous_performance.append(eval_before_pg)
+        self.next_performance.append(eval_after_pg)
+        self.used_weight.append(weight)
 
-            # Episode info logging
-            if "episode" in info.keys():
-                for item in info["episode"]:
-                    print(f"Agent #{self.id} - global_step={self.global_step}, episodic_return={item['episode']['r']}")
-                    # TODO add logging from wrapper ?
-                    self.writer.add_scalar("charts/episodic_return", item["episode"]["r"], self.global_step)
-                    self.writer.add_scalar("charts/episodic_length", item["episode"]["l"], self.global_step)
-                    break
-
-        return obs, done
-
-    def __compute_advantages(self, next_obs, next_done):
+    def __build_model_and_predict(self, training_weights, training_deltas, training_next_perfs, current_dim,
+                                  current_eval: np.ndarray, weight_candidate: np.ndarray, sigma: float):
         """
-        Computes the advantages by replaying experiences from the buffer in reverse
-        :return: MO returns, scalarized advantages
+        Uses the hyperbolic model on the training data: weights, deltas and next_perfs to predict the next delta
+        given the current evaluation and weight.
+        :return: The expected delta from current_eval by using weight_candidate.
         """
-        with th.no_grad():
-            next_value = self.networks.get_value(next_obs).reshape(self.num_envs, -1)
-            if self.gae:
-                advantages = th.zeros_like(self.batch.rewards).to(self.device)
-                lastgaelam = 0
-                for t in reversed(range(self.steps_per_iteration)):
-                    if t == self.steps_per_iteration - 1:
-                        nextnonterminal = 1.0 - next_done
-                        nextvalues = next_value
-                    else:
-                        _, _, _, _, done_t1, value_t1 = self.batch.get(t + 1)
-                        nextnonterminal = 1.0 - done_t1
-                        nextvalues = value_t1
 
-                    # This allows to broadcast the nextnonterminal tensors to match the additional dimension of rewards
-                    nextnonterminal = nextnonterminal.unsqueeze(1).repeat(1, self.networks.reward_dim)
-                    _, _, _, reward_t, _, value_t = self.batch.get(t)
-                    delta = reward_t + self.gamma * nextvalues * nextnonterminal - value_t
-                    advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
-                returns = advantages + self.batch.values
+        def __f(x, A, a, b, c):
+            return A * (np.exp(a * (x - b)) - 1) / (np.exp(a * (x - b)) + 1) + c
+
+        def __hyperbolic_model(params, x, y):
+            # f = A * (exp(a(x - b)) - 1) / (exp(a(x - b)) + 1) + c
+            return (params[0] * (np.exp(params[1] * (x - params[2])) - 1.) / (np.exp(params[1] * (x - params[2])) + 1) +
+                    params[3] - y) * w
+
+        def __jacobian(params, x, y):
+            A, a, b, c = params[0], params[1], params[2], params[3]
+            J = np.zeros([len(params), len(x)])
+            # df_dA = (exp(a(x - b)) - 1) / (exp(a(x - b)) + 1)
+            J[0] = ((np.exp(a * (x - b)) - 1) / (np.exp(a * (x - b)) + 1)) * w
+            # df_da = A(x - b)(2exp(a(x-b)))/(exp(a(x-b)) + 1)^2
+            J[1] = (A * (x - b) * (2. * np.exp(a * (x - b))) / ((np.exp(a * (x - b)) + 1) ** 2)) * w
+            # df_db = A(-a)(2exp(a(x-b)))/(exp(a(x-b)) + 1)^2
+            J[2] = (A * (-a) * (2. * np.exp(a * (x - b))) / ((np.exp(a * (x - b)) + 1) ** 2)) * w
+            # df_dc = 1
+            J[3] = w
+
+            return np.transpose(J)
+
+        train_x = []
+        train_y = []
+        w = []
+        for i in range(len(training_weights)):
+            train_x.append(training_weights[i][current_dim])
+            train_y.append(training_deltas[i][current_dim])
+            diff = np.abs(training_next_perfs[i] - current_eval)
+            dist = np.linalg.norm(diff / np.abs(current_eval))
+            coef = np.exp(-((dist / sigma) ** 2) / 2.0)
+            w.append(coef)
+
+        train_x = np.array(train_x)
+        train_y = np.array(train_y)
+        w = np.array(w)
+
+        A_upperbound = np.clip(np.max(train_y) - np.min(train_y), 1.0, 500.0)
+        initial_guess = np.ones(4)
+        res_robust = least_squares(__hyperbolic_model, initial_guess, loss='soft_l1', f_scale=self.f_scale,
+                                   args=(train_x, train_y), jac=__jacobian,
+                                   bounds=([0, 0.1, -5., -500.], [A_upperbound, 20., 5., 500.]))
+
+        return __f(weight_candidate.T[current_dim], *res_robust.x)
+
+    def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> np.ndarray:
+        """
+        Use a part of the collected data (determined by the neighborhood threshold) to predict the performance
+        after using weight to train the policy whose current evaluation is policy_eval.
+        :param weight_candidate: weight candidate
+        :param policy_eval: current evaluation of the policy
+        :return:
+        """
+        neighbor_weights = []
+        neighbor_deltas = []
+        neighbor_next_perf = []
+        current_sigma = self.sigma / 2.
+        current_neighb_threshold = self.neighborhood_threshold / 2.
+        # Iterates until we find at least 4 neighbors, enlarges the neighborhood at each iteration
+        while len(neighbor_weights) < 4:
+            if current_neighb_threshold >= 1.:
+                break
             else:
-                returns = th.zeros_like(self.batch.rewards).to(self.device)
-                for t in reversed(range(self.steps_per_iteration)):
-                    if t == self.steps_per_iteration - 1:
-                        nextnonterminal = 1.0 - next_done
-                        next_return = next_value
-                    else:
-                        _, _, _, _, done_t1, _ = self.batch.get(t + 1)
-                        nextnonterminal = 1.0 - done_t1
-                        next_return = returns[t + 1]
+                # Enlarging neighborhood
+                current_sigma *= 2.
+                current_neighb_threshold *= 2.
+            # Filtering for neighbors
+            for previous_perf, next_perf, w in zip(self.previous_performance, self.next_performance, self.used_weight):
+                if np.all(np.abs(previous_perf - policy_eval) < current_neighb_threshold * np.abs(previous_perf)) and \
+                        weight_candidate not in neighbor_weights:
+                    neighbor_weights.append(weight_candidate)
+                    neighbor_deltas.append(next_perf - previous_perf)
+                    neighbor_next_perf.append(next_perf)
 
-                    # This allows to broadcast the nextnonterminal tensors to match the additional dimension of rewards
-                    nextnonterminal = nextnonterminal.unsqueeze(1).repeat(1, self.networks.reward_dim)
-                    _, _, _, reward_t, _, _ = self.batch.get(t)
-                    returns[t] = reward_t + self.gamma * nextnonterminal * next_return
-                advantages = returns - self.batch.values
-
-        # Scalarization of the advantages (weighted sum)
-        advantages = advantages @ self.weights
-        return returns, advantages
-
-    def __update_networks(self, returns, advantages):
-        # flatten the batch (b == batch)
-        obs, actions, logprobs, _, _, values = self.batch.get_all()
-        b_obs = obs.reshape((-1,) + self.networks.obs_shape)
-        b_logprobs = logprobs.reshape(-1)
-        b_actions = actions.reshape((-1,) + self.networks.action_shape)
-        b_advantages = advantages.reshape(-1)
-        b_returns = returns.reshape(-1, self.networks.reward_dim)
-        b_values = values.reshape(-1, self.networks.reward_dim)
-
-        # Optimizing the policy and value network
-        b_inds = np.arange(self.batch_size)
-        clipfracs = []
-
-        # Perform multiple passes on the batch (that is shuffled every time)
-        for epoch in range(self.update_epochs):
-            np.random.shuffle(b_inds)
-            for start in range(0, self.batch_size, self.minibatch_size):
-                end = start + self.minibatch_size
-                # mb == minibatch
-                mb_inds = b_inds[start:end]
-
-                _, newlogprob, entropy, newvalue = self.networks.get_action_and_value(b_obs[mb_inds],
-                                                                                      b_actions[mb_inds])
-                logratio = newlogprob - b_logprobs[mb_inds]
-                ratio = logratio.exp()
-
-                with th.no_grad():
-                    # calculate approx_kl http://joschu.net/blog/kl-approx.html
-                    old_approx_kl = (-logratio).mean()
-                    approx_kl = ((ratio - 1) - logratio).mean()
-                    clipfracs += [((ratio - 1.0).abs() > self.clip_coef).float().mean().item()]
-
-                mb_advantages = b_advantages[mb_inds]
-                if self.norm_adv:
-                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
-
-                # Policy loss
-                pg_loss1 = -mb_advantages * ratio
-                pg_loss2 = -mb_advantages * th.clamp(ratio, 1 - self.clip_coef, 1 + self.clip_coef)
-                pg_loss = th.max(pg_loss1, pg_loss2).mean()
-
-                # Value loss
-                newvalue = newvalue.view(-1, self.networks.reward_dim)
-                if self.clip_vloss:
-                    v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
-                    v_clipped = b_values[mb_inds] + th.clamp(
-                        newvalue - b_values[mb_inds],
-                        -self.clip_coef,
-                        self.clip_coef,
-                    )
-                    v_loss_clipped = (v_clipped - b_returns[mb_inds]) ** 2
-                    v_loss_max = th.max(v_loss_unclipped, v_loss_clipped)
-                    v_loss = 0.5 * v_loss_max.mean()
-                else:
-                    v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
-
-                entropy_loss = entropy.mean()
-                loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef
-
-                self.optimizer.zero_grad()
-                loss.backward()
-                nn.utils.clip_grad_norm_(self.networks.parameters(), self.max_grad_norm)
-                self.optimizer.step()
-
-            if self.target_kl is not None:
-                if approx_kl > self.target_kl:
-                    break
-
-        y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
-        var_y = np.var(y_true)
-        explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
-
-        # record rewards for plotting purposes
-        self.writer.add_scalar(f"charts/learning_rate_{self.id}", self.optimizer.param_groups[0]["lr"],
-                               self.global_step)
-        self.writer.add_scalar(f"losses/value_loss_{self.id}", v_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses/policy_loss_{self.id}", pg_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses/entropy_{self.id}", entropy_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses/old_approx_kl_{self.id}", old_approx_kl.item(), self.global_step)
-        self.writer.add_scalar(f"losses/approx_kl_{self.id}", approx_kl.item(), self.global_step)
-        self.writer.add_scalar(f"losses/clipfrac_{self.id}", np.mean(clipfracs), self.global_step)
-        self.writer.add_scalar(f"losses/explained_variance_{self.id}", explained_var, self.global_step)
-
-    def train(self, current_iteration, max_iterations):
-        """
-        A training iteration: trains PPO for self.steps_per_iteration * self.num_envs.
-        """
-        # Start the game
-        start_time = time.time()
-        next_obs = th.Tensor(self.envs.reset()).to(self.device)  # num_envs x obs
-        next_done = th.zeros(self.num_envs).to(self.device)
-
-        # Split the epoch into batches
-        # num_updates = self.steps_per_iteration // self.batch_size
-        # print(f"Update {num_updates}")
-        # for update in range(1, num_updates + 1):
-        #     print(f"Update {update}/{num_updates}")
-        # Annealing the rate if instructed to do so.
-        if self.anneal_lr:
-            frac = 1.0 - (current_iteration - 1.0) / max_iterations
-            lrnow = frac * self.learning_rate
-            self.optimizer.param_groups[0]["lr"] = lrnow
-
-        # Fills buffer
-        next_obs, next_done = self.__collect_samples(next_obs, next_done)
-
-        # Compute advantage on collected samples
-        returns, advantages = self.__compute_advantages(next_obs, next_done)
-
-        # Update neural networks from batch
-        self.__update_networks(returns, advantages)
-
-        # Logging
-        print("SPS:", int(self.global_step / (time.time() - start_time)))
-        self.writer.add_scalar("charts/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
+        # constructing a prediction model for each objective dimension, and using it to construct the delta predictions
+        delta_predictions = [
+            self.__build_model_and_predict(
+                training_weights=neighbor_weights,
+                training_deltas=neighbor_deltas,
+                training_next_perfs=neighbor_next_perf,
+                current_dim=obj_num,
+                current_eval=policy_eval,
+                weight_candidate=weight_candidate,
+                sigma=current_sigma
+            ) for obj_num in range(weight_candidate.size)
+        ]
+        delta_predictions = np.array(delta_predictions).T
+        return delta_predictions + policy_eval
 
 
 class PGMORL(MORLAlgorithm):
@@ -359,6 +155,9 @@ class PGMORL(MORLAlgorithm):
             limit_env_steps: int = 5e6,
             evolutionary_iterations: int = 20,
             num_weight_candidates: int = 7,
+            min_weight: float = 0.,
+            max_weight: float = 1.,
+            delta_weight: float = 0.2,
             env=None,
             gamma: float = 0.995,
             project_name: str = "PGMORL",
@@ -391,6 +190,7 @@ class PGMORL(MORLAlgorithm):
         assert isinstance(self.action_space, gym.spaces.Box), "only continuous action space is supported"
         self.tmp_env.close()
         self.gamma = gamma
+        self.ref_point = np.array([0., -5.])
 
         # EA parameters
         self.pop_size = pop_size
@@ -398,8 +198,14 @@ class PGMORL(MORLAlgorithm):
         self.steps_per_iteration = steps_per_iteration
         self.evolutionary_iterations = evolutionary_iterations
         self.num_weight_candidates = num_weight_candidates
+        self.min_weight = min_weight
+        self.max_weight = max_weight
+        self.delta_weight = delta_weight
         self.limit_env_steps = limit_env_steps
         self.max_iterations = self.limit_env_steps // self.steps_per_iteration // self.num_envs
+        self.iteration = 0
+        self.pareto_archive = ParetoArchive()
+        self.predictor = PerformancePredictor()
 
         # PPO Parameters
         self.net_arch = net_arch
@@ -444,17 +250,26 @@ class PGMORL(MORLAlgorithm):
             for _ in range(self.pop_size)
         ]
 
-        # TODO WEIGHT
-        weight = np.array([0.5, 0.5], dtype=np.float32)
+        weights = self.generate_weights(self.delta_weight)
+        print(f"Warmup phase - sampled weights: {weights}")
+        self.pop_size = len(weights)
 
         self.agents = [
-            MOPPOAgent(i, self.networks[i], weight, self.env, self.writer, gamma=self.gamma, device=self.device)
+            MOPPOAgent(i, self.networks[i], weights[i], self.env, self.writer, gamma=self.gamma, device=self.device)
             for i in range(self.pop_size)
         ]
 
-
     def eval(self, obs):
         pass
+
+    def generate_weights(self, delta_weight: float) -> np.ndarray:
+        """
+        Generates weights uniformly distributed over the objective dimensions. These weight vectors are separated by
+        delta_weight distance.
+        :param delta_weight: distance between weight vectors
+        :return: all the candidate weights
+        """
+        return np.linspace((0., 1.), (1., 0.), int(1/delta_weight) + 1, dtype=np.float32)
 
     def get_config(self) -> dict:
         return {
@@ -467,6 +282,9 @@ class PGMORL(MORLAlgorithm):
             "limit_env_steps": self.limit_env_steps,
             "max_iterations": self.max_iterations,
             "num_weight_candidates": self.num_weight_candidates,
+            "min_weight": self.min_weight,
+            "max_weight": self.max_weight,
+            "delta_weight": self.delta_weight,
             "gamma": self.gamma,
             "seed": self.seed,
             "net_arch": self.net_arch,
@@ -486,31 +304,71 @@ class PGMORL(MORLAlgorithm):
             "gae_lambda": self.gae_lambda,
         }
 
+    def __eval_agent(self, agent, render: bool = False):
+        scalarized, discounted_scalarized, reward, discounted_reward = mo_gym.eval_mo(agent=agent, env=self.env.envs[0],
+                                                                                      w=agent.weights, render=render)
+        print(f"Agent #{agent.id} - {reward} - discounted: {discounted_reward}")
+        for i, (r, dr) in enumerate(zip(reward, discounted_reward)):
+            self.writer.add_scalar(f"charts_{agent.id}/evaluated_reward_{i}", r, self.iteration)
+            self.writer.add_scalar(f"charts_{agent.id}/evaluated_discounted_reward_{i}", dr, self.iteration)
+        self.writer.add_scalar(f"charts_{agent.id}/scalarized_discounted_reward", scalarized, self.iteration)
+        self.writer.add_scalar(f"charts_{agent.id}/scalarized_reward_", discounted_scalarized, self.iteration)
+        self.pareto_archive.add(agent, discounted_reward)
+        return discounted_reward
+
+    def __train_all_agents(self, evaluations_before_train):
+        self.writer.add_scalar("charts/iteration", self.iteration)
+        for i, agent in enumerate(self.agents):
+            agent.train(self.iteration, self.max_iterations)
+            performance_after_train = self.__eval_agent(agent)
+            self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], performance_after_train)
+            evaluations_before_train[i] = performance_after_train
+        print(self.pareto_archive.evaluations)
+        hv = hypervolume(self.ref_point, self.pareto_archive.evaluations)
+        self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
+
+    def __update_weights(self, current_evals: List[np.ndarray]):
+        """
+        Update the weights of each agent based on prediction of PF improvement given current_evals and their current weights.
+        :param current_evals: current evaluations of the agents' policies
+        """
+        candidate_weights = self.generate_weights(self.delta_weight / 2.)  # Generates more weights than agents
+        np.random.shuffle(candidate_weights)  # Randomize
+
+        current_front = deepcopy(self.pareto_archive.evaluations)
+        for i, a in enumerate(self.agents):
+            predicted_evals = [self.predictor.predict_next_evaluation(weight, current_evals[i]) for weight in candidate_weights]
+            mixture_metrics = [
+                hypervolume(self.ref_point, current_front + predicted_eval) - sparsity(current_front + predicted_eval)
+                for predicted_eval in predicted_evals
+            ]
+            best_candidate = np.argmax(np.array(mixture_metrics))
+            # Assigns weight to the agent
+            a.weights = th.from_numpy(deepcopy(candidate_weights[best_candidate]))
+            # Append current estimate to the estimated front (for computing the next predictions)
+            current_front.append(predicted_evals[best_candidate])
+
     def train(self):
-        global_step = 0
         # Warmup
-        iteration = 0
+        current_evaluations = [np.zeros(self.reward_dim) for _ in range(len(self.agents))]
         for i in range(self.warmup_iterations):
-            self.writer.add_scalar("iteration", iteration)
-            self.writer.add_scalar("warmup_iterations", i)
-            print(f"Warmup iteration #{iteration}")
-            for a in self.agents:
-                a.train(iteration, self.max_iterations)
-            iteration += 1
+            self.writer.add_scalar("charts/warmup_iterations", i)
+            print(f"Warmup iteration #{self.iteration}")
+            self.__train_all_agents(current_evaluations)
+            self.iteration += 1
 
-        while iteration < self.max_iterations:
-            print(f"Evolutionary iteration #{iteration}")
-            for g in range(self.evolutionary_iterations):
-                self.writer.add_scalar("iteration", iteration)
-                self.writer.add_scalar("evolutionary_iterations", g)
-                # TODO predict weights`
-                # TODO task selection
-                for a in self.agents:
-                    a.weights = np.array([0.2, 0.8], dtype=np.float32)
-                    a.train(iteration, self.max_iterations)
-                # TODO eval after each generation?
-                iteration += 1
+        # Evolution
+        remaining_iterations = max(self.max_iterations - self.warmup_iterations, self.evolutionary_iterations)
+        for generation in range(remaining_iterations):
+            print(f"Evolutionary iteration #{generation}")
+            self.writer.add_scalar("charts/evolutionary_iterations", generation)
+            self.__update_weights(current_evaluations)
+            weights = [agent.weights for agent in self.agents]
+            print(f"Current weights: {weights}")
+            self.__train_all_agents(current_evaluations)
+            self.iteration += 1
 
-        ## TODO evals
+        for a in self.agents:
+            self.__eval_agent(a, render=True)
         self.env.close()
         self.close_wandb()

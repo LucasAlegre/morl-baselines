@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import seaborn as sns
 from torch import nn
+from pymoo.factory import get_reference_directions
 
 
 @th.no_grad()
@@ -53,3 +54,19 @@ def linearly_decaying_epsilon(initial_epsilon, decay_period, step, warmup_steps,
     bonus = (initial_epsilon - final_epsilon) * steps_left / decay_period
     bonus = np.clip(bonus, 0.0, 1.0 - final_epsilon)
     return final_epsilon + bonus
+
+
+def get_weights(num_objs: int, num_weights: int) -> List:
+    """
+    Generates weights spread over the unit simplex
+    :param num_objs: number of objectives in the problem
+    :param num_weights: number of weights desired
+    :return: a list of np.array containing the weights.
+    ! There might be a different number of weights being returned than what is specified !
+    See https://pymoo.org/misc/reference_directions.html#Reference-Directions
+    """
+    weights = get_reference_directions("das-dennis", num_objs, n_partitions=num_weights)
+    if len(weights) != num_weights + 1:
+        print(f"WARNING: the number of weights {num_weights} you have chosen cannot be sampled using Das-Dennis approach. "
+              f"We have sampled {len(weights)} instead.")
+    return [np.array(weight, dtype=np.float32) for weight in weights]
