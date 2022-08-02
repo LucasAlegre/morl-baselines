@@ -1,10 +1,9 @@
 from copy import deepcopy
+from typing import List
 
 import numpy as np
 
-
-# https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
-import torch
+from morl_baselines.mo_algorithms.mo_ppo import MOPPOAgent
 
 
 def is_pareto_efficient(evaluations: np.ndarray, return_mask: bool = True):
@@ -16,6 +15,7 @@ def is_pareto_efficient(evaluations: np.ndarray, return_mask: bool = True):
         If return_mask is True, this will be an (n_points, ) boolean array
         Otherwise it will be a (n_efficient_points, ) integer array of indices.
     """
+    # https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
     is_efficient = np.arange(evaluations.shape[0])
     n_points = evaluations.shape[0]
     next_point_index = 0  # Next index in the is_efficient array to search for
@@ -39,12 +39,12 @@ def is_pareto_efficient(evaluations: np.ndarray, return_mask: bool = True):
 
 class ParetoArchive:
     def __init__(self):
-        self.individuals = []
-        self.evaluations = []
+        self.individuals: List[MOPPOAgent] = []
+        self.evaluations: List[np.ndarray] = []
 
-    def add(self, candidate, evaluation: np.ndarray):
+    def add(self, candidate: MOPPOAgent, evaluation: np.ndarray):
         """
-        Adds the candidate to the memory if it is pareto efficient
+        Adds the candidate to the memory and removes Pareto inefficient points
         """
         self.evaluations.append(evaluation)
         self.individuals.append(deepcopy(candidate))

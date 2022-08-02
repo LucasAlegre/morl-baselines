@@ -5,6 +5,7 @@ import numpy as np
 from pymoo.factory import get_performance_indicator
 
 
+# TODO should this be here or in MO-gym?
 def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
     """Computes the hypervolume metric for a set of points (value vectors) and a reference point.
 
@@ -22,12 +23,12 @@ def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
 def sparsity(front: List[np.ndarray]) -> float:
     """
     Sparsity metric from PGMORL
-    :param front: current pareto front to compute the parsity on
+    :param front: current pareto front to compute the sparsity on
     """
     if len(front) < 2:
-        return 0.0
+        return 0.
 
-    sparsity_value = 0.0
+    sparsity_value = 0.
     m = len(front[0])
     front = np.array(front)
     for dim in range(m):

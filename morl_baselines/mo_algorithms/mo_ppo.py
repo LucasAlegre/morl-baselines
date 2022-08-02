@@ -1,34 +1,89 @@
-import random
 import time
 from copy import deepcopy
+from typing import List, Optional, Union
 
 import gym
-import numpy as np
 import mo_gym
-import wandb
-from mo_gym import utils
+import numpy as np
 import torch as th
 from torch import nn, optim
 from torch.distributions import Normal
-from torch.nn import Sequential
-from typing import Callable, List, Optional, Union
-
 from torch.utils.tensorboard import SummaryWriter
 
-from morl_baselines.common.buffer import PPOReplayBuffer
-from morl_baselines.common.morl_algorithm import MORLAlgorithm
 from morl_baselines.common.networks import mlp
-from morl_baselines.common.utils import layer_init, get_weights
+from morl_baselines.common.utils import layer_init
 
 
 # This code has been adapted from the PPO implementation of clean RL
 # https://github.com/vwxyzjn/cleanrl/blob/master/cleanrl/ppo_continuous_action.py
+
+class PPOReplayBuffer:
+    def __init__(self, size: int, num_envs: int, obs_shape: tuple, action_shape: tuple, reward_dim: int,
+                 device: Union[th.device, str]):
+        self.size = size
+        self.ptr = 0
+        self.num_envs = num_envs
+        self.device = device
+        self.obs = th.zeros((self.size, self.num_envs) + obs_shape).to(device)
+        self.actions = th.zeros((self.size, self.num_envs) + action_shape).to(device)
+        self.logprobs = th.zeros((self.size, self.num_envs)).to(device)
+        self.rewards = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
+        self.dones = th.zeros((self.size, self.num_envs)).to(device)
+        self.values = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
+
+    def add(self, obs, actions, logprobs, rewards, dones, values):
+        assert self.ptr < self.size, "Buffer is full!"
+        self.obs[self.ptr] = obs
+        self.actions[self.ptr] = actions
+        self.logprobs[self.ptr] = logprobs
+        self.rewards[self.ptr] = rewards
+        self.dones[self.ptr] = dones
+        self.values[self.ptr] = values
+        self.ptr += 1
+
+    def flush(self):
+        self.ptr = 0
+        self.obs = th.zeros_like(self.obs).to(self.device)
+        self.actions = th.zeros_like(self.actions).to(self.device)
+        self.logprobs = th.zeros_like(self.logprobs).to(self.device)
+        self.rewards = th.zeros_like(self.rewards).to(self.device)
+        self.dones = th.zeros_like(self.dones).to(self.device)
+        self.values = th.zeros_like(self.values).to(self.device)
+
+    def get(self, step):
+        assert step <= self.ptr, f"Trying to access an empty slot in the buffer: step={step}, current size={self.ptr}"
+        return (
+            self.obs[step],
+            self.actions[step],
+            self.logprobs[step],
+            self.rewards[step],
+            self.dones[step],
+            self.values[step]
+        )
+
+    def get_all(self):
+        assert self.ptr == self.size, f"Buffer is not full yet! ptr={self.ptr}"
+        return (
+            self.obs,
+            self.actions,
+            self.logprobs,
+            self.rewards,
+            self.dones,
+            self.values
+        )
+
+
 def make_env(env_id, seed, idx, run_name, gamma):
+    """
+    Returns a function to create environments. This is because PPO works better with vectorized environments.
+    Also, some tricks like clipping and normalizing the environments' features are applied.
+    """
+
     def thunk():
         env = mo_gym.make(env_id)
         reward_dim = env.reward_space.shape[0]
         if idx == 0:
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}", episode_trigger=lambda e: e % 1000 == 0)
+            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}_{seed}", episode_trigger=lambda e: e % 1000 == 0)
         env = gym.wrappers.ClipAction(env)
         env = gym.wrappers.NormalizeObservation(env)
         env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
@@ -43,9 +98,16 @@ def make_env(env_id, seed, idx, run_name, gamma):
     return thunk
 
 
-hidden_init = lambda layer: layer_init(layer, weight_gain=np.sqrt(2), bias_const=0.)
-critic_init = lambda layer: layer_init(layer, weight_gain=1.)
-value_init = lambda layer: layer_init(layer, weight_gain=.01)
+def hidden_layer_init(layer):
+    layer_init(layer, weight_gain=np.sqrt(2), bias_const=0.)
+
+
+def critic_init(layer):
+    layer_init(layer, weight_gain=1.)
+
+
+def value_init(layer):
+    layer_init(layer, weight_gain=.01)
 
 
 class MOPPONet(nn.Module):
@@ -59,13 +121,13 @@ class MOPPONet(nn.Module):
         # S -> ... -> |R| (multi-objective)
         self.critic = mlp(input_dim=np.array(self.obs_shape).prod(), output_dim=self.reward_dim, net_arch=net_arch,
                           activation_fn=nn.Tanh)
-        self.critic.apply(hidden_init)
+        self.critic.apply(hidden_layer_init)
         critic_init(list(self.critic.modules())[-1])
 
         # S -> ... -> A (continuous)
         self.actor_mean = mlp(input_dim=np.array(self.obs_shape).prod(), output_dim=np.array(self.action_shape).prod(),
                               net_arch=net_arch, activation_fn=nn.Tanh)
-        self.actor_mean.apply(hidden_init)
+        self.actor_mean.apply(hidden_layer_init)
         value_init(list(self.actor_mean.modules())[-1])
         self.actor_logstd = nn.Parameter(th.zeros(1, np.array(self.action_shape).prod()))
 
@@ -83,6 +145,9 @@ class MOPPONet(nn.Module):
 
 
 class MOPPOAgent:
+    """
+    Modifies PPO to have a multi-objective value net (returning a vector).
+    """
     def __init__(
             self,
             id: int,
@@ -171,11 +236,14 @@ class MOPPOAgent:
         copied.optimizer = deepcopy(self.optimizer)
         return copied
 
+    def change_weights(self, new_weights: np.ndarray):
+        self.weights = th.from_numpy(deepcopy(new_weights)).to(self.device)
+
     def __extend_to_reward_dim(self, tensor: th.Tensor):
-        # This allows to broadcast the nextnonterminal tensors to match the additional dimension of rewards
+        # This allows to broadcast the tensor to match the additional dimension of rewards
         return tensor.unsqueeze(1).repeat(1, self.networks.reward_dim)
 
-    def __collect_samples(self, obs, done):
+    def __collect_samples(self, obs: th.Tensor, done: th.Tensor):
         """
         Fills the batch with {self.steps_per_iteration} samples collected from the environments
         :param obs: current observations
@@ -266,7 +334,6 @@ class MOPPOAgent:
         # Optimizing the policy and value network
         b_inds = np.arange(self.batch_size)
         clipfracs = []
-
         # Perform multiple passes on the batch (that is shuffled every time)
         for epoch in range(self.update_epochs):
             np.random.shuffle(b_inds)
@@ -346,11 +413,6 @@ class MOPPOAgent:
         next_obs = th.Tensor(self.envs.reset()).to(self.device)  # num_envs x obs
         next_done = th.zeros(self.num_envs).to(self.device)
 
-        # Split the epoch into batches
-        # num_updates = self.steps_per_iteration // self.batch_size
-        # print(f"Update {num_updates}")
-        # for update in range(1, num_updates + 1):
-        #     print(f"Update {update}/{num_updates}")
         # Annealing the rate if instructed to do so.
         if self.anneal_lr:
             frac = 1.0 - (current_iteration - 1.0) / max_iterations
@@ -381,4 +443,4 @@ class MOPPOAgent:
         with th.no_grad():
             action, _, _, _ = self.networks.get_action_and_value(obs)
 
-        return action[0].detach().numpy()
+        return action[0].detach().cpu().numpy()

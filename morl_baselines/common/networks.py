@@ -6,19 +6,15 @@ from torch import nn
 
 
 def mlp(
-        input_dim: int,
-        output_dim: int,
-        net_arch: List[int],
-        activation_fn: Type[nn.Module] = nn.ReLU,
-        layer_init_fn=lambda layer: layer,
-        last_layer_init_fn=lambda layer: layer
+    input_dim: int,
+    output_dim: int,
+    net_arch: List[int],
+    activation_fn: Type[nn.Module] = nn.ReLU
 ) -> nn.Sequential:
     """
     Create a multi layer perceptron (MLP), which is
     a collection of fully-connected layers each followed by an activation function.
 
-    :param last_layer_init_fn:
-    :param layer_init_fn:
     :param input_dim: Dimension of the input vector
     :param output_dim:
     :param net_arch: Architecture of the neural net
@@ -29,15 +25,15 @@ def mlp(
     :return:
     """
     assert len(net_arch) > 0
-    modules = [layer_init_fn(nn.Linear(input_dim, net_arch[0])), activation_fn()]
+    modules = [nn.Linear(input_dim, net_arch[0]), activation_fn()]
 
     for idx in range(len(net_arch) - 1):
-        modules.append(layer_init_fn(nn.Linear(net_arch[idx], net_arch[idx + 1])))
+        modules.append(nn.Linear(net_arch[idx], net_arch[idx + 1]))
         modules.append(activation_fn())
 
     if output_dim > 0:
         last_layer_dim = net_arch[-1]
-        modules.append(last_layer_init_fn(nn.Linear(last_layer_dim, output_dim)))
+        modules.append(nn.Linear(last_layer_dim, output_dim))
 
     return nn.Sequential(*modules)
 

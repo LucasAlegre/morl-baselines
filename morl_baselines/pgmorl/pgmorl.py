@@ -1,18 +1,21 @@
 import random
 from copy import deepcopy
+from typing import List, Optional, Union, Tuple
 
 import gym
-import numpy as np
 import mo_gym
+import numpy as np
 import torch as th
-from typing import List, Optional, Union
 from scipy.optimize import least_squares
 
-from morl_baselines.common.indicators import sparsity, hypervolume
+from morl_baselines.common.performance_indicators import sparsity, hypervolume
+from morl_baselines.common.morl_algorithm import MORLAlgorithm
 from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.mo_algorithms.mo_ppo import make_env, MOPPONet, MOPPOAgent
-from morl_baselines.common.morl_algorithm import MORLAlgorithm
-from morl_baselines.common.utils import get_weights
+
+
+# Some code in this file has been adapted from the original code provided by the authors of the paper
+# https://github.com/mit-gfx/PGMORL
 
 
 class PerformancePredictor:
@@ -93,13 +96,13 @@ class PerformancePredictor:
 
         return __f(weight_candidate.T[current_dim], *res_robust.x)
 
-    def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> np.ndarray:
+    def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Use a part of the collected data (determined by the neighborhood threshold) to predict the performance
         after using weight to train the policy whose current evaluation is policy_eval.
         :param weight_candidate: weight candidate
         :param policy_eval: current evaluation of the policy
-        :return:
+        :return: the delta prediction, along with the predicted next evaluations
         """
         neighbor_weights = []
         neighbor_deltas = []
@@ -135,12 +138,16 @@ class PerformancePredictor:
             ) for obj_num in range(weight_candidate.size)
         ]
         delta_predictions = np.array(delta_predictions).T
-        return delta_predictions + policy_eval
+        return delta_predictions, delta_predictions + policy_eval
 
 
 class PGMORL(MORLAlgorithm):
     """
-    Prediction Guided MORL.
+    J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik,
+    “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,”
+    in Proceedings of the 37th International Conference on Machine Learning,
+    Nov. 2020, pp. 10607–10616. Available: https://proceedings.mlr.press/v119/xu20h.html
+
     https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf
     https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf
     """
@@ -152,7 +159,7 @@ class PGMORL(MORLAlgorithm):
             pop_size: int = 6,
             warmup_iterations: int = 80,
             steps_per_iteration: int = 2048,
-            limit_env_steps: int = 5e6,
+            limit_env_steps: int = int(5e6),
             evolutionary_iterations: int = 20,
             num_weight_candidates: int = 7,
             min_weight: float = 0.,
@@ -320,12 +327,15 @@ class PGMORL(MORLAlgorithm):
         self.writer.add_scalar("charts/iteration", self.iteration)
         for i, agent in enumerate(self.agents):
             agent.train(self.iteration, self.max_iterations)
-            performance_after_train = self.__eval_agent(agent)
-            self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], performance_after_train)
-            evaluations_before_train[i] = performance_after_train
+            evaluation_after_train = self.__eval_agent(agent)
+            self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], evaluation_after_train)
+            evaluations_before_train[i] = evaluation_after_train
+        print("Current pareto archive:")
         print(self.pareto_archive.evaluations)
         hv = hypervolume(self.ref_point, self.pareto_archive.evaluations)
+        sp = sparsity(self.pareto_archive.evaluations)
         self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
+        self.writer.add_scalar("charts/sparsity", sp, self.iteration)
 
     def __update_weights(self, current_evals: List[np.ndarray]):
         """
@@ -337,14 +347,17 @@ class PGMORL(MORLAlgorithm):
 
         current_front = deepcopy(self.pareto_archive.evaluations)
         for i, a in enumerate(self.agents):
-            predicted_evals = [self.predictor.predict_next_evaluation(weight, current_evals[i]) for weight in candidate_weights]
+            delta_predictions, predicted_evals = \
+                map(list, zip(*[self.predictor.predict_next_evaluation(weight, current_evals[i]) for weight in candidate_weights]))
+            print(f"Agent #{a.id} - Delta predictions:")
+            print(delta_predictions)
             mixture_metrics = [
                 hypervolume(self.ref_point, current_front + predicted_eval) - sparsity(current_front + predicted_eval)
                 for predicted_eval in predicted_evals
             ]
             best_candidate = np.argmax(np.array(mixture_metrics))
-            # Assigns weight to the agent
-            a.weights = th.from_numpy(deepcopy(candidate_weights[best_candidate]))
+            # Assigns best predicted weights to the agent
+            a.change_weights(deepcopy(candidate_weights[best_candidate]))
             # Append current estimate to the estimated front (for computing the next predictions)
             current_front.append(predicted_evals[best_candidate])
 
@@ -368,7 +381,6 @@ class PGMORL(MORLAlgorithm):
             self.__train_all_agents(current_evaluations)
             self.iteration += 1
 
-        for a in self.agents:
-            self.__eval_agent(a, render=True)
+        print("Done training!")
         self.env.close()
         self.close_wandb()

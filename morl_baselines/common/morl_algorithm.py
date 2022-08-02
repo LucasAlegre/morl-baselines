@@ -18,6 +18,11 @@ class MORLAlgorithm(ABC):
         self.num_episodes = 0
 
     def extract_env_info(self, env):
+        """
+        Extracts all the features of the environment: observation space, action space, ...
+        """
+        # Sometimes, the environment is not instantiated at the moment the MORL algorithms is being instantiated.
+        # So env can be None. It is the reponsibility of the implemented MORLAlgorithm to call this method in those cases
         if env is not None:
             self.env = env
             self.observation_shape = self.env.observation_space.shape
