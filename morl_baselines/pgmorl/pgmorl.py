@@ -155,6 +155,7 @@ class PGMORL(MORLAlgorithm):
     def __init__(
             self,
             env_id: str = "mo-halfcheetah-v4",
+            ref_point: np.ndarray = np.array([0., -5.]),
             num_envs: int = 4,
             pop_size: int = 6,
             warmup_iterations: int = 80,
@@ -197,7 +198,7 @@ class PGMORL(MORLAlgorithm):
         assert isinstance(self.action_space, gym.spaces.Box), "only continuous action space is supported"
         self.tmp_env.close()
         self.gamma = gamma
-        self.ref_point = np.array([0., -5.])
+        self.ref_point = ref_point
 
         # EA parameters
         self.pop_size = pop_size
@@ -281,6 +282,7 @@ class PGMORL(MORLAlgorithm):
     def get_config(self) -> dict:
         return {
             "env_id": self.env_id,
+            "ref_point": self.ref_point,
             "num_envs": self.num_envs,
             "pop_size": self.pop_size,
             "warmup_iterations": self.warmup_iterations,
