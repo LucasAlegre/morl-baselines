@@ -404,12 +404,10 @@ class MOPPOAgent:
         self.writer.add_scalar(f"losses_{self.id}/clipfrac", np.mean(clipfracs), self.global_step)
         self.writer.add_scalar(f"losses_{self.id}/explained_variance", explained_var, self.global_step)
 
-    def train(self, current_iteration, max_iterations):
+    def train(self, start_time, current_iteration, max_iterations):
         """
         A training iteration: trains PPO for self.steps_per_iteration * self.num_envs.
         """
-        # Start the game
-        start_time = time.time()
         next_obs = th.Tensor(self.envs.reset()).to(self.device)  # num_envs x obs
         next_done = th.zeros(self.num_envs).to(self.device)
 

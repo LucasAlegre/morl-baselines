@@ -3,7 +3,6 @@ from typing import List
 
 import numpy as np
 
-from morl_baselines.mo_algorithms.mo_ppo import MOPPOAgent
 
 
 def is_pareto_efficient(evaluations: np.ndarray, return_mask: bool = True):
@@ -39,10 +38,10 @@ def is_pareto_efficient(evaluations: np.ndarray, return_mask: bool = True):
 
 class ParetoArchive:
     def __init__(self):
-        self.individuals: List[MOPPOAgent] = []
+        self.individuals: list = []
         self.evaluations: List[np.ndarray] = []
 
-    def add(self, candidate: MOPPOAgent, evaluation: np.ndarray):
+    def add(self, candidate, evaluation: np.ndarray):
         """
         Adds the candidate to the memory and removes Pareto inefficient points
         """
