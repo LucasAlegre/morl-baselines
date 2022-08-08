@@ -59,6 +59,7 @@ class Envelope(MORLAlgorithm):
         gamma: float = 0.99,
         max_grad_norm: Optional[float] = None,
         envelope: bool = True,
+        homotopy_lambda: float = 0.0,
         min_priority: float = 1.0,
         project_name: str = "Envelope",
         experiment_name: str = "Envelope",
@@ -92,6 +93,7 @@ class Envelope(MORLAlgorithm):
         self.q_optim = optim.Adam(self.q_net.parameters(), lr=self.learning_rate)
 
         self.envelope = envelope
+        self.homotopy_lambda = homotopy_lambda
         self.replay_buffer = ReplayBuffer(self.observation_shape, 1, rew_dim=self.rew_dim, max_size=buffer_size, action_dtype=np.uint8)
         self.min_priority = min_priority
 
@@ -164,7 +166,11 @@ class Envelope(MORLAlgorithm):
             q_value = q_values.gather(1, s_actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2)))
             q_value = q_value.reshape(-1, self.rew_dim)
             td_error = q_value - target_q
-            critic_loss = huber(td_error.abs(), min_priority=self.min_priority) 
+            critic_loss = huber(td_error.abs(), min_priority=self.min_priority)
+
+            if self.homotopy_lambda > 0:
+                auxiliary_loss = th.einsum("br,br->b", td_error, w)
+                critic_loss = (1 - self.homotopy_lambda) * critic_loss + self.homotopy_lambda * auxiliary_loss 
 
             self.q_optim.zero_grad()
             critic_loss.backward()
