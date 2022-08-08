@@ -95,7 +95,8 @@ class PerformancePredictor:
 
         return __f(weight_candidate.T[current_dim], *res_robust.x)
 
-    def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> Tuple[
+        np.ndarray, np.ndarray]:
         """
         Use a part of the collected data (determined by the neighborhood threshold) to predict the performance
         after using weight to train the policy whose current evaluation is policy_eval.
@@ -153,6 +154,7 @@ class PerformanceBuffer:
     Divides the objective space in to n bins of size max_size.
     Stores the population
     """
+
     def __init__(self, num_bins: int, max_size: int, ref_point: np.ndarray):
         self.num_bins = num_bins
         self.max_size = max_size
@@ -417,9 +419,9 @@ class PGMORL(MORLAlgorithm):
 
         current_front = deepcopy(self.archive.evaluations)
         population = self.population.individuals
-        current_population_eval = self.population.evaluations
-        selected_tasks_last_eval = []
-        # For each worker, select a policy, weight tuple
+        population_eval = self.population.evaluations
+        selected_tasks = []
+        # For each worker, select a (policy, weight) tuple
         for i in range(len(self.agents)):
             max_improv = float('-inf')
             best_candidate = None
@@ -427,32 +429,38 @@ class PGMORL(MORLAlgorithm):
             best_predicted_eval = None
 
             # In each selection, look at every possible candidate in the current population and every possible weight generated
-            for candidate, last_candidate_eval in zip(population, current_population_eval):
-                # Avoid double selection of the same individual
-                if tuple(last_candidate_eval) not in selected_tasks_last_eval:
-                    delta_predictions, predicted_evals = \
-                        map(list, zip(*[self.predictor.predict_next_evaluation(weight, last_candidate_eval) for weight in
-                                        candidate_weights]))
-                    mixture_metrics = [
-                        hypervolume(self.ref_point, current_front + predicted_eval) - sparsity(current_front + predicted_eval)
-                        for predicted_eval in predicted_evals
-                    ]
-                    # Best among all the weights for the current candidate
-                    current_candidate_weight = np.argmax(np.array(mixture_metrics))
-                    current_candidate_improv = np.max(np.array(mixture_metrics))
+            for candidate, last_candidate_eval in zip(population, population_eval):
+                # Pruning the already selected (candidate, weight) pairs
+                candidate_tuples = [(last_candidate_eval, weight) for weight in candidate_weights
+                                    if (tuple(last_candidate_eval), tuple(weight)) not in selected_tasks]
 
-                    # Best among all candidates, weight tuple update
-                    if max_improv < current_candidate_improv:
-                        max_improv = current_candidate_improv
-                        best_candidate = (candidate, candidate_weights[current_candidate_weight])
-                        best_eval = last_candidate_eval
-                        best_predicted_eval = predicted_evals[current_candidate_weight]
+                # Prediction of improvements of each pair
+                delta_predictions, predicted_evals = \
+                    map(list,
+                        zip(*[self.predictor.predict_next_evaluation(weight, candidate_eval) for candidate_eval, weight
+                              in candidate_tuples]))
+                # optimization criterion is a hypervolume - sparsity
+                mixture_metrics = [
+                    hypervolume(self.ref_point, current_front + predicted_eval) - sparsity(
+                        current_front + predicted_eval)
+                    for predicted_eval in predicted_evals
+                ]
+                # Best among all the weights for the current candidate
+                current_candidate_weight = np.argmax(np.array(mixture_metrics))
+                current_candidate_improv = np.max(np.array(mixture_metrics))
 
-            selected_tasks_last_eval.append(tuple(best_eval))
+                # Best among all candidates, weight tuple update
+                if max_improv < current_candidate_improv:
+                    max_improv = current_candidate_improv
+                    best_candidate = (candidate, candidate_tuples[current_candidate_weight][1])
+                    best_eval = last_candidate_eval
+                    best_predicted_eval = predicted_evals[current_candidate_weight]
+
+            selected_tasks.append((tuple(best_eval), tuple(best_candidate[1])))
             # Append current estimate to the estimated front (to compute the next predictions)
             current_front.append(best_predicted_eval)
 
-            # Assigns best predicted weight-agent pair to the worker
+            # Assigns best predicted (weight-agent) pair to the worker
             copied_agent = deepcopy(best_candidate[0])
             copied_agent.global_step = self.agents[i].global_step
             copied_agent.id = i
@@ -460,7 +468,8 @@ class PGMORL(MORLAlgorithm):
             self.agents[i] = copied_agent
 
             print(f"Agent #{self.agents[i].id} - weights {best_candidate[1]}")
-            print(f"current eval: {best_eval} - estimated next: {best_predicted_eval} - deltas {(best_predicted_eval - best_eval)}")
+            print(
+                f"current eval: {best_eval} - estimated next: {best_predicted_eval} - deltas {(best_predicted_eval - best_eval)}")
 
     def train(self):
         # Init
