@@ -32,7 +32,7 @@ def main():
         gradient_updates=1,
         target_net_update_freq=1000, #1000,  # 500 reduce by gradient updates
         tau=1,
-        log=False,
+        log=True,
         project_name="MORL-Baselines",
         experiment_name="Envelope - minecart-v0",
     )

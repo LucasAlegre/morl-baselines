@@ -215,7 +215,7 @@ class Envelope(MORLAlgorithm):
         next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
         #breakpoint()
         next_q_values = self.q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.rew_dim)
-        scalarized_next_q_values = th.einsum("br,bpar->bpa", w, next_q_values)
+        scalarized_next_q_values = th.einsum("br,bwar->bwa", w, next_q_values)
         max_q, ac = th.max(scalarized_next_q_values, dim=2)
         pref = th.argmax(max_q, dim=1)
 
