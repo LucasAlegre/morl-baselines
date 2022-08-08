@@ -93,7 +93,7 @@ class PerformancePredictor:
                                    args=(train_x, train_y), jac=__jacobian,
                                    bounds=([0, 0.1, -5., -500.], [A_upperbound, 20., 5., 500.]))
 
-        return __f(weight_candidate.T[current_dim], *res_robust.x)
+        return __f(weight_candidate[current_dim], *res_robust.x)
 
     def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> Tuple[
         np.ndarray, np.ndarray]:
@@ -107,21 +107,22 @@ class PerformancePredictor:
         neighbor_weights = []
         neighbor_deltas = []
         neighbor_next_perf = []
-        current_sigma = self.sigma
-        current_neighb_threshold = self.neighborhood_threshold
+        current_sigma = self.sigma / 2.
+        current_neighb_threshold = self.neighborhood_threshold / 2.
         # Iterates until we find at least 4 neighbors, enlarges the neighborhood at each iteration
         while len(neighbor_weights) < 4:
-            # Filtering for neighbors
-            for previous_perf, next_perf, w in zip(self.previous_performance, self.next_performance, self.used_weight):
-                if np.all(np.abs(previous_perf - policy_eval) < current_neighb_threshold * np.abs(policy_eval)) and \
-                        tuple(next_perf) not in list(map(tuple, neighbor_next_perf)):
-                    neighbor_weights.append(weight_candidate)
-                    neighbor_deltas.append(next_perf - previous_perf)
-                    neighbor_next_perf.append(next_perf)
-
             # Enlarging neighborhood
             current_sigma *= 2.
             current_neighb_threshold *= 2.
+
+            # Filtering for neighbors
+            for previous_perf, next_perf, neighb_w in zip(self.previous_performance, self.next_performance, self.used_weight):
+                if np.all(np.abs(previous_perf - policy_eval) < current_neighb_threshold * np.abs(policy_eval)) and \
+                        tuple(next_perf) not in list(map(tuple, neighbor_next_perf)):
+                    neighbor_weights.append(neighb_w)
+                    neighbor_deltas.append(next_perf - previous_perf)
+                    neighbor_next_perf.append(next_perf)
+
 
         # constructing a prediction model for each objective dimension, and using it to construct the delta predictions
         delta_predictions = [
@@ -135,7 +136,7 @@ class PerformancePredictor:
                 sigma=current_sigma
             ) for obj_num in range(weight_candidate.size)
         ]
-        delta_predictions = np.array(delta_predictions).T
+        delta_predictions = np.array(delta_predictions)
         return delta_predictions, delta_predictions + policy_eval
 
 
@@ -175,9 +176,9 @@ class PerformanceBuffer:
 
     def add(self, candidate, evaluation: np.ndarray):
         def center_eval(eval):
+            # Objectives must be positive
             return np.clip(eval + self.origin, 0., float('inf'))
 
-        # Objectives must be positive
         centered_eval = center_eval(evaluation)
         norm_eval = np.linalg.norm(centered_eval)
         theta = np.arccos(np.clip(centered_eval[1] / (norm_eval + 1e-3), -1.0, 1.0))
