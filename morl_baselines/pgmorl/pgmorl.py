@@ -487,10 +487,10 @@ class PGMORL(MORLAlgorithm):
 
             for _ in range(self.evolutionary_iterations):
                 # Run training of every agent for evolutionary iterations.
-                self.__train_all_agents()
-                self.iteration += 1
                 print(f"Evolutionary iteration #{self.iteration - self.warmup_iterations}")
                 self.writer.add_scalar("charts/evolutionary_iterations", self.iteration - self.warmup_iterations)
+                self.__train_all_agents()
+                self.iteration += 1
             self.__eval_all_agents(current_evaluations)
             evolutionary_generation += 1
 

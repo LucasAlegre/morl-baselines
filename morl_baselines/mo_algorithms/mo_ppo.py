@@ -233,7 +233,8 @@ class MOPPOAgent:
         )
 
         copied.global_step = self.global_step
-        copied.optimizer = deepcopy(self.optimizer)
+        copied.optimizer = optim.Adam(copied_net.parameters(), lr=self.learning_rate, eps=1e-5)
+        copied.batch = deepcopy(self.batch)
         return copied
 
     def change_weights(self, new_weights: np.ndarray):
