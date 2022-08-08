@@ -60,7 +60,6 @@ class Envelope(MORLAlgorithm):
         max_grad_norm: Optional[float] = None,
         envelope: bool = True,
         homotopy_lambda: float = 0.0,
-        min_priority: float = 1.0,
         project_name: str = "Envelope",
         experiment_name: str = "Envelope",
         log: bool = True,
@@ -95,7 +94,6 @@ class Envelope(MORLAlgorithm):
         self.envelope = envelope
         self.homotopy_lambda = homotopy_lambda
         self.replay_buffer = ReplayBuffer(self.observation_shape, 1, rew_dim=self.rew_dim, max_size=buffer_size, action_dtype=np.uint8)
-        self.min_priority = min_priority
 
         self.log = log
         if log:
@@ -108,7 +106,6 @@ class Envelope(MORLAlgorithm):
             "initial_epsilon": self.initial_epsilon,
             "epsilon_decay_steps:": self.epsilon_decay_steps,
             "batch_size": self.batch_size,
-            "min_priority": self.min_priority,
             "tau": self.tau,
             "clip_grand_norm": self.max_grad_norm,
             "target_net_update_freq": self.target_net_update_freq,
@@ -165,11 +162,13 @@ class Envelope(MORLAlgorithm):
             q_values = self.q_net(s_obs, w)
             q_value = q_values.gather(1, s_actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2)))
             q_value = q_value.reshape(-1, self.rew_dim)
-            td_error = q_value - target_q
-            critic_loss = huber(td_error.abs(), min_priority=self.min_priority)
+            #td_error = q_value - target_q
+            critic_loss = F.mse_loss(q_value, target_q)
 
             if self.homotopy_lambda > 0:
-                auxiliary_loss = th.einsum("br,br->b", td_error, w)
+                wQ = th.einsum("br,br->b", q_value, w)
+                wTQ = th.einsum("br,br->b", target_q, w)
+                auxiliary_loss = F.mse_loss(wQ, wTQ)
                 critic_loss = (1 - self.homotopy_lambda) * critic_loss + self.homotopy_lambda * auxiliary_loss 
 
             self.q_optim.zero_grad()
