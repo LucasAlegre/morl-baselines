@@ -67,3 +67,21 @@ def linearly_decaying_epsilon(initial_epsilon, decay_period, step, warmup_steps,
     bonus = (initial_epsilon - final_epsilon) * steps_left / decay_period
     bonus = np.clip(bonus, 0.0, 1.0 - final_epsilon)
     return final_epsilon + bonus
+
+
+def random_weights(dim, seed=None, n=1):
+    """Generate random normalized weights from a Dirichlet distribution alpha=1
+    Args:
+        dim: size of the weight vector
+    """
+    if seed is not None:
+        rng = np.random.default_rng(seed)
+    else:
+        rng = np.random
+    weights = []
+    for _ in range(n):
+        w = rng.dirichlet(np.ones(dim))
+        weights.append(w)
+    if n == 1:
+        return weights[0]
+    return np.array(weights)
