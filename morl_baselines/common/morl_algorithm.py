@@ -36,7 +36,7 @@ class MORLAlgorithm(ABC):
         """
 
     @abstractmethod
-    def train(self):
+    def update(self):
         """Update algorithm's parameters"""
 
     @abstractmethod

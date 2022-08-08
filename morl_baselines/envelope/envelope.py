@@ -67,7 +67,7 @@ class Envelope(MORLAlgorithm):
     ):
 
         super().__init__(env, device)
-        self.rew_dim = len(self.env.w)
+        self.rew_dim = self.env.reward_space.shape[0]
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -142,7 +142,7 @@ class Envelope(MORLAlgorithm):
     def sample_batch_experiences(self):
         return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
 
-    def train(self, weight: th.Tensor):
+    def update(self, weight: th.Tensor):
         critic_losses = []
         for g in range(self.gradient_updates):
             s_obs, s_actions, s_rewards, s_next_obs, s_dones = self.sample_batch_experiences()
@@ -199,7 +199,7 @@ class Envelope(MORLAlgorithm):
     @th.no_grad()
     def max_action(self, obs: th.Tensor, w: th.Tensor) -> int:
         q_values = self.q_net(obs, w)
-        scalarized_q_values = th.einsum("r,sar->sa", w, q_values)
+        scalarized_q_values = th.einsum("r,bar->ba", w, q_values)
         max_act = th.argmax(scalarized_q_values, dim=1)
         return max_act.detach().item()
 
@@ -211,7 +211,7 @@ class Envelope(MORLAlgorithm):
 
         next_obs = obs.unsqueeze(1).repeat(1, M.size(0), 1)
         next_q_values = self.q_net(next_obs, M).view(obs.size(0), len(self.M), self.action_dim, self.rew_dim)
-        scalarized_next_q_values = th.einsum("sr,spar->spa", w, next_q_values)
+        scalarized_next_q_values = th.einsum("br,bpar->bpa", w, next_q_values)
         max_q, ac = th.max(scalarized_next_q_values, dim=2)
         pref = th.argmax(max_q, dim=1)
 
@@ -227,7 +227,7 @@ class Envelope(MORLAlgorithm):
     def ddqn_target(self, obs: th.Tensor, w: th.Tensor):
         # Max action for each state
         q_values = self.q_net(obs, w)
-        scalarized_q_values = th.einsum("sr,sar->sa", w, q_values)
+        scalarized_q_values = th.einsum("br,bar->ba", w, q_values)
         max_acts = th.argmax(scalarized_q_values, dim=1)
         # Action evaluated with the target network
         q_values_target = self.target_q_net(obs, w)
@@ -246,7 +246,6 @@ class Envelope(MORLAlgorithm):
         eval_freq: int = 1000,
         reset_learning_starts: bool = False,
     ):
-        self.env.w = w
         self.M = [th.tensor(w).float().to(self.device) for w in M]
         tensor_w = th.tensor(w).float().to(self.device)
 
@@ -268,15 +267,15 @@ class Envelope(MORLAlgorithm):
             if self.num_timesteps < self.learning_starts:
                 action = self.env.action_space.sample()
             else:
-                action = self.act(th.as_tensor(obs).float().to(self.device), th.as_tensor(w).float().to(self.device))
+                action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
-            next_obs, reward, done, info = self.env.step(action)
+            next_obs, vec_reward, done, info = self.env.step(action)
             terminal = done if "TimeLimit.truncated" not in info else not info["TimeLimit.truncated"]
 
-            self.replay_buffer.add(obs, action, info["vector_reward"], next_obs, terminal)
+            self.replay_buffer.add(obs, action, vec_reward, next_obs, terminal)
 
             if self.num_timesteps >= self.learning_starts:
-                self.train(tensor_w)
+                self.update(tensor_w)
 
             if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
                 total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
@@ -286,8 +285,8 @@ class Envelope(MORLAlgorithm):
                     self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
                     self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
 
-            episode_reward += reward
-            episode_vec_reward += info["vector_reward"]
+            episode_reward += np.dot(w, vec_reward)
+            episode_vec_reward += vec_reward
             if done:
                 obs, done = self.env.reset(), False
                 num_episodes += 1

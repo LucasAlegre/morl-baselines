@@ -1,3 +1,4 @@
+import numpy as np
 import gym
 from gym.wrappers.record_video import RecordVideo
 import mo_gym
@@ -9,7 +10,7 @@ def main():
 
     def make_env():
         env = mo_gym.make("minecart-v0")
-        env = mo_gym.LinearReward(env)
+        #env = mo_gym.LinearReward(env)
         return env
 
     env = make_env()
@@ -37,6 +38,7 @@ def main():
         experiment_name="Envelope",
     )
 
+    w = np.array([0.9, 0.0, 0.1])
     agent.learn(
             total_timesteps=100000,
             total_episodes=None,
