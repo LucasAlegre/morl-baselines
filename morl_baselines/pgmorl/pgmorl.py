@@ -442,8 +442,8 @@ class PGMORL(MORLAlgorithm):
                               in candidate_tuples]))
                 # optimization criterion is a hypervolume - sparsity
                 mixture_metrics = [
-                    hypervolume(self.ref_point, current_front + predicted_eval) - sparsity(
-                        current_front + predicted_eval)
+                    hypervolume(self.ref_point, current_front + [predicted_eval]) - sparsity(
+                        current_front + [predicted_eval])
                     for predicted_eval in predicted_evals
                 ]
                 # Best among all the weights for the current candidate
