@@ -18,5 +18,5 @@ if __name__ == "__main__":
         print(f"Agent #{a.id}")
         print(f"Scalarized: {scalarized}")
         print(f"Discounted scalarized: {discounted_scalarized}")
-        print(f"Scalarized: {reward}")
-        print(f"Discounted scalarized: {discounted_reward}")
+        print(f"Vectorial: {reward}")
+        print(f"Discounted vectorial: {discounted_reward}")
