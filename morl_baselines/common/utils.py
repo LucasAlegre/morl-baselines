@@ -48,25 +48,26 @@ def huber(x, min_priority=0.01):
     return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
 
 
-def linearly_decaying_epsilon(initial_epsilon, decay_period, step, warmup_steps, final_epsilon):
-    """Returns the current epsilon for the agent's epsilon-greedy policy.
+def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, final_value):
+    """Returns the current value for a linearly decaying parameter.
     This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
     al., 2015). The schedule is as follows:
     Begin at 1. until warmup_steps steps have been taken; then
     Linearly decay epsilon from 1. to epsilon in decay_period steps; and then
     Use epsilon from there on.
     Args:
-    decay_period: float, the period over which epsilon is decayed.
+    decay_period: float, the period over which the value is decayed.
     step: int, the number of training steps completed so far.
-    warmup_steps: int, the number of steps taken before epsilon is decayed.
-    epsilon: float, the final value to which to decay the epsilon parameter.
+    warmup_steps: int, the number of steps taken before the value is decayed.
+    final value: float, the final value to which to decay the value parameter.
     Returns:
-    A float, the current epsilon value computed according to the schedule.
+    A float, the current value computed according to the schedule.
     """
     steps_left = decay_period + warmup_steps - step
-    bonus = (initial_epsilon - final_epsilon) * steps_left / decay_period
-    bonus = np.clip(bonus, 0.0, 1.0 - final_epsilon)
-    return final_epsilon + bonus
+    bonus = (initial_value - final_value) * steps_left / decay_period
+    value = final_value + bonus
+    value = np.clip(value, min(initial_value, final_value), max(initial_value, final_value))
+    return value
 
 
 def random_weights(dim, seed=None, n=1):
