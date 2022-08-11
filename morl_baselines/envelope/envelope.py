@@ -254,24 +254,26 @@ class Envelope(MORLAlgorithm):
     def learn(
         self,
         total_timesteps: int,
-        w: np.ndarray,
+        weight: np.ndarray = None, # Weight vector. If None, it is randomly sampled every episode (as done in the paper).
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
         eval_freq: int = 1000,
         reset_learning_starts: bool = False,
     ):
-        tensor_w = th.tensor(w).float().to(self.device)
-
         self.num_timesteps = 0 if reset_num_timesteps else self.num_timesteps
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
         if reset_learning_starts:  # Resets epsilon-greedy exploration
             self.learning_starts = self.num_timesteps
 
         episode_reward = 0.0
-        episode_vec_reward = np.zeros(w.shape[0])
+        episode_vec_reward = np.zeros(self.rew_dim)
         num_episodes = 0
         obs, done = self.env.reset(), False
+
+        w = weight if weight is not None else random_weights(self.rew_dim, 1)
+        tensor_w = th.tensor(w).float().to(self.device)
+
         for _ in range(1, total_timesteps + 1):
             if total_episodes is not None and num_episodes == total_episodes:
                 break
@@ -294,7 +296,7 @@ class Envelope(MORLAlgorithm):
                 total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
                 self.writer.add_scalar("eval/total_reward", total_reward, self.num_timesteps)
                 self.writer.add_scalar("eval/discounted_return", discounted_return, self.num_timesteps)
-                for i in range(episode_vec_reward.shape[0]):
+                for i in range(self.rew_dim):
                     self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
                     self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
 
@@ -305,15 +307,19 @@ class Envelope(MORLAlgorithm):
                 num_episodes += 1
                 self.num_episodes += 1
 
+                if weight is None:
+                    w = random_weights(self.rew_dim, 1)
+                    tensor_w = th.tensor(w).float().to(self.device)
+
                 if num_episodes % 100 == 0:
                     print(f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}")
                 if self.log:
                     self.writer.add_scalar("metrics/episode", self.num_episodes, self.num_timesteps)
                     self.writer.add_scalar("metrics/episode_reward", episode_reward, self.num_timesteps)
-                    for i in range(episode_vec_reward.shape[0]):
+                    for i in range(self.rew_dim):
                         self.writer.add_scalar(f"metrics/episode_reward_obj{i}", episode_vec_reward[i], self.num_timesteps)
 
                 episode_reward = 0.0
-                episode_vec_reward = np.zeros(w.shape[0])
+                episode_vec_reward = np.zeros(self.rew_dim)
             else:
                 obs = next_obs

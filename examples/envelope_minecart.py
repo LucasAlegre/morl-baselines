@@ -44,7 +44,7 @@ def main():
     agent.learn(
             total_timesteps=100000,
             total_episodes=None,
-            w=w,
+            weight=None,
             eval_env=eval_env,
             eval_freq=1000,
             reset_num_timesteps=False,
