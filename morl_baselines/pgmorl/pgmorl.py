@@ -163,7 +163,6 @@ class PerformanceBuffer:
         self.dtheta = np.pi / 2.0 / self.num_bins
         self.bins = [[] for _ in range(self.num_bins)]
         self.bins_evals = [[] for _ in range(self.num_bins)]
-        self.bin_weights = generate_weights(1 / (self.num_bins - 1))
 
     @property
     def evaluations(self) -> List[np.ndarray]:
@@ -327,7 +326,7 @@ class PGMORL(MORLAlgorithm):
         self.pop_size = len(weights)
 
         self.agents = [
-            MOPPOAgent(i, self.networks[i], weights[i], self.env, self.writer, gamma=self.gamma, device=self.device)
+            MOPPOAgent(i, self.networks[i], weights[i], self.env, self.writer, gamma=self.gamma, device=self.device, seed=self.seed)
             for i in range(self.pop_size)
         ]
 
