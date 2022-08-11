@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 import torch as th
@@ -10,19 +10,29 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 class MORLAlgorithm(ABC):
-    def __init__(self, env: gym.Env, device: Union[th.device, str] = "auto") -> None:
-        self.env = env
-        self.observation_shape = self.env.observation_space.shape
-        self.observation_dim = self.env.observation_space.shape[0]
-        self.action_space = env.action_space
-        if isinstance(self.env.action_space, (spaces.Discrete, spaces.MultiBinary)):
-            self.action_dim = self.env.action_space.n
-        else:
-            self.action_dim = self.env.action_space.shape[0]
+    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto") -> None:
+        self.extract_env_info(env)
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
 
         self.num_timesteps = 0
         self.num_episodes = 0
+
+    def extract_env_info(self, env):
+        """
+        Extracts all the features of the environment: observation space, action space, ...
+        """
+        # Sometimes, the environment is not instantiated at the moment the MORL algorithms is being instantiated.
+        # So env can be None. It is the reponsibility of the implemented MORLAlgorithm to call this method in those cases
+        if env is not None:
+            self.env = env
+            self.observation_shape = self.env.observation_space.shape
+            self.observation_dim = self.env.observation_space.shape[0]
+            self.action_space = env.action_space
+            if isinstance(self.env.action_space, (spaces.Discrete, spaces.MultiBinary)):
+                self.action_dim = self.env.action_space.n
+            else:
+                self.action_dim = self.env.action_space.shape[0]
+            self.reward_dim = self.env.reward_space.shape[0]
 
     @abstractmethod
     def eval(self, obs: np.ndarray) -> Union[int, np.ndarray]:
