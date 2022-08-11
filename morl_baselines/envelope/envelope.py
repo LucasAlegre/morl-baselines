@@ -222,20 +222,26 @@ class Envelope(MORLAlgorithm):
 
     @th.no_grad()
     def envelope_target(self, obs: th.Tensor, w: th.Tensor, sampled_w: th.Tensor) -> th.Tensor:
-        # TODO: There must be a clearer way to write this without all the reshape and expand
+        # Repeat the weights for each sample
         W = sampled_w.unsqueeze(0).repeat(obs.size(0), 1, 1)
+        # Repeat the observations for each sampled weight
         next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
         
+        # Batch size X Num sampled weights X Num actions X Num objectives
         next_q_values = self.q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.rew_dim)
+        # Scalarized Q values for each sampled weight
         scalarized_next_q_values = th.einsum("br,bwar->bwa", w, next_q_values)
+        # Max Q values for each sampled weight  
         max_q, ac = th.max(scalarized_next_q_values, dim=2)
+        # Max weights in the envelope
         pref = th.argmax(max_q, dim=1)
 
+        # MO Q-values evaluated on the target network
         next_q_values_target = self.target_q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.rew_dim)
 
-        # Max over actions
+        # Index the Q-values for the max actions
         max_next_q = next_q_values_target.gather(2, ac.unsqueeze(2).unsqueeze(3).expand(next_q_values.size(0), next_q_values.size(1), 1, next_q_values.size(3))).squeeze(2)
-        # Max over preferences
+        # Index the Q-values for the max sampled weights
         max_next_q = max_next_q.gather(1, pref.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))).squeeze(1)
         return max_next_q
     
