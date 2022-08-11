@@ -10,6 +10,7 @@ setup(
         "gym==0.24.1",  # Fixed version due to breaking changes in 0.25
         "numpy",
         "torch>=1.11",
+        "pymoo"
     ],
     tests_require=["pytest", "mock"],
     python_requires=">=3.7",

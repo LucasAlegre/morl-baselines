@@ -5,11 +5,11 @@ This repository aims at containing standard MORL algorithms, compatible with the
 ## TODO
 
 ### Multi-policy
-| Person          | Algo                | Paper                                                                                                                | Existing implem                                                                  | Done? |
-|-----------------|---------------------|----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|-------|
-| Florian / Lucas | Envelope Q-Learning | https://arxiv.org/pdf/1908.08342.pdf                                                                                 | https://github.com/RunzheYang/MORL                                               |       |
-| Florian         | PGMORL              | https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf / https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf | https://github.com/mit-gfx/PGMORL                                                |       |
-|                 | Pareto Q-Learning   | https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf                                                   | https://gitlab.ai.vub.ac.be/mreymond/deep-sea-treasure/-/blob/master/pareto_q.py |       |
+| Person          | Algo                | Paper                                                                                                                | Existing implem                                                                  | Done?              |
+|-----------------|---------------------|----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|--------------------|
+| Florian / Lucas | Envelope Q-Learning | https://arxiv.org/pdf/1908.08342.pdf                                                                                 | https://github.com/RunzheYang/MORL                                               |                    |
+| Florian         | PGMORL              | https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf / https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf | https://github.com/mit-gfx/PGMORL                                                | :heavy_check_mark: |
+| Willem          | Pareto Q-Learning   | https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf                                                   | https://gitlab.ai.vub.ac.be/mreymond/deep-sea-treasure/-/blob/master/pareto_q.py |                    |
 
 ### Single-policy
 | Person | Algo                             | Paper                                                                                                                        | Existing implem | Done? |
