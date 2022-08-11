@@ -5,7 +5,6 @@ import numpy as np
 from pymoo.factory import get_performance_indicator
 
 
-# TODO should this be here or in MO-gym?
 def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
     """Computes the hypervolume metric for a set of points (value vectors) and a reference point.
 
