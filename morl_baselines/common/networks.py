@@ -9,7 +9,7 @@ def mlp(
     input_dim: int,
     output_dim: int,
     net_arch: List[int],
-    activation_fn: Type[nn.Module] = nn.ReLU,
+    activation_fn: Type[nn.Module] = nn.ReLU
 ) -> nn.Sequential:
     """
     Create a multi layer perceptron (MLP), which is
