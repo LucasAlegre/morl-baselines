@@ -32,26 +32,15 @@ class PPOReplayBuffer:
         self.values = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
 
     def add(self, obs, actions, logprobs, rewards, dones, values):
-        assert self.ptr < self.size, "Buffer is full!"
         self.obs[self.ptr] = obs
         self.actions[self.ptr] = actions
         self.logprobs[self.ptr] = logprobs
         self.rewards[self.ptr] = rewards
         self.dones[self.ptr] = dones
         self.values[self.ptr] = values
-        self.ptr += 1
-
-    def flush(self):
-        self.ptr = 0
-        self.obs = th.zeros_like(self.obs).to(self.device)
-        self.actions = th.zeros_like(self.actions).to(self.device)
-        self.logprobs = th.zeros_like(self.logprobs).to(self.device)
-        self.rewards = th.zeros_like(self.rewards).to(self.device)
-        self.dones = th.zeros_like(self.dones).to(self.device)
-        self.values = th.zeros_like(self.values).to(self.device)
+        self.ptr = (self.ptr + 1) % self.size
 
     def get(self, step):
-        assert step <= self.ptr, f"Trying to access an empty slot in the buffer: step={step}, current size={self.ptr}"
         return (
             self.obs[step],
             self.actions[step],
@@ -62,7 +51,6 @@ class PPOReplayBuffer:
         )
 
     def get_all(self):
-        assert self.ptr == self.size, f"Buffer is not full yet! ptr={self.ptr}"
         return (
             self.obs,
             self.actions,
@@ -90,7 +78,7 @@ def make_env(env_id, seed, idx, run_name, gamma):
         for o in range(reward_dim):
             env = mo_gym.utils.MONormalizeReward(env, idx=o, gamma=gamma)
             env = mo_gym.utils.MOClipReward(env, idx=o, min_r=-10, max_r=10)
-        env.seed(seed)
+        env.reset(seed=seed)
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
         return env
@@ -171,12 +159,14 @@ class MOPPOAgent:
             gae: bool = True,
             gae_lambda: float = .95,
             device: Union[th.device, str] = "auto",
+            seed: int = 42,
     ):
         self.id = id
         self.envs = envs
         self.num_envs = envs.num_envs
         self.networks = networks
         self.device = device
+        self.seed = seed
 
         # PPO Parameters
         self.steps_per_iteration = steps_per_iteration
@@ -409,7 +399,7 @@ class MOPPOAgent:
         """
         A training iteration: trains PPO for self.steps_per_iteration * self.num_envs.
         """
-        next_obs = th.Tensor(self.envs.reset()).to(self.device)  # num_envs x obs
+        next_obs = th.Tensor(self.envs.reset(seed=self.seed)).to(self.device)  # num_envs x obs
         next_done = th.zeros(self.num_envs).to(self.device)
 
         # Annealing the rate if instructed to do so.
@@ -419,7 +409,6 @@ class MOPPOAgent:
             self.optimizer.param_groups[0]["lr"] = lrnow
 
         # Fills buffer
-        self.batch.flush()
         next_obs, next_done = self.__collect_samples(next_obs, next_done)
 
         # Compute advantage on collected samples
