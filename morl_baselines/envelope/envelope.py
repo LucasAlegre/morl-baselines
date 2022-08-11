@@ -12,7 +12,7 @@ import wandb as wb
 from morl_baselines.common.morl_algorithm import MORLAlgorithm
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.networks import mlp, NatureCNN
-from morl_baselines.common.utils import layer_init, polyak_update, linearly_decaying_epsilon, get_grad_norm, huber, random_weights
+from morl_baselines.common.utils import layer_init, polyak_update, linearly_decaying_value, get_grad_norm, huber, random_weights
 from mo_gym.evaluation import eval_mo
 
 
@@ -60,7 +60,9 @@ class Envelope(MORLAlgorithm):
         max_grad_norm: Optional[float] = None,
         envelope: bool = True,
         num_sample_w: int = 4,
-        homotopy_lambda: float = 0.0,
+        initial_homotopy_lambda: float = 0.0,
+        final_homotopy_lambda: float = 1.0,
+        homotopy_decay_steps: int = None,
         project_name: str = "Envelope",
         experiment_name: str = "Envelope",
         log: bool = True,
@@ -83,6 +85,9 @@ class Envelope(MORLAlgorithm):
         self.learning_starts = learning_starts
         self.batch_size = batch_size
         self.gradient_updates = gradient_updates
+        self.initial_homotopy_lambda = initial_homotopy_lambda
+        self.final_homotopy_lambda = final_homotopy_lambda
+        self.homotopy_decay_steps = homotopy_decay_steps
 
         self.q_net = QNet(self.observation_shape, self.action_dim, self.rew_dim, net_arch=net_arch).to(self.device)
         self.target_q_net = QNet(self.observation_shape, self.action_dim, self.rew_dim, net_arch=net_arch).to(self.device)
@@ -94,7 +99,7 @@ class Envelope(MORLAlgorithm):
 
         self.envelope = envelope
         self.num_sample_w = num_sample_w
-        self.homotopy_lambda = homotopy_lambda
+        self.homotopy_lambda = self.initial_homotopy_lambda
         self.replay_buffer = ReplayBuffer(self.observation_shape, 1, rew_dim=self.rew_dim, max_size=buffer_size, action_dtype=np.uint8)
 
         self.log = log
@@ -117,6 +122,9 @@ class Envelope(MORLAlgorithm):
             "net_arch": self.net_arch,
             "gradient_updates": self.gradient_updates,
             "buffer_size": self.buffer_size,
+            "initial_homotopy_lambda": self.initial_homotopy_lambda,
+            "final_homotopy_lambda": self.final_homotopy_lambda,
+            "homotopy_decay_steps": self.homotopy_decay_steps,
             "learning_starts": self.learning_starts,
         }
 
@@ -146,21 +154,21 @@ class Envelope(MORLAlgorithm):
     def update(self):
         critic_losses = []
         for g in range(self.gradient_updates):
-            s_obs, s_actions, s_rewards, s_next_obs, s_dones = self.sample_batch_experiences()
+            b_obs, b_actions, b_rewards, b_next_obs, b_dones = self.sample_batch_experiences()
 
             sampled_w = th.tensor(random_weights(dim=self.rew_dim, n=self.num_sample_w)).float().to(self.device)  # sample num_sample_w random weights
-            w = sampled_w.repeat_interleave(s_obs.size(0), 0)  # repeat the weights for each sample
-            s_obs, s_actions, s_rewards, s_next_obs, s_dones = s_obs.repeat(self.num_sample_w, 1), s_actions.repeat(self.num_sample_w, 1), s_rewards.repeat(self.num_sample_w, 1), s_next_obs.repeat(self.num_sample_w, 1), s_dones.repeat(self.num_sample_w, 1)
+            w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
+            b_obs, b_actions, b_rewards, b_next_obs, b_dones = b_obs.repeat(self.num_sample_w, 1), b_actions.repeat(self.num_sample_w, 1), b_rewards.repeat(self.num_sample_w, 1), b_next_obs.repeat(self.num_sample_w, 1), b_dones.repeat(self.num_sample_w, 1)
             
             with th.no_grad():
                 if self.envelope:
-                    target = self.envelope_target(s_next_obs, w, sampled_w)
+                    target = self.envelope_target(b_next_obs, w, sampled_w)
                 else:
-                    target = self.ddqn_target(s_next_obs, w)             
-                target_q = s_rewards + (1 - s_dones) * self.gamma * target
+                    target = self.ddqn_target(b_next_obs, w)             
+                target_q = b_rewards + (1 - b_dones) * self.gamma * target
 
-            q_values = self.q_net(s_obs, w)
-            q_value = q_values.gather(1, s_actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2)))
+            q_values = self.q_net(b_obs, w)
+            q_value = q_values.gather(1, b_actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2)))
             q_value = q_value.reshape(-1, self.rew_dim)
             #td_error = q_value - target_q
             critic_loss = F.mse_loss(q_value, target_q)
@@ -184,11 +192,15 @@ class Envelope(MORLAlgorithm):
             polyak_update(self.q_net.parameters(), self.target_q_net.parameters(), self.tau)
 
         if self.epsilon_decay_steps is not None:
-            self.epsilon = linearly_decaying_epsilon(self.initial_epsilon, self.epsilon_decay_steps, self.num_timesteps, self.learning_starts, self.final_epsilon)
+            self.epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, self.num_timesteps, self.learning_starts, self.final_epsilon)
+        
+        if self.homotopy_decay_steps is not None:
+            self.homotopy_lambda = linearly_decaying_value(self.initial_homotopy_lambda, self.homotopy_decay_steps, self.num_timesteps, self.learning_starts, self.final_homotopy_lambda)
 
         if self.log and self.num_timesteps % 100 == 0:
             self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.num_timesteps)
             self.writer.add_scalar("metrics/epsilon", self.epsilon, self.num_timesteps)
+            self.writer.add_scalar("metrics/homotopy_lambda", self.homotopy_lambda, self.num_timesteps)
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         obs = th.as_tensor(obs).float().to(self.device)
@@ -213,7 +225,7 @@ class Envelope(MORLAlgorithm):
         # TODO: There must be a clearer way to write this without all the reshape and expand
         W = sampled_w.unsqueeze(0).repeat(obs.size(0), 1, 1)
         next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
-        #breakpoint()
+        
         next_q_values = self.q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.rew_dim)
         scalarized_next_q_values = th.einsum("br,bwar->bwa", w, next_q_values)
         max_q, ac = th.max(scalarized_next_q_values, dim=2)

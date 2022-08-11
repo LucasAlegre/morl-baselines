@@ -14,7 +14,7 @@ def main():
         return env
 
     env = make_env()
-    eval_env = RecordVideo(make_env(), "videos/minecart/", episode_trigger=lambda e: e % 1000 == 0)
+    eval_env = make_env() # RecordVideo(make_env(), "videos/minecart/", episode_trigger=lambda e: e % 1000 == 0)
 
     agent = Envelope(
         env,
@@ -22,11 +22,14 @@ def main():
         learning_rate=3e-4,
         gamma=0.98,
         batch_size=64,
-        net_arch=[256, 256, 256, 256, 256],
+        net_arch=[256, 256, 256, 256],
         buffer_size=int(2e6),
         initial_epsilon=1.0,
         final_epsilon=0.05,
         epsilon_decay_steps=50000,
+        initial_homotopy_lambda=0.0,
+        final_homotopy_lambda=1.0,
+        homotopy_decay_steps=10000,
         learning_starts=100,
         envelope=True,
         gradient_updates=1,
