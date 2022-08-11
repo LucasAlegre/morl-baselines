@@ -254,7 +254,7 @@ class Envelope(MORLAlgorithm):
     def learn(
         self,
         total_timesteps: int,
-        weight: np.ndarray = None, # Weight vector. If None, it is randomly sampled every episode (as done in the paper).
+        weight: Optional[np.ndarray] = None, # Weight vector. If None, it is randomly sampled every episode (as done in the paper).
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
