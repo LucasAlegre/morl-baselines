@@ -35,11 +35,12 @@ class MORLAlgorithm(ABC):
             self.reward_dim = self.env.reward_space.shape[0]
 
     @abstractmethod
-    def eval(self, obs: np.ndarray) -> Union[int, np.ndarray]:
+    def eval(self, obs: np.ndarray, w: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         """Gives the best action for the given observation
 
         Args:
             obs (np.array): Observation
+            w (optional np.array): weight for scalarization
 
         Returns:
             np.array or int: Action

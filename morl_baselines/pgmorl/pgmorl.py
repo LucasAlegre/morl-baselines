@@ -227,7 +227,7 @@ class PGMORL(MORLAlgorithm):
             delta_weight: float = 0.2,
             env=None,
             gamma: float = 0.995,
-            project_name: str = "PGMORL",
+            project_name: str = "MORL-baselines",
             experiment_name: str = "PGMORL",
             seed: int = 0,
             torch_deterministic: bool = True,
@@ -330,7 +330,7 @@ class PGMORL(MORLAlgorithm):
             for i in range(self.pop_size)
         ]
 
-    def eval(self, obs):
+    def eval(self, obs, w):
         pass
 
     def get_config(self) -> dict:
