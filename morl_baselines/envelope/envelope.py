@@ -70,7 +70,6 @@ class Envelope(MORLAlgorithm):
     ):
 
         super().__init__(env, device)
-        self.rew_dim = self.env.reward_space.shape[0]
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -89,8 +88,8 @@ class Envelope(MORLAlgorithm):
         self.final_homotopy_lambda = final_homotopy_lambda
         self.homotopy_decay_steps = homotopy_decay_steps
 
-        self.q_net = QNet(self.observation_shape, self.action_dim, self.rew_dim, net_arch=net_arch).to(self.device)
-        self.target_q_net = QNet(self.observation_shape, self.action_dim, self.rew_dim, net_arch=net_arch).to(self.device)
+        self.q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
+        self.target_q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
         self.target_q_net.load_state_dict(self.q_net.state_dict())
         for param in self.target_q_net.parameters():
             param.requires_grad = False
@@ -100,7 +99,7 @@ class Envelope(MORLAlgorithm):
         self.envelope = envelope
         self.num_sample_w = num_sample_w
         self.homotopy_lambda = self.initial_homotopy_lambda
-        self.replay_buffer = ReplayBuffer(self.observation_shape, 1, rew_dim=self.rew_dim, max_size=buffer_size, action_dtype=np.uint8)
+        self.replay_buffer = ReplayBuffer(self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8)
 
         self.log = log
         if log:
@@ -156,7 +155,7 @@ class Envelope(MORLAlgorithm):
         for g in range(self.gradient_updates):
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = self.sample_batch_experiences()
 
-            sampled_w = th.tensor(random_weights(dim=self.rew_dim, n=self.num_sample_w)).float().to(self.device)  # sample num_sample_w random weights
+            sampled_w = th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w)).float().to(self.device)  # sample num_sample_w random weights
             w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = b_obs.repeat(self.num_sample_w, 1), b_actions.repeat(self.num_sample_w, 1), b_rewards.repeat(self.num_sample_w, 1), b_next_obs.repeat(self.num_sample_w, 1), b_dones.repeat(self.num_sample_w, 1)
             
@@ -169,7 +168,7 @@ class Envelope(MORLAlgorithm):
 
             q_values = self.q_net(b_obs, w)
             q_value = q_values.gather(1, b_actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2)))
-            q_value = q_value.reshape(-1, self.rew_dim)
+            q_value = q_value.reshape(-1, self.reward_dim)
             #td_error = q_value - target_q
             critic_loss = F.mse_loss(q_value, target_q)
 
@@ -228,7 +227,7 @@ class Envelope(MORLAlgorithm):
         next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
         
         # Batch size X Num sampled weights X Num actions X Num objectives
-        next_q_values = self.q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.rew_dim)
+        next_q_values = self.q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.reward_dim)
         # Scalarized Q values for each sampled weight
         scalarized_next_q_values = th.einsum("br,bwar->bwa", w, next_q_values)
         # Max Q values for each sampled weight  
@@ -237,7 +236,7 @@ class Envelope(MORLAlgorithm):
         pref = th.argmax(max_q, dim=1)
 
         # MO Q-values evaluated on the target network
-        next_q_values_target = self.target_q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.rew_dim)
+        next_q_values_target = self.target_q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.reward_dim)
 
         # Index the Q-values for the max actions
         max_next_q = next_q_values_target.gather(2, ac.unsqueeze(2).unsqueeze(3).expand(next_q_values.size(0), next_q_values.size(1), 1, next_q_values.size(3))).squeeze(2)
@@ -254,7 +253,7 @@ class Envelope(MORLAlgorithm):
         # Action evaluated with the target network
         q_values_target = self.target_q_net(obs, w)
         q_values_target = q_values_target.gather(1, max_acts.long().reshape(-1, 1, 1).expand(q_values_target.size(0), 1, q_values_target.size(2)))
-        q_values_target = q_values_target.reshape(-1, self.rew_dim)
+        q_values_target = q_values_target.reshape(-1, self.reward_dim)
         return q_values_target
 
     def learn(
@@ -273,11 +272,11 @@ class Envelope(MORLAlgorithm):
             self.learning_starts = self.num_timesteps
 
         episode_reward = 0.0
-        episode_vec_reward = np.zeros(self.rew_dim)
+        episode_vec_reward = np.zeros(self.reward_dim)
         num_episodes = 0
         obs, done = self.env.reset(), False
 
-        w = weight if weight is not None else random_weights(self.rew_dim, 1)
+        w = weight if weight is not None else random_weights(self.reward_dim, 1)
         tensor_w = th.tensor(w).float().to(self.device)
 
         for _ in range(1, total_timesteps + 1):
@@ -302,7 +301,7 @@ class Envelope(MORLAlgorithm):
                 total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
                 self.writer.add_scalar("eval/total_reward", total_reward, self.num_timesteps)
                 self.writer.add_scalar("eval/discounted_return", discounted_return, self.num_timesteps)
-                for i in range(self.rew_dim):
+                for i in range(self.reward_dim):
                     self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
                     self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
 
@@ -314,7 +313,7 @@ class Envelope(MORLAlgorithm):
                 self.num_episodes += 1
 
                 if weight is None:
-                    w = random_weights(self.rew_dim, 1)
+                    w = random_weights(self.reward_dim, 1)
                     tensor_w = th.tensor(w).float().to(self.device)
 
                 if num_episodes % 100 == 0:
@@ -322,10 +321,10 @@ class Envelope(MORLAlgorithm):
                 if self.log:
                     self.writer.add_scalar("metrics/episode", self.num_episodes, self.num_timesteps)
                     self.writer.add_scalar("metrics/episode_reward", episode_reward, self.num_timesteps)
-                    for i in range(self.rew_dim):
+                    for i in range(self.reward_dim):
                         self.writer.add_scalar(f"metrics/episode_reward_obj{i}", episode_vec_reward[i], self.num_timesteps)
 
                 episode_reward = 0.0
-                episode_vec_reward = np.zeros(self.rew_dim)
+                episode_vec_reward = np.zeros(self.reward_dim)
             else:
                 obs = next_obs
