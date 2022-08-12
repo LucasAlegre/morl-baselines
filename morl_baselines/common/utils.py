@@ -1,4 +1,5 @@
-from typing import Iterable
+from os import waitid_result
+from typing import Iterable, Optional
 
 import numpy as np
 import torch as th
@@ -65,19 +66,27 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
     return value
 
 
-def random_weights(dim, seed=None, n=1):
-    """Generate random normalized weights from a Dirichlet distribution alpha=1
+def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = 'gaussian') -> np.ndarray:
+    """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1
     Args:
         dim: size of the weight vector
+        seed: random seed
+        n : number of weight vectors to generate
+        dist: distribution to use, either 'gaussian' or 'dirichlet'
     """
     if seed is not None:
         rng = np.random.default_rng(seed)
     else:
         rng = np.random
-    weights = []
-    for _ in range(n):
-        w = rng.dirichlet(np.ones(dim))
-        weights.append(w)
+
+    if dist == 'gaussian':
+        w = np.random.randn(n, dim)
+        w = np.abs(w) / np.linalg.norm(w, ord=1, axis=1, keepdims=True)
+    elif dist == 'dirichlet':
+        w = rng.dirichlet(np.ones(dim), n)
+    else:
+        raise ValueError(f'Unknown distribution {dist}')
+
     if n == 1:
-        return weights[0]
-    return np.array(weights)
+        return w[0]
+    return w
