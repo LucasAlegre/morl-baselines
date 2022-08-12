@@ -60,6 +60,7 @@ class PrioritizedReplayBuffer:
         max_size=100000,
         obs_dtype=np.float32,
         action_dtype=np.float32,
+        eps=1e-5
     ):
         self.max_size = max_size
         self.ptr, self.size, = 0, 0
@@ -70,7 +71,8 @@ class PrioritizedReplayBuffer:
         self.dones = np.zeros((max_size, 1), dtype=np.float32)
 
         self.tree = SumTree(max_size)
-        self.max_priority = 0.01
+        self.eps = eps
+        self.max_priority = eps
 
     def add(self, obs, action, reward, next_obs, done, priority=None):
         self.obs[self.ptr] = np.array(obs).copy()

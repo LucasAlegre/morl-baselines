@@ -11,6 +11,7 @@ import torch.optim as optim
 import wandb as wb
 from morl_baselines.common.morl_algorithm import MORLAlgorithm
 from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.networks import mlp, NatureCNN
 from morl_baselines.common.utils import layer_init, polyak_update, linearly_decaying_value, get_grad_norm, huber, random_weights
 from mo_gym.evaluation import eval_mo
@@ -60,6 +61,8 @@ class Envelope(MORLAlgorithm):
         max_grad_norm: Optional[float] = None,
         envelope: bool = True,
         num_sample_w: int = 4,
+        per: bool = True,
+        per_alpha: float = 0.6,
         initial_homotopy_lambda: float = 0.0,
         final_homotopy_lambda: float = 1.0,
         homotopy_decay_steps: int = None,
@@ -83,6 +86,8 @@ class Envelope(MORLAlgorithm):
         self.net_arch = net_arch
         self.learning_starts = learning_starts
         self.batch_size = batch_size
+        self.per = per
+        self.per_alpha = per_alpha
         self.gradient_updates = gradient_updates
         self.initial_homotopy_lambda = initial_homotopy_lambda
         self.final_homotopy_lambda = final_homotopy_lambda
@@ -99,7 +104,10 @@ class Envelope(MORLAlgorithm):
         self.envelope = envelope
         self.num_sample_w = num_sample_w
         self.homotopy_lambda = self.initial_homotopy_lambda
-        self.replay_buffer = ReplayBuffer(self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8)
+        if self.per:
+            self.replay_buffer = PrioritizedReplayBuffer(self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8)
+        else:
+            self.replay_buffer = ReplayBuffer(self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8)
 
         self.log = log
         if log:
@@ -119,6 +127,7 @@ class Envelope(MORLAlgorithm):
             "use_envelope": self.envelope,
             "num_sample_w": self.num_sample_w,
             "net_arch": self.net_arch,
+            "per": self.per,
             "gradient_updates": self.gradient_updates,
             "buffer_size": self.buffer_size,
             "initial_homotopy_lambda": self.initial_homotopy_lambda,
@@ -153,12 +162,15 @@ class Envelope(MORLAlgorithm):
     def update(self):
         critic_losses = []
         for g in range(self.gradient_updates):
-            b_obs, b_actions, b_rewards, b_next_obs, b_dones = self.sample_batch_experiences()
+            if self.per:
+                b_obs, b_actions, b_rewards, b_next_obs, b_dones, b_inds = self.sample_batch_experiences()
+            else:
+                b_obs, b_actions, b_rewards, b_next_obs, b_dones = self.sample_batch_experiences()
 
             sampled_w = th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w)).float().to(self.device)  # sample num_sample_w random weights
             w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = b_obs.repeat(self.num_sample_w, 1), b_actions.repeat(self.num_sample_w, 1), b_rewards.repeat(self.num_sample_w, 1), b_next_obs.repeat(self.num_sample_w, 1), b_dones.repeat(self.num_sample_w, 1)
-            
+
             with th.no_grad():
                 if self.envelope:
                     target = self.envelope_target(b_next_obs, w, sampled_w)
@@ -169,7 +181,7 @@ class Envelope(MORLAlgorithm):
             q_values = self.q_net(b_obs, w)
             q_value = q_values.gather(1, b_actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2)))
             q_value = q_value.reshape(-1, self.reward_dim)
-            #td_error = q_value - target_q
+
             critic_loss = F.mse_loss(q_value, target_q)
 
             if self.homotopy_lambda > 0:
@@ -186,6 +198,13 @@ class Envelope(MORLAlgorithm):
                 th.nn.utils.clip_grad_norm_(self.q_net.parameters(), self.max_grad_norm)
             self.q_optim.step()
             critic_losses.append(critic_loss.item())
+
+            if self.per:
+                td_err = (q_value[:len(b_inds)] - target_q[:len(b_inds)]).detach()
+                priority = th.einsum("sr,sr->s", td_err, w[:len(b_inds)]).abs()
+                priority = priority.cpu().numpy().flatten()
+                priority = (priority + self.replay_buffer.eps) ** self.per_alpha
+                self.replay_buffer.update_priorities(b_inds, priority)
 
         if self.tau != 1 or self.num_timesteps % self.target_net_update_freq == 0:
             polyak_update(self.q_net.parameters(), self.target_q_net.parameters(), self.tau)
