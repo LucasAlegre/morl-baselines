@@ -14,7 +14,7 @@ if __name__ == "__main__":
     scalarization = tchebicheff(tau=4., reward_dim=2)
     weights = np.array([0.3, 0.7])
 
-    agent = MOQLearning(env, id=0, scalarization=weighted_sum, weights=weights)
+    agent = MOQLearning(env, id=0, scalarization=scalarization, weights=weights)
     agent.train(total_timesteps=int(1e5), start_time=time.time(), eval_freq=100, eval_env=eval_env)
 
     print(mo_gym.eval_mo(agent, env=eval_env, w=weights))
