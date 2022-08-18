@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import wandb as wb
-from morl_baselines.common.morl_algorithm import MORLAlgorithm
+from morl_baselines.common.morl_algorithm import MOPolicy, MOAgent
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.networks import mlp, NatureCNN
@@ -43,7 +43,16 @@ class QNet(nn.Module):
         return q_values.view(-1, self.action_dim, self.rew_dim)  # Batch size X Actions X Rewards
 
 
-class Envelope(MORLAlgorithm):
+class Envelope(MOPolicy, MOAgent):
+    """
+    R. Yang, X. Sun, and K. Narasimhan, “A Generalized Algorithm for Multi-Objective Reinforcement Learning and Policy Adaptation,”
+    arXiv:1908.08342 [cs], Nov. 2019, Accessed: Sep. 06, 2021. [Online]. Available: http://arxiv.org/abs/1908.08342
+
+    Envelope uses a conditoned network to embed multiple policies (taking the weight as input).
+
+    The main change of this algorithm compare to a scalarized CN DQN is the target update.
+    """
+
     def __init__(
         self,
         env,
@@ -73,7 +82,8 @@ class Envelope(MORLAlgorithm):
         device: Union[th.device, str] = "auto",
     ):
 
-        super().__init__(env, device)
+        MOAgent.__init__(self, env, device=device)
+        MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -193,8 +203,8 @@ class Envelope(MORLAlgorithm):
 
             self.q_optim.zero_grad()
             critic_loss.backward()
-            if self.log and self.num_timesteps % 100 == 0:
-                self.writer.add_scalar("losses/grad_norm", get_grad_norm(self.q_net.parameters()).item(), self.num_timesteps)
+            if self.log and self.global_step % 100 == 0:
+                self.writer.add_scalar("losses/grad_norm", get_grad_norm(self.q_net.parameters()).item(), self.global_step)
             if self.max_grad_norm is not None:
                 th.nn.utils.clip_grad_norm_(self.q_net.parameters(), self.max_grad_norm)
             self.q_optim.step()
@@ -207,19 +217,19 @@ class Envelope(MORLAlgorithm):
                 priority = (priority + self.replay_buffer.eps) ** self.per_alpha
                 self.replay_buffer.update_priorities(b_inds, priority)
 
-        if self.tau != 1 or self.num_timesteps % self.target_net_update_freq == 0:
+        if self.tau != 1 or self.global_step % self.target_net_update_freq == 0:
             polyak_update(self.q_net.parameters(), self.target_q_net.parameters(), self.tau)
 
         if self.epsilon_decay_steps is not None:
-            self.epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, self.num_timesteps, self.learning_starts, self.final_epsilon)
+            self.epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, self.global_step, self.learning_starts, self.final_epsilon)
         
         if self.homotopy_decay_steps is not None:
-            self.homotopy_lambda = linearly_decaying_value(self.initial_homotopy_lambda, self.homotopy_decay_steps, self.num_timesteps, self.learning_starts, self.final_homotopy_lambda)
+            self.homotopy_lambda = linearly_decaying_value(self.initial_homotopy_lambda, self.homotopy_decay_steps, self.global_step, self.learning_starts, self.final_homotopy_lambda)
 
-        if self.log and self.num_timesteps % 100 == 0:
-            self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.num_timesteps)
-            self.writer.add_scalar("metrics/epsilon", self.epsilon, self.num_timesteps)
-            self.writer.add_scalar("metrics/homotopy_lambda", self.homotopy_lambda, self.num_timesteps)
+        if self.log and self.global_step % 100 == 0:
+            self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.global_step)
+            self.writer.add_scalar("metrics/epsilon", self.epsilon, self.global_step)
+            self.writer.add_scalar("metrics/homotopy_lambda", self.homotopy_lambda, self.global_step)
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         obs = th.as_tensor(obs).float().to(self.device)
@@ -276,7 +286,7 @@ class Envelope(MORLAlgorithm):
         q_values_target = q_values_target.reshape(-1, self.reward_dim)
         return q_values_target
 
-    def learn(
+    def train(
         self,
         total_timesteps: int,
         weight: Optional[np.ndarray] = None, # Weight vector. If None, it is randomly sampled every episode (as done in the paper).
@@ -286,10 +296,10 @@ class Envelope(MORLAlgorithm):
         eval_freq: int = 1000,
         reset_learning_starts: bool = False,
     ):
-        self.num_timesteps = 0 if reset_num_timesteps else self.num_timesteps
+        self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
         if reset_learning_starts:  # Resets epsilon-greedy exploration
-            self.learning_starts = self.num_timesteps
+            self.learning_starts = self.global_step
 
         num_episodes = 0
         obs, done = self.env.reset(), False
@@ -300,9 +310,9 @@ class Envelope(MORLAlgorithm):
         for _ in range(1, total_timesteps + 1):
             if total_episodes is not None and num_episodes == total_episodes:
                 break
-            self.num_timesteps += 1
+            self.global_step += 1
 
-            if self.num_timesteps < self.learning_starts:
+            if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
             else:
                 action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
@@ -312,16 +322,11 @@ class Envelope(MORLAlgorithm):
 
             self.replay_buffer.add(obs, action, vec_reward, next_obs, terminal)
 
-            if self.num_timesteps >= self.learning_starts:
+            if self.global_step >= self.learning_starts:
                 self.update()
 
-            if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
-                total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
-                self.writer.add_scalar("eval/total_reward", total_reward, self.num_timesteps)
-                self.writer.add_scalar("eval/discounted_return", discounted_return, self.num_timesteps)
-                for i in range(self.reward_dim):
-                    self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
-                    self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
+            if eval_env is not None and self.log and self.global_step % eval_freq == 0:
+                self.policy_eval(eval_env, w, self.writer)
 
             if done:
                 obs, done = self.env.reset(), False
@@ -332,8 +337,8 @@ class Envelope(MORLAlgorithm):
                     w = random_weights(self.reward_dim, 1)
                     tensor_w = th.tensor(w).float().to(self.device)
 
-                if self.log:
-                    log_episode_info(info["episode"], None, np.dot, w, self.num_timesteps, self.writer)
+                if self.log and "episode" in info.keys():
+                    log_episode_info(info["episode"], None, np.dot, w, self.global_step, self.writer)
 
             else:
                 obs = next_obs

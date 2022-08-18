@@ -9,10 +9,10 @@ from torch.utils.tensorboard import SummaryWriter
 from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
 from morl_baselines.common.scalarization import weighted_sum, tchebicheff
 
-from morl_baselines.common.morl_algorithm import MORLAlgorithm
+from morl_baselines.common.morl_algorithm import MOPolicy, MOAgent
 
 
-class MOQLearning(MORLAlgorithm):
+class MOQLearning(MOPolicy, MOAgent):
     """
     Scalarized Q learning:
     Maintains one Q-table per objective, rely on a scalarization function to choose the moves.
@@ -36,7 +36,8 @@ class MOQLearning(MORLAlgorithm):
             parent_writer: Optional[SummaryWriter] = None
     ):
 
-        super().__init__(env)
+        MOAgent.__init__(self, env)
+        MOPolicy.__init__(self, id)
         self.learning_rate = learning_rate
         self.id = id
         self.gamma = gamma
@@ -88,12 +89,12 @@ class MOQLearning(MORLAlgorithm):
         self.q_table[obs][self.action] += self.learning_rate * td_error
 
         if self.epsilon_decay_steps is not None:
-            self.epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, self.num_timesteps,
-                                                     self.learning_starts, self.final_epsilon)
+            self.epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, self.global_step,
+                                                   self.learning_starts, self.final_epsilon)
 
-        if self.log and self.num_timesteps % 1000 == 0:
-            self.writer.add_scalar(f"losses_{self.id}/scalarized_td_error", self.scalarization(td_error, self.weights), self.num_timesteps)
-            self.writer.add_scalar(f"losses_{self.id}/mean_td_error", np.mean(td_error), self.num_timesteps)
+        if self.log and self.global_step % 1000 == 0:
+            self.writer.add_scalar(f"losses_{self.id}/scalarized_td_error", self.scalarization(td_error, self.weights), self.global_step)
+            self.writer.add_scalar(f"losses_{self.id}/mean_td_error", np.mean(td_error), self.global_step)
 
     def get_config(self) -> dict:
         return {
@@ -106,28 +107,7 @@ class MOQLearning(MORLAlgorithm):
             "scalarization": self.scalarization.__name__,
         }
 
-    def train(self):
-        pass
-
-    def policy_eval(self, eval_env, log=True):
-        # TODO, make eval_mo generic to scalarization?
-        scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward = eval_mo(self, eval_env, self.weights)
-        if log:
-            self.writer.add_scalar(f"eval_{self.id}/scalarized_reward", scalarized_reward, self.num_timesteps)
-            self.writer.add_scalar(f"eval_{self.id}/scalarized_discounted_reward", scalarized_discounted_reward,
-                                   self.num_timesteps)
-            for i in range(vec_reward.shape[0]):
-                self.writer.add_scalar(f"eval_{self.id}/vec_{i}", vec_reward[i], self.num_timesteps)
-                self.writer.add_scalar(f"eval_{self.id}/discounted_vec_{i}", discounted_vec_reward[i], self.num_timesteps)
-
-        return (
-            scalarized_reward,
-            scalarized_discounted_reward,
-            vec_reward,
-            discounted_vec_reward
-        )
-
-    def learn(
+    def train(
             self,
             start_time,
             total_timesteps: int = int(5e5),
@@ -145,11 +125,11 @@ class MOQLearning(MORLAlgorithm):
         num_episodes = 0
         self.obs, done = self.env.reset(), False
 
-        self.num_timesteps = 0 if reset_num_timesteps else self.num_timesteps
+        self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
         for _ in range(1, total_timesteps + 1):
-            self.num_timesteps += 1
+            self.global_step += 1
 
             self.action = self.__act(self.obs)
             self.next_obs, self.reward, done, info = self.env.step(self.action)
@@ -157,8 +137,8 @@ class MOQLearning(MORLAlgorithm):
 
             self.update()
 
-            if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
-                self.policy_eval(eval_env, self.log)
+            if eval_env is not None and self.log and self.global_step % eval_freq == 0:
+                self.policy_eval(eval_env, self.weights, self.writer)
 
             if done:
                 self.obs, done = self.env.reset(), False
@@ -166,8 +146,8 @@ class MOQLearning(MORLAlgorithm):
                 self.num_episodes += 1
 
                 if self.log:
-                    print("SPS:", int(self.num_timesteps / (time.time() - start_time)))
-                    self.writer.add_scalar(f"charts_{self.id}/SPS", int(self.num_timesteps / (time.time() - start_time)), self.num_timesteps)
-                    log_episode_info(info["episode"], self.id, self.scalarization, self.weights, self.num_timesteps, self.writer)
+                    print("SPS:", int(self.global_step / (time.time() - start_time)))
+                    self.writer.add_scalar(f"charts_{self.id}/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
+                    log_episode_info(info["episode"], self.id, self.scalarization, self.weights, self.global_step, self.writer)
             else:
                 self.obs = self.next_obs

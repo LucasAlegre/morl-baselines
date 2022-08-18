@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 
 import gym
 import mo_gym
+from mo_gym import eval_mo
 import numpy as np
 import torch as th
 from mo_gym import MORecordEpisodeStatistics
@@ -12,6 +13,7 @@ from torch.distributions import Normal
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.networks import mlp
+from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.utils import layer_init, log_episode_info
 
 
@@ -134,7 +136,7 @@ class MOPPONet(nn.Module):
         return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)
 
 
-class MOPPOAgent:
+class MOPPO(MOPolicy):
     """
     Modifies PPO to have a multi-objective value net (returning a vector).
     """
@@ -163,6 +165,7 @@ class MOPPOAgent:
             device: Union[th.device, str] = "auto",
             seed: int = 42,
     ):
+        super().__init__(id, device)
         self.id = id
         self.envs = envs
         self.num_envs = envs.num_envs
@@ -192,7 +195,6 @@ class MOPPOAgent:
         self.gae = gae
 
         self.optimizer = optim.Adam(networks.parameters(), lr=self.learning_rate, eps=1e-5)
-        self.global_step = 0
 
         # Storage setup (the batch)
         self.batch = PPOReplayBuffer(self.steps_per_iteration, self.num_envs, self.networks.obs_shape,
@@ -311,14 +313,26 @@ class MOPPOAgent:
         advantages = advantages @ self.weights
         return returns, advantages
 
-    def __update_networks(self, returns, advantages):
+    def eval(self, obs: np.ndarray, w):
+        """
+        Returns the best action to perform for the given obs
+        :return: action as a numpy array (continuous actions)
+        """
+        obs = th.as_tensor(obs).float().to(self.device)
+        obs = obs.unsqueeze(0).repeat(self.num_envs, 1)  # duplicate observation to fit the NN input
+        with th.no_grad():
+            action, _, _, _ = self.networks.get_action_and_value(obs)
+
+        return action[0].detach().cpu().numpy()
+
+    def update(self):
         # flatten the batch (b == batch)
         obs, actions, logprobs, _, _, values = self.batch.get_all()
         b_obs = obs.reshape((-1,) + self.networks.obs_shape)
         b_logprobs = logprobs.reshape(-1)
         b_actions = actions.reshape((-1,) + self.networks.action_shape)
-        b_advantages = advantages.reshape(-1)
-        b_returns = returns.reshape(-1, self.networks.reward_dim)
+        b_advantages = self.advantages.reshape(-1)
+        b_returns = self.returns.reshape(-1, self.networks.reward_dim)
         b_values = values.reshape(-1, self.networks.reward_dim)
 
         # Optimizing the policy and value network
@@ -411,23 +425,11 @@ class MOPPOAgent:
         next_obs, next_done = self.__collect_samples(next_obs, next_done)
 
         # Compute advantage on collected samples
-        returns, advantages = self.__compute_advantages(next_obs, next_done)
+        self.returns, self.advantages = self.__compute_advantages(next_obs, next_done)
 
         # Update neural networks from batch
-        self.__update_networks(returns, advantages)
+        self.update()
 
         # Logging
         print("SPS:", int(self.global_step / (time.time() - start_time)))
         self.writer.add_scalar("charts/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
-
-    def eval(self, obs: np.ndarray, w):
-        """
-        Returns the best action to perform for the given obs
-        :return: action as a numpy array (continuous actions)
-        """
-        obs = th.as_tensor(obs).float().to(self.device)
-        obs = obs.unsqueeze(0).repeat(self.num_envs, 1)  # duplicate observation to fit the NN input
-        with th.no_grad():
-            action, _, _, _ = self.networks.get_action_and_value(obs)
-
-        return action[0].detach().cpu().numpy()

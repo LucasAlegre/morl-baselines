@@ -10,9 +10,9 @@ import torch as th
 from scipy.optimize import least_squares
 
 from morl_baselines.common.performance_indicators import sparsity, hypervolume
-from morl_baselines.common.morl_algorithm import MORLAlgorithm
+from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.mo_algorithms.mo_ppo import make_env, MOPPONet, MOPPOAgent
+from morl_baselines.mo_algorithms.mo_ppo import make_env, MOPPONet, MOPPO
 
 
 # Some code in this file has been adapted from the original code provided by the authors of the paper
@@ -198,7 +198,7 @@ class PerformanceBuffer:
                     break
 
 
-class PGMORL(MORLAlgorithm):
+class PGMORL(MOAgent):
     """
     J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik,
     “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,”
@@ -248,7 +248,7 @@ class PGMORL(MORLAlgorithm):
             gae_lambda: float = .95,
             device: Union[th.device, str] = "auto",
     ):
-        super().__init__(env, device)
+        super().__init__(env, device=device)
         # Env dimensions
         self.tmp_env = mo_gym.make(env_id)
         self.extract_env_info(self.tmp_env)
@@ -326,12 +326,9 @@ class PGMORL(MORLAlgorithm):
         self.pop_size = len(weights)
 
         self.agents = [
-            MOPPOAgent(i, self.networks[i], weights[i], self.env, self.writer, gamma=self.gamma, device=self.device, seed=self.seed)
+            MOPPO(i, self.networks[i], weights[i], self.env, self.writer, gamma=self.gamma, device=self.device, seed=self.seed)
             for i in range(self.pop_size)
         ]
-
-    def eval(self, obs, w):
-        pass
 
     def get_config(self) -> dict:
         return {
@@ -369,43 +366,23 @@ class PGMORL(MORLAlgorithm):
             "gae_lambda": self.gae_lambda,
         }
 
-    def __eval_agent(self, agent, render: bool = False):
-        """
-        Evaluates the current agent and store the performances into archives and population
-        :param agent: agent to evaluate
-        :param render: whether the environment should render or not
-        :return: the discounted reward of the agent
-        """
-        scalarized, discounted_scalarized, reward, discounted_reward = mo_gym.eval_mo(agent=agent, env=self.env.envs[0],
-                                                                                      w=agent.weights, render=render)
-        print(f"Agent #{agent.id} - {reward} - discounted: {discounted_reward}")
-        for i, (r, dr) in enumerate(zip(reward, discounted_reward)):
-            self.writer.add_scalar(f"charts_{agent.id}/evaluated_reward_{i}", r, self.iteration)
-            self.writer.add_scalar(f"charts_{agent.id}/evaluated_discounted_reward_{i}", dr, self.iteration)
-        self.writer.add_scalar(f"charts_{agent.id}/scalarized_discounted_reward", scalarized, self.iteration)
-        self.writer.add_scalar(f"charts_{agent.id}/scalarized_reward", discounted_scalarized, self.iteration)
-
-        # Storing current results
-        self.population.add(agent, discounted_reward)
-        self.archive.add(agent, discounted_reward)
-        return discounted_reward
-
     def __train_all_agents(self):
         for i, agent in enumerate(self.agents):
             agent.train(self.start_time, self.iteration, self.max_iterations)
-
-    def update(self):
-        pass
 
     def __eval_all_agents(self, evaluations_before_train: List[np.ndarray], add_to_prediction: bool = True):
         """
         Evaluates all agents and store their current performances on the buffer and pareto archive
         """
         for i, agent in enumerate(self.agents):
-            evaluation_after_train = self.__eval_agent(agent)
+            _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], agent.weights, self.writer)
+            # Storing current results
+            self.population.add(agent, discounted_reward)
+            self.archive.add(agent, discounted_reward)
             if add_to_prediction:
-                self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], evaluation_after_train)
-            evaluations_before_train[i] = evaluation_after_train
+                self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], discounted_reward)
+            evaluations_before_train[i] = discounted_reward
+
         print("Current pareto archive:")
         print(self.archive.evaluations)
         hv = hypervolume(self.ref_point, self.archive.evaluations)

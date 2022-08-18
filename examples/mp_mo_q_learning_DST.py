@@ -22,8 +22,6 @@ if __name__ == "__main__":
                           )
     agent.train()
 
-    # TODO we need to think about making the API more consistent, some agents contain multiple policies without an explicit weight
-    # Update, eval eval_mo are not really consistent with those IMO
     front, discounted_front = agent.eval_all_agents()
     print(discounted_front)
     plt.scatter(np.array(discounted_front[:, 0], discounted_front[:, 1]))

@@ -2,6 +2,7 @@ import numpy as np
 import gym
 from gym.wrappers.record_video import RecordVideo
 import mo_gym
+from mo_gym import MORecordEpisodeStatistics
 
 from morl_baselines.envelope.envelope import Envelope
 
@@ -10,6 +11,7 @@ def main():
 
     def make_env():
         env = mo_gym.make("minecart-v0")
+        env =  MORecordEpisodeStatistics(env, gamma=0.98)
         #env = mo_gym.LinearReward(env)
         return env
 
@@ -41,7 +43,7 @@ def main():
     )
 
     w = np.array([0.9, 0.0, 0.1])
-    agent.learn(
+    agent.train(
             total_timesteps=100000,
             total_episodes=None,
             weight=None,

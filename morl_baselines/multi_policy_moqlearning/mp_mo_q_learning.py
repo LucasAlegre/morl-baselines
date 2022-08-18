@@ -4,13 +4,13 @@ from typing import Optional, Union
 import numpy as np
 from mo_gym import eval_mo
 
-from morl_baselines.common.morl_algorithm import MORLAlgorithm
+from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.scalarization import weighted_sum
 from morl_baselines.mo_algorithms.mo_q_learning import MOQLearning
 
 
-class MPMOQLearning(MORLAlgorithm):
+class MPMOQLearning(MOAgent):
     """
     Outer loop version of mo_q_learning
     """
@@ -93,30 +93,24 @@ class MPMOQLearning(MORLAlgorithm):
         discounted_rewards = []
         rewards = []
         for a in self.agents:
-            _, _, vec, discounted_vec = a.policy_eval(eval_env=self.env, log=False)
+            _, _, vec, discounted_vec = a.policy_eval(eval_env=self.env, weights=a.weights, writer=self.writer)
             discounted_rewards.append(discounted_vec)
             rewards.append(vec)
         print(f"Evaluation of all agents: {rewards}")
         print(f"discounted: {discounted_rewards}")
         return rewards, discounted_rewards
 
-    def update(self):
-        pass
 
     def train(self):
         start_time = time.time()
         training_epoch = int(self.num_timesteps / self.eval_freq)
-        global_step = 0
         for e in range(training_epoch):
             print(f"Training epoch #{e}")
             for a in self.agents:
-                a.learn(start_time, total_timesteps=self.eval_freq, reset_num_timesteps=False)
-            global_step += len(self.agents) * self.eval_freq
+                a.train(start_time, total_timesteps=self.eval_freq, reset_num_timesteps=False)
+            self.global_step += len(self.agents) * self.eval_freq
             rewards, disc_rewards = self.eval_all_agents()
             hv = hypervolume(self.ref_point, rewards)
-            self.writer.add_scalar("metrics/hypervolume", hv, global_step)
+            self.writer.add_scalar("metrics/hypervolume", hv, self.global_step)
 
         self.writer.close()
-
-    def eval(self, obs: np.ndarray, w: Optional[np.ndarray] = None) -> Union[int, np.ndarray]:
-        pass
