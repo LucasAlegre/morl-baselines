@@ -1,9 +1,9 @@
-from os import waitid_result
 from typing import Iterable, Optional
 
 import numpy as np
 import torch as th
 from torch import nn
+from torch.utils.tensorboard import SummaryWriter
 
 
 @th.no_grad()
@@ -18,9 +18,9 @@ def layer_init(layer, method="orthogonal", weight_gain: float = 1, bias_const: f
 
 @th.no_grad()
 def polyak_update(
-    params: Iterable[th.nn.Parameter],
-    target_params: Iterable[th.nn.Parameter],
-    tau: float,
+        params: Iterable[th.nn.Parameter],
+        target_params: Iterable[th.nn.Parameter],
+        tau: float,
 ) -> None:
     for param, target_param in zip(params, target_params):
         if tau == 1:
@@ -90,3 +90,38 @@ def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str =
     if n == 1:
         return w[0]
     return w
+
+
+def log_episode_info(info: dict, id: Optional[int], scalarization, weights: np.ndarray, global_timestep: int, writer: Optional[SummaryWriter] = None):
+    """
+    Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper)
+    :param info: info dictionary containing the episode statistics
+    :param id: agent's id
+    :param scalarization: scalarization function
+    :param weights: weights to be used in the scalarization
+    :param writer: wandb writer
+    """
+    episode_ts = info["l"]
+    episode_time = info["t"]
+    episode_return = info["r"]
+    disc_episode_return = info["dr"]
+    scal_return = scalarization(episode_return, weights)
+    disc_scal_return = scalarization(disc_episode_return, weights)
+    print(f"Episode infos:")
+    print(f"Steps: {episode_ts}, Time: {episode_time}")
+    print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")
+    print(f"Scalarized Reward: {scal_return}, Discounted: {disc_scal_return}")
+
+    if writer is not None:
+        if id is not None:
+            idstr = "_" + str(id)
+        else:
+            idstr = ""
+        writer.add_scalar(f"charts{idstr}/timesteps_per_episode", episode_ts, global_timestep)
+        writer.add_scalar(f"charts{idstr}/episode_time", episode_time, global_timestep)
+        writer.add_scalar(f"metrics{idstr}/scalarized_episode_return", scal_return, global_timestep)
+        writer.add_scalar(f"metrics{idstr}/discounted_scalarized_episode_return", disc_scal_return, global_timestep)
+
+        for i in range(episode_return.shape[0]):
+            writer.add_scalar(f"metrics{idstr}/episode_return_obj_{i}", episode_return[i], global_timestep)
+            writer.add_scalar(f"metrics{idstr}/disc_episode_return_obj_{i}", disc_episode_return[i], global_timestep)

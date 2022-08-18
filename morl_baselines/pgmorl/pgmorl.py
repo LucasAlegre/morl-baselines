@@ -394,6 +394,9 @@ class PGMORL(MORLAlgorithm):
         for i, agent in enumerate(self.agents):
             agent.train(self.start_time, self.iteration, self.max_iterations)
 
+    def update(self):
+        pass
+
     def __eval_all_agents(self, evaluations_before_train: List[np.ndarray], add_to_prediction: bool = True):
         """
         Evaluates all agents and store their current performances on the buffer and pareto archive

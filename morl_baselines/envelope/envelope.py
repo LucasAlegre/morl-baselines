@@ -13,7 +13,8 @@ from morl_baselines.common.morl_algorithm import MORLAlgorithm
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.networks import mlp, NatureCNN
-from morl_baselines.common.utils import layer_init, polyak_update, linearly_decaying_value, get_grad_norm, huber, random_weights
+from morl_baselines.common.utils import layer_init, polyak_update, linearly_decaying_value, get_grad_norm, huber, \
+    random_weights, log_episode_info
 from mo_gym.evaluation import eval_mo
 
 
@@ -290,8 +291,6 @@ class Envelope(MORLAlgorithm):
         if reset_learning_starts:  # Resets epsilon-greedy exploration
             self.learning_starts = self.num_timesteps
 
-        episode_reward = 0.0
-        episode_vec_reward = np.zeros(self.reward_dim)
         num_episodes = 0
         obs, done = self.env.reset(), False
 
@@ -324,8 +323,6 @@ class Envelope(MORLAlgorithm):
                     self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
                     self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
 
-            episode_reward += np.dot(w, vec_reward)
-            episode_vec_reward += vec_reward
             if done:
                 obs, done = self.env.reset(), False
                 num_episodes += 1
@@ -335,15 +332,8 @@ class Envelope(MORLAlgorithm):
                     w = random_weights(self.reward_dim, 1)
                     tensor_w = th.tensor(w).float().to(self.device)
 
-                if num_episodes % 100 == 0:
-                    print(f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}")
                 if self.log:
-                    self.writer.add_scalar("metrics/episode", self.num_episodes, self.num_timesteps)
-                    self.writer.add_scalar("metrics/episode_reward", episode_reward, self.num_timesteps)
-                    for i in range(self.reward_dim):
-                        self.writer.add_scalar(f"metrics/episode_reward_obj{i}", episode_vec_reward[i], self.num_timesteps)
+                    log_episode_info(info["episode"], None, np.dot, w, self.num_timesteps, self.writer)
 
-                episode_reward = 0.0
-                episode_vec_reward = np.zeros(self.reward_dim)
             else:
                 obs = next_obs

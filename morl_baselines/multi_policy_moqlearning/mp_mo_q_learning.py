@@ -100,6 +100,9 @@ class MPMOQLearning(MORLAlgorithm):
         print(f"discounted: {discounted_rewards}")
         return rewards, discounted_rewards
 
+    def update(self):
+        pass
+
     def train(self):
         start_time = time.time()
         training_epoch = int(self.num_timesteps / self.eval_freq)

@@ -6,12 +6,13 @@ import gym
 import mo_gym
 import numpy as np
 import torch as th
+from mo_gym import MORecordEpisodeStatistics
 from torch import nn, optim
 from torch.distributions import Normal
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.networks import mlp
-from morl_baselines.common.utils import layer_init
+from morl_baselines.common.utils import layer_init, log_episode_info
 
 
 # This code has been adapted from the PPO implementation of clean RL
@@ -78,6 +79,7 @@ def make_env(env_id, seed, idx, run_name, gamma):
         for o in range(reward_dim):
             env = mo_gym.utils.MONormalizeReward(env, idx=o, gamma=gamma)
             env = mo_gym.utils.MOClipReward(env, idx=o, min_r=-10, max_r=10)
+        env = MORecordEpisodeStatistics(env, gamma=gamma)
         env.reset(seed=seed)
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
@@ -260,10 +262,7 @@ class MOPPOAgent:
             # Episode info logging
             if "episode" in info.keys():
                 for item in info["episode"]:
-                    print(f"Agent #{self.id} - global_step={self.global_step}, episodic_return={item['episode']['r']}")
-                    # TODO add logging from wrapper ?
-                    self.writer.add_scalar(f"charts_{self.id}/episodic_return", item["episode"]["r"], self.global_step)
-                    self.writer.add_scalar(f"charts_{self.id}/episodic_length", item["episode"]["l"], self.global_step)
+                    log_episode_info(item, self.id, np.dot, self.weights, self.global_step, self.writer)
                     break
 
         return obs, done

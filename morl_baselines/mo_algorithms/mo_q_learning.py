@@ -6,7 +6,7 @@ import numpy as np
 from mo_gym import eval_mo
 from torch.utils.tensorboard import SummaryWriter
 
-from morl_baselines.common.utils import linearly_decaying_epsilon
+from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
 from morl_baselines.common.scalarization import weighted_sum, tchebicheff
 
 from morl_baselines.common.morl_algorithm import MORLAlgorithm
@@ -21,7 +21,7 @@ class MOQLearning(MORLAlgorithm):
     def __init__(
             self,
             env,
-            id: int,
+            id: Optional[int] = None,
             weights: np.ndarray = np.array([0.5, 0.5]),
             scalarization=weighted_sum,
             learning_rate: float = 0.1,
@@ -72,7 +72,7 @@ class MOQLearning(MORLAlgorithm):
             return int(self.env.action_space.sample())
         return int(np.argmax(self.scalarization(self.q_table[obs], self.weights)))
 
-    def __update(self):
+    def update(self):
         """
         Updates the Q table
         """
@@ -88,7 +88,7 @@ class MOQLearning(MORLAlgorithm):
         self.q_table[obs][self.action] += self.learning_rate * td_error
 
         if self.epsilon_decay_steps is not None:
-            self.epsilon = linearly_decaying_epsilon(self.initial_epsilon, self.epsilon_decay_steps, self.num_timesteps,
+            self.epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, self.num_timesteps,
                                                      self.learning_starts, self.final_epsilon)
 
         if self.log and self.num_timesteps % 1000 == 0:
@@ -142,8 +142,6 @@ class MOQLearning(MORLAlgorithm):
         :param eval_env: other environment to launch greedy evaluations
         :param eval_freq: number of timesteps between each policy evaluation
         """
-        episode_reward = 0.0
-        episode_vec_reward = np.zeros_like(self.weights)
         num_episodes = 0
         self.obs, done = self.env.reset(), False
 
@@ -157,35 +155,19 @@ class MOQLearning(MORLAlgorithm):
             self.next_obs, self.reward, done, info = self.env.step(self.action)
             self.terminal = done if "TimeLimit.truncated" not in info else not info["TimeLimit.truncated"]
 
-            self.__update()
+            self.update()
 
             if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
                 self.policy_eval(eval_env, self.log)
 
-            episode_reward += self.scalarization(self.reward, self.weights)
-            episode_vec_reward += self.reward
             if done:
                 self.obs, done = self.env.reset(), False
                 num_episodes += 1
                 self.num_episodes += 1
 
-                if num_episodes % 1000 == 0:
-                    print(
-                        f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}, {episode_vec_reward}")
                 if self.log:
                     print("SPS:", int(self.num_timesteps / (time.time() - start_time)))
                     self.writer.add_scalar(f"charts_{self.id}/SPS", int(self.num_timesteps / (time.time() - start_time)), self.num_timesteps)
-
-                    self.writer.add_scalar(f"charts_{self.id}/timesteps", self.num_timesteps)
-                    self.writer.add_scalar(f"metrics_{self.id}/episode", self.num_episodes, self.num_timesteps)
-                    self.writer.add_scalar(f"metrics_{self.id}/scalarized_episode_reward", episode_reward, self.num_timesteps)
-                    self.writer.add_scalar(f"charts_{self.id}/learning_rate", self.learning_rate, self.num_timesteps)
-                    self.writer.add_scalar(f"charts_{self.id}/epsilon", self.epsilon, self.num_timesteps)
-                    for i in range(episode_vec_reward.shape[0]):
-                        self.writer.add_scalar(f"metrics_{self.id}/episode_reward_obj{i}", episode_vec_reward[i],
-                                               self.num_timesteps)
-
-                episode_reward = 0.0
-                episode_vec_reward = np.zeros(self.weights.shape[0])
+                    log_episode_info(info["episode"], self.id, self.scalarization, self.weights, self.num_timesteps, self.writer)
             else:
                 self.obs = self.next_obs
