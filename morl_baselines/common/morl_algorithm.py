@@ -47,7 +47,7 @@ class MORLAlgorithm(ABC):
         """
 
     @abstractmethod
-    def train(self):
+    def update(self):
         """Update algorithm's parameters"""
 
     @abstractmethod
@@ -71,6 +71,8 @@ class MORLAlgorithm(ABC):
             save_code=True,
         )
         self.writer = SummaryWriter(f"/tmp/{self.experiment_name}")
+        # The default "step" of wandb is not the actual time step (gloabl_step) of the MDP
+        wandb.define_metric("*", step_metric="global_step")
 
     def close_wandb(self):
         import wandb
