@@ -1,3 +1,4 @@
+import gym.wrappers
 import mo_gym
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,12 +10,12 @@ from morl_baselines.multi_policy_moqlearning.mp_mo_q_learning import MPMOQLearni
 
 if __name__ == "__main__":
     env = MORecordEpisodeStatistics(DeepSeaTreasure(dst_map=DEFAULT_MAP), gamma=0.9)
-    eval_env = DeepSeaTreasure(dst_map=DEFAULT_MAP)
+    eval_env = gym.wrappers.TimeLimit(DeepSeaTreasure(dst_map=DEFAULT_MAP), 500)
     scalarization = tchebicheff(tau=4., reward_dim=2)
 
     agent = MPMOQLearning(env,
                           ref_point=np.array([0., -25.]),
-                          scalarization=weighted_sum,
+                          scalarization=scalarization,
                           num_timesteps=int(1e5),
                           weights_step_size=.1,
                           initial_epsilon=0.9,

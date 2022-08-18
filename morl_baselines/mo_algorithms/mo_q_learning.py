@@ -71,7 +71,8 @@ class MOQLearning(MOPolicy, MOAgent):
         obs = tuple(obs)
         if obs not in self.q_table:
             return int(self.env.action_space.sample())
-        return int(np.argmax(self.scalarization(self.q_table[obs], self.weights)))
+        scalarized = np.array([self.scalarization(state_action_value, self.weights) for state_action_value in self.q_table[obs]])
+        return int(np.argmax(scalarized))
 
     def update(self):
         """
@@ -93,6 +94,7 @@ class MOQLearning(MOPolicy, MOAgent):
                                                    self.learning_starts, self.final_epsilon)
 
         if self.log and self.global_step % 1000 == 0:
+            self.writer.add_scalar(f"charts_{self.id}/epsilon", self.epsilon, self.global_step)
             self.writer.add_scalar(f"losses_{self.id}/scalarized_td_error", self.scalarization(td_error, self.weights), self.global_step)
             self.writer.add_scalar(f"losses_{self.id}/mean_td_error", np.mean(td_error), self.global_step)
 
@@ -145,7 +147,7 @@ class MOQLearning(MOPolicy, MOAgent):
                 num_episodes += 1
                 self.num_episodes += 1
 
-                if self.log:
+                if self.log and self.global_step % 1000 == 0:
                     print("SPS:", int(self.global_step / (time.time() - start_time)))
                     self.writer.add_scalar(f"charts_{self.id}/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
                     log_episode_info(info["episode"], self.id, self.scalarization, self.weights, self.global_step, self.writer)
