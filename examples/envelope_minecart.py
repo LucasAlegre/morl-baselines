@@ -2,19 +2,20 @@ import numpy as np
 import gym
 from gym.wrappers.record_video import RecordVideo
 import mo_gym
+from mo_gym.utils import MORecordEpisodeStatistics
 
 from morl_baselines.envelope.envelope import Envelope
 
 
 def main():
-
     def make_env():
         env = mo_gym.make("minecart-v0")
-        #env = mo_gym.LinearReward(env)
+        env = MORecordEpisodeStatistics(env, gamma=0.98)
+        # env = mo_gym.LinearReward(env)
         return env
 
     env = make_env()
-    eval_env = make_env() # RecordVideo(make_env(), "videos/minecart/", episode_trigger=lambda e: e % 1000 == 0)
+    eval_env = make_env()  # RecordVideo(make_env(), "videos/minecart/", episode_trigger=lambda e: e % 1000 == 0)
 
     agent = Envelope(
         env,
@@ -33,7 +34,7 @@ def main():
         learning_starts=100,
         envelope=True,
         gradient_updates=1,
-        target_net_update_freq=1000, #1000,  # 500 reduce by gradient updates
+        target_net_update_freq=1000,  # 1000,  # 500 reduce by gradient updates
         tau=1,
         log=True,
         project_name="MORL-Baselines",
@@ -41,15 +42,16 @@ def main():
     )
 
     w = np.array([0.9, 0.0, 0.1])
-    agent.learn(
-            total_timesteps=100000,
-            total_episodes=None,
-            weight=None,
-            eval_env=eval_env,
-            eval_freq=1000,
-            reset_num_timesteps=False,
-            reset_learning_starts=False
-        )
+    agent.train(
+        total_timesteps=100000,
+        total_episodes=None,
+        weight=None,
+        eval_env=eval_env,
+        eval_freq=1000,
+        reset_num_timesteps=False,
+        reset_learning_starts=False
+    )
+
 
 if __name__ == '__main__':
     main()

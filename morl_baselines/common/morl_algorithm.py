@@ -3,18 +3,84 @@ from typing import Union, Optional
 
 import numpy as np
 import torch as th
+import mo_gym
+from mo_gym import eval_mo
 import gym
 from gym import spaces
 
 from torch.utils.tensorboard import SummaryWriter
 
 
-class MORLAlgorithm(ABC):
+class MOPolicy(ABC):
+    """
+    An MORL policy, has an underlying learning structure which can be:
+    - used to get a greedy action via eval()
+    - updated using some experiences via update()
+
+    Note that the learning structure can embed multiple policies (for example using a Conditioned Network). In this case,
+    eval() requires a weight vector as input.
+    """
+    def __init__(self, id: Optional[int] = None, device: Union[th.device, str] = "auto") -> None:
+        self.id = id
+        self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
+        self.global_step = 0
+
+    @abstractmethod
+    def eval(self, obs: np.ndarray, w: Optional[np.ndarray]) -> Union[int, np.ndarray]:
+        """Gives the best action for the given observation
+
+        Args:
+            obs (np.array): Observation
+            w (optional np.array): weight for scalarization
+
+        Returns:
+            np.array or int: Action
+        """
+
+    def policy_eval(self, eval_env, weights: np.ndarray, writer: SummaryWriter):
+        """
+        Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
+        :param eval_env: evaluation environment
+        :param weights: weights to use in the evaluation
+        :param writer: wandb writer
+        :return: a tuple containing the evaluations
+        """
+
+        # TODO, make eval_mo generic to scalarization?
+        scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward = eval_mo(self, eval_env, weights)
+        if self.id is None:
+            idstr = ""
+        else:
+            idstr = f"_{self.id}"
+
+        writer.add_scalar(f"eval{idstr}/scalarized_reward", scalarized_reward, self.global_step)
+        writer.add_scalar(f"eval{idstr}/scalarized_discounted_reward", scalarized_discounted_reward, self.global_step)
+        for i in range(vec_reward.shape[0]):
+            writer.add_scalar(f"eval{idstr}/vec_{i}", vec_reward[i], self.global_step)
+            writer.add_scalar(f"eval{idstr}/discounted_vec_{i}", discounted_vec_reward[i], self.global_step)
+
+        return (
+            scalarized_reward,
+            scalarized_discounted_reward,
+            vec_reward,
+            discounted_vec_reward
+        )
+
+    @abstractmethod
+    def update(self):
+        """Update algorithm's parameters"""
+
+
+class MOAgent(ABC):
+    """
+    An MORL Agent, can contain one or multiple MOPolicies.
+    Contains helpers to extract features from the environment, setup logging etc.
+    """
     def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto") -> None:
         self.extract_env_info(env)
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
 
-        self.num_timesteps = 0
+        self.global_step = 0
         self.num_episodes = 0
 
     def extract_env_info(self, env):
@@ -34,20 +100,6 @@ class MORLAlgorithm(ABC):
                 self.action_dim = self.env.action_space.shape[0]
             self.reward_dim = self.env.reward_space.shape[0]
 
-    @abstractmethod
-    def eval(self, obs: np.ndarray) -> Union[int, np.ndarray]:
-        """Gives the best action for the given observation
-
-        Args:
-            obs (np.array): Observation
-
-        Returns:
-            np.array or int: Action
-        """
-
-    @abstractmethod
-    def update(self):
-        """Update algorithm's parameters"""
 
     @abstractmethod
     def get_config(self) -> dict:
