@@ -53,11 +53,11 @@ class MOPolicy(ABC):
         else:
             idstr = f"_{self.id}"
 
-        self.writer.add_scalar(f"eval{idstr}/scalarized_reward", scalarized_reward, self.global_step)
-        self.writer.add_scalar(f"eval{idstr}/scalarized_discounted_reward", scalarized_discounted_reward, self.global_step)
+        writer.add_scalar(f"eval{idstr}/scalarized_reward", scalarized_reward, self.global_step)
+        writer.add_scalar(f"eval{idstr}/scalarized_discounted_reward", scalarized_discounted_reward, self.global_step)
         for i in range(vec_reward.shape[0]):
-            self.writer.add_scalar(f"eval{idstr}/vec_{i}", vec_reward[i], self.global_step)
-            self.writer.add_scalar(f"eval{idstr}/discounted_vec_{i}", discounted_vec_reward[i], self.global_step)
+            writer.add_scalar(f"eval{idstr}/vec_{i}", vec_reward[i], self.global_step)
+            writer.add_scalar(f"eval{idstr}/discounted_vec_{i}", discounted_vec_reward[i], self.global_step)
 
         return (
             scalarized_reward,

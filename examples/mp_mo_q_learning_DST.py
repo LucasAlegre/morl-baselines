@@ -25,4 +25,5 @@ if __name__ == "__main__":
 
     front, discounted_front = agent.eval_all_agents()
     print(discounted_front)
-    plt.scatter(np.array(discounted_front[:, 0], discounted_front[:, 1]))
+    plt.scatter(np.array(discounted_front)[:, 0], np.array(discounted_front)[:, 1])
+    plt.show()
