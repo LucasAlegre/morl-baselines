@@ -40,6 +40,10 @@ class MOQLearning(MOPolicy, MOAgent):
         MOPolicy.__init__(self, id)
         self.learning_rate = learning_rate
         self.id = id
+        if self.id is not None:
+            self.idstr = f"_{self.id}"
+        else:
+            self.idstr = ""
         self.gamma = gamma
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -94,9 +98,9 @@ class MOQLearning(MOPolicy, MOAgent):
                                                    self.learning_starts, self.final_epsilon)
 
         if self.log and self.global_step % 1000 == 0:
-            self.writer.add_scalar(f"charts_{self.id}/epsilon", self.epsilon, self.global_step)
-            self.writer.add_scalar(f"losses_{self.id}/scalarized_td_error", self.scalarization(td_error, self.weights), self.global_step)
-            self.writer.add_scalar(f"losses_{self.id}/mean_td_error", np.mean(td_error), self.global_step)
+            self.writer.add_scalar(f"charts{self.idstr}/epsilon", self.epsilon, self.global_step)
+            self.writer.add_scalar(f"losses{self.idstr}/scalarized_td_error", self.scalarization(td_error, self.weights), self.global_step)
+            self.writer.add_scalar(f"losses{self.idstr}/mean_td_error", np.mean(td_error), self.global_step)
 
     def get_config(self) -> dict:
         return {
@@ -149,7 +153,7 @@ class MOQLearning(MOPolicy, MOAgent):
 
                 if self.log and self.global_step % 1000 == 0:
                     print("SPS:", int(self.global_step / (time.time() - start_time)))
-                    self.writer.add_scalar(f"charts_{self.id}/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
-                    log_episode_info(info["episode"], self.id, self.scalarization, self.weights, self.global_step, self.writer)
+                    self.writer.add_scalar(f"charts{self.idstr}/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
+                    log_episode_info(info["episode"], self.scalarization, self.weights, self.global_step, self.id, self.writer)
             else:
                 self.obs = self.next_obs

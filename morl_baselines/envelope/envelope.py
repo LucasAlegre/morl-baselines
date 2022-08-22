@@ -338,7 +338,7 @@ class Envelope(MOPolicy, MOAgent):
                     tensor_w = th.tensor(w).float().to(self.device)
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], None, np.dot, w, self.global_step, self.writer)
+                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer)
 
             else:
                 obs = next_obs

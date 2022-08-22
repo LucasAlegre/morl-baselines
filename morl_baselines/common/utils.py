@@ -92,13 +92,14 @@ def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str =
     return w
 
 
-def log_episode_info(info: dict, id: Optional[int], scalarization, weights: np.ndarray, global_timestep: int, writer: Optional[SummaryWriter] = None):
+def log_episode_info(info: dict, scalarization, weights: np.ndarray, global_timestep: int, id: Optional[int] = None,
+                     writer: Optional[SummaryWriter] = None):
     """
     Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper)
     :param info: info dictionary containing the episode statistics
-    :param id: agent's id
     :param scalarization: scalarization function
     :param weights: weights to be used in the scalarization
+    :param id: agent's id
     :param writer: wandb writer
     """
     episode_ts = info["l"]

@@ -264,7 +264,7 @@ class MOPPO(MOPolicy):
             # Episode info logging
             if "episode" in info.keys():
                 for item in info["episode"]:
-                    log_episode_info(item, self.id, np.dot, self.weights, self.global_step, self.writer)
+                    log_episode_info(item, np.dot, self.weights, self.global_step, self.id, self.writer)
                     break
 
         return obs, done
