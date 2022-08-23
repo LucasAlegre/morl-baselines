@@ -4,7 +4,7 @@ from typing import Callable, List, Optional
 import gym
 import numpy as np
 
-from morl_baselines.common.morl_algorithm import MORLAlgorithm
+from morl_baselines.common.morl_algorithm import MOAgent
 
 
 def get_non_dominated(candidates):
@@ -88,7 +88,7 @@ def crowding_distance_assignment(nd_array):
     return crowding_distances
 
 
-class ParetoQ(MORLAlgorithm):
+class ParetoQ(MOAgent):
     """
     An implementation for a pareto Q learning agent that is able to deal with stochastic environments.
     """
@@ -109,7 +109,10 @@ class ParetoQ(MORLAlgorithm):
         self.perf_indic = perf_indic
         try:
             self.num_actions = env.action_space.n
-            self.num_states = 121  # env.observation_space.shape
+            self.num_states = 1
+            for low, high in zip(env.observation_space.low, env.observation_space.high):
+                self.num_states *= high - low + 1
+            print(self.num_states)
             self.num_objectives = env.reward_space.shape[0]
         except Exception:
             raise Exception('Pareto Q-learning is only supported on the deep sea treasure environment.')
