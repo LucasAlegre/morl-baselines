@@ -3,51 +3,55 @@ from typing import List
 
 import numpy as np
 
-from morl_baselines.mo_algorithms.mo_ppo import MOPPOAgent
 
-
-def is_pareto_efficient(evaluations: np.ndarray, return_mask: bool = True):
+def get_non_dominated(candidates: set):
     """
-    Find the pareto-efficient points (maximization is supposed)
-    :param evaluations: An (n_points, n_objectives) array
-    :param return_mask: True to return a mask
-    :return: An array of indices of pareto-efficient points.
-        If return_mask is True, this will be an (n_points, ) boolean array
-        Otherwise it will be a (n_efficient_points, ) integer array of indices.
+    This function returns the non-dominated subset of elements.
+    :param candidates: The input set of candidate vectors.
+    :return: The non-dominated subset of this input set.
+    Source: https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+    The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.
     """
-    # https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
-    is_efficient = np.arange(evaluations.shape[0])
-    n_points = evaluations.shape[0]
-    next_point_index = 0  # Next index in the is_efficient array to search for
-    while next_point_index < len(evaluations):
-        # Check for points which are better or equal to the current one
-        nondominated_point_mask = np.any(evaluations > evaluations[next_point_index], axis=1)
-        efficient_points = np.where(np.all(evaluations == evaluations[next_point_index], axis=1))
-        nondominated_point_mask[efficient_points] = True
+    candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
+    candidates = candidates[candidates.sum(1).argsort()[::-1]]  # Sort candidates by decreasing sum of coordinates.
+    for i in range(candidates.shape[0]):  # Process each point in turn.
+        n = candidates.shape[0]  # Check current size of the candidates.
+        if i >= n:  # If we've eliminated everything up until this size we stop.
+            break
+        nd = np.ones(candidates.shape[0], dtype=bool)  # Initialize a boolean mask for undominated points.
+        # find all points not dominated by i
+        # since points are sorted by coordinate sum
+        # i cannot dominate any points in 1,...,i-1
+        nd[i + 1:] = np.any(candidates[i + 1:] > candidates[i], axis=1)
+        candidates = candidates[nd]  # Grab only the non-dominated vectors using the generated bitmask.
 
-        # Apply mask to filter out the dominated points
-        is_efficient = is_efficient[nondominated_point_mask]
-        evaluations = evaluations[nondominated_point_mask]
-        next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
-    if return_mask:
-        is_efficient_mask = np.zeros(n_points, dtype=bool)
-        is_efficient_mask[is_efficient] = True
-        return is_efficient_mask
-    else:
-        return is_efficient
+    non_dominated = set()
+    for candidate in candidates:
+        non_dominated.add(tuple(candidate))  # Add the non dominated vectors to a set again.
+
+    return non_dominated
 
 
 class ParetoArchive:
     def __init__(self):
-        self.individuals: List[MOPPOAgent] = []
+        self.individuals: list = []
         self.evaluations: List[np.ndarray] = []
 
-    def add(self, candidate: MOPPOAgent, evaluation: np.ndarray):
+    def add(self, candidate, evaluation: np.ndarray):
         """
         Adds the candidate to the memory and removes Pareto inefficient points
         """
         self.evaluations.append(evaluation)
         self.individuals.append(deepcopy(candidate))
-        mask = is_pareto_efficient(np.array([np.array(e) for e in self.evaluations]))
-        self.evaluations = np.array(self.evaluations)[mask].tolist()
-        self.individuals = np.array(self.individuals)[mask].tolist()
+        # ND sorting
+        nd_candidates = get_non_dominated(set([tuple(e) for e in self.evaluations]))
+
+        # Reconstruct the pareto archive (because ND sorting might change the order of candidates)
+        nd_evals = []
+        nd_individuals = []
+        for e, i in zip(self.evaluations, self.individuals):
+            if tuple(e) in nd_candidates:
+                nd_evals.append(e)
+                nd_individuals.append(i)
+        self.evaluations = nd_evals
+        self.individuals = nd_individuals
