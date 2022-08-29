@@ -2,10 +2,7 @@ from itertools import combinations
 from typing import List, Optional
 
 import cvxpy as cp
-import matplotlib.pyplot as plt
 import numpy as np
-
-import wandb as wb
 
 from morl_baselines.common.performance_indicators import hypervolume
 
@@ -13,32 +10,32 @@ np.set_printoptions(precision=4)
 
 
 class OLS:
-    # Section 3.3 of http://roijers.info/pub/thesis.pdf
+    """ Optimistic Linear Support (Section 3.3 of http://roijers.info/pub/thesis.pdf)
+        Outer loop method to select next weight vector
+
+        Args:
+            num_objectives (int): Number of objectives
+            epsilon (float, optional): Minimum improvement per iteration. Defaults to 0.0.
+            verbose (bool): Defaults to False.
+    """
     def __init__(
         self,
-        m: int,
+        num_objectives: int,
         epsilon: float = 0.0,
-        negative_weights: bool = False,
-        max_value: Optional[float] = None,
-        min_value: Optional[float] = None,
-        reverse_extremum: bool = False,
+        verbose: bool = False,
     ):
-        self.m = m
+        self.num_objectives = num_objectives
         self.epsilon = epsilon
         self.W = []
         self.ccs = []
         self.ccs_weights = []
         self.queue = []
         self.iteration = 0
-        self.max_value = max_value
-        self.min_value = min_value
-        self.negative_weights = negative_weights
-        self.worst_case_weight_repeated = False
-        extremum_weights = reversed(self.extrema_weights()) if reverse_extremum else self.extrema_weights()
-        for w in extremum_weights:
+        self.verbose = verbose
+        for w in self.extrema_weights():
             self.queue.append((float("inf"), w))
 
-    def next_w(self) -> np.ndarray:
+    def next_weight(self) -> np.ndarray:
         return self.queue.pop(0)[1]
 
     def get_ccs_weights(self) -> List[np.ndarray]:
@@ -52,21 +49,28 @@ class OLS:
             return weights
 
     def ended(self) -> bool:
-        return len(self.queue) == 0 or self.worst_case_weight_repeated
+        return len(self.queue) == 0
 
-    def add_solution(self, value, w, gpi_agent=None, env=None) -> int:
-        print("value:", value)
+    def add_solution(self, value: np.ndarray, w: np.ndarray) -> List[int]:
+        """Add new value vector optimal to weight w.
+        Args:
+            value (np.ndarray): New value vector
+            w (np.ndarray): Weight vector
+        Returns:
+            List of value vectores removed from the CCS for being dominated.
+        """        
+        if self.verbose:
+            print(f"Adding value: {value} to CCS.")
+
         self.iteration += 1
         self.W.append(w)
-        if self.is_dominated(value):
+        if self.is_dominated_or_equal(value):
+            if self.verbose:
+                print("Value is dominated. Discarding.")
             return [len(self.ccs)]
-        for i, v in enumerate(self.ccs):
-            if np.allclose(v, value):
-                return [len(self.ccs)]  # delete new policy as it has same value as an old one
 
         W_del = self.remove_obsolete_weights(new_value=value)
         W_del.append(w)
-        print("W_del", W_del)
 
         removed_indx = self.remove_obsolete_values(value)
 
@@ -77,23 +81,22 @@ class OLS:
 
         print("W_corner", W_corner)
         for wc in W_corner:
-            priority = self.get_priority(wc, gpi_agent, env)
-            print("improv.", priority)
+            priority = self.get_priority(wc)
             if priority > self.epsilon:
+                if self.verbose:
+                    print(f"Adding weight: {wc} to queue with priority {priority}.")
                 self.queue.append((priority, wc))
         self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
 
-        print("ccs:", self.ccs)
-        print("ccs size:", len(self.ccs))
+        if self.verbose:
+            print(f"CCS: {self.ccs}")
+            print(f"CCS size: {len(self.ccs)}")
 
         return removed_indx
 
     def get_priority(self, w) -> float:
         max_optimistic_value = self.max_value_lp(w)
         max_value_ccs = self.max_scalarized_value(w)
-        # upper_bound_nemecek = self.upper_bound_policy_caches(w)
-        # print(f'optimistic: {max_optimistic_value} policy_cache_up: {upper_bound_nemecek}')
-
         priority = max_optimistic_value - max_value_ccs  # / abs(max_optimistic_value)
         return priority
 
@@ -113,7 +116,7 @@ class OLS:
         W_del = []
         inds_remove = []
         for i, (priority, cw) in enumerate(self.queue):
-            if np.dot(cw, new_value) > self.max_scalarized_value(cw):  # and priority != float('inf'):
+            if np.dot(cw, new_value) > self.max_scalarized_value(cw):
                 W_del.append(cw)
                 inds_remove.append(i)
         for i in reversed(inds_remove):
@@ -130,7 +133,6 @@ class OLS:
                     best_in_all = False
                     break
             if best_in_all:
-                print("removed value", self.ccs[i])
                 removed_indx.append(i)
                 self.ccs.pop(i)
                 self.ccs_weights.pop(i)
@@ -139,9 +141,9 @@ class OLS:
     def max_value_lp(self, w_new: np.ndarray) -> float:
         if len(self.ccs) == 0:
             return float("inf")
-        w = cp.Parameter(self.m)
+        w = cp.Parameter(self.num_objectives)
         w.value = w_new
-        v = cp.Variable(self.m)
+        v = cp.Variable(self.num_objectives)
         W_ = np.vstack(self.W)
         V_ = np.array([self.max_scalarized_value(weight) for weight in self.W])
         W = cp.Parameter(W_.shape)
@@ -150,10 +152,6 @@ class OLS:
         V.value = V_
         objective = cp.Maximize(w @ v)
         constraints = [W @ v <= V]
-        if self.max_value is not None:
-            constraints.append(v <= self.max_value)
-        if self.min_value is not None:
-            constraints.append(v >= self.min_value)
         prob = cp.Problem(objective, constraints)
         return prob.solve(verbose=False)
 
@@ -170,14 +168,13 @@ class OLS:
                 elif np.dot(w, v) > np.dot(w, best[0]):
                     best = [v]
             V_rel += best
-            if len(best) < self.m:
+            if len(best) < self.num_objectives:
                 wc = self.corner_weight(v_new, best)
                 W_new.append(wc)
                 W_new.extend(self.extrema_weights())
 
         V_rel = np.unique(V_rel, axis=0)
-        # V_rel = self.ccs.copy()
-        for comb in range(1, self.m):
+        for comb in range(1, self.num_objectives):
             for x in combinations(V_rel, comb):
                 if not x:
                     continue
@@ -185,19 +182,18 @@ class OLS:
                 W_new.append(wc)
 
         filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.W] + [np.allclose(wc, w_old) for p, w_old in self.queue]))
-        # (np.isclose(np.dot(wc, v_new), self.max_scalarized_value(wc))) and \
         W_new = list(filter(filter_fn, W_new))
         W_new = np.unique(W_new, axis=0)
         return W_new
 
     def corner_weight(self, v_new: np.ndarray, v_set: List[np.ndarray]) -> np.ndarray:
-        wc = cp.Variable(self.m)
-        v_n = cp.Parameter(self.m)
+        wc = cp.Variable(self.num_objectives)
+        v_n = cp.Parameter(self.num_objectives)
         v_n.value = v_new
         objective = cp.Minimize(v_n @ wc)  # cp.Minimize(0)
         constraints = [0 <= wc, cp.sum(wc) == 1]
         for v in v_set:
-            v_par = cp.Parameter(self.m)
+            v_par = cp.Parameter(self.num_objectives)
             v_par.value = v
             constraints.append(v_par @ wc == v_n @ wc)
         prob = cp.Problem(objective, constraints)
@@ -211,15 +207,15 @@ class OLS:
 
     def extrema_weights(self) -> List[np.ndarray]:
         extrema_weights = []
-        for i in range(self.m):
-            w = np.zeros(self.m)
+        for i in range(self.num_objectives):
+            w = np.zeros(self.num_objectives)
             w[i] = 1.0
             extrema_weights.append(w)
         return extrema_weights
 
-    def is_dominated(self, value):
+    def is_dominated_or_equal(self, value: np.ndarray) -> bool:
         for v in self.ccs:
-            if (v > value).all():
+            if ((v >= value).all() and (v > value).any()) or np.allclose(v, value):
                 return True
         return False
 
@@ -229,12 +225,12 @@ if __name__ == "__main__":
     def solve(w):
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
-    m = 4
-    ols = OLS(m=m, epsilon=0.0001) #, min_value=0.0, max_value=1 / (1 - 0.95) * 1)
+    num_objectives = 4
+    ols = OLS(num_objectives=num_objectives, epsilon=0.0001) #, min_value=0.0, max_value=1 / (1 - 0.95) * 1)
     while not ols.ended():
         w = ols.next_w()
         print("w:", w)
         value = solve(w)
         ols.add_solution(value, w)
 
-        print("hv:", hypervolume(np.zeros(m), ols.ccs))
+        print("hv:", hypervolume(np.zeros(num_objectives), ols.ccs))
