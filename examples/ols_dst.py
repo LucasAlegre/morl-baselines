@@ -19,10 +19,12 @@ def main():
         new_policy.train(0, total_timesteps=int(2e5))
 
         _, _, vec, discounted_vec = new_policy.policy_eval(eval_env=env, weights=w, writer=new_policy.writer)
-
-        ols.add_solution(discounted_vec, w)
         policies.append(new_policy)
 
+        removed_inds = ols.add_solution(discounted_vec, w)
+        
+        for ind in removed_inds:
+            policies.pop(ind)  # remove policies that are no longer needed
 
 if __name__ == "__main__":
     main()

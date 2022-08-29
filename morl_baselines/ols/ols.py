@@ -57,7 +57,7 @@ class OLS:
             value (np.ndarray): New value vector
             w (np.ndarray): Weight vector
         Returns:
-            List of value vectores removed from the CCS for being dominated.
+            List of indices of value vectors removed from the CCS for being dominated.
         """        
         if self.verbose:
             print(f"Adding value: {value} to CCS.")
