@@ -200,8 +200,8 @@ class OLS:
         prob = cp.Problem(objective, constraints)
         prob.solve(verbose=False)  # (solver='SCS', verbose=False, eps=1e-5)
         if prob.status == cp.OPTIMAL:
-            weight = np.clip(wc.value, 0, 1)  # ensure range [0,1]
-            weight /= weight.sum()  # ensure sum to one
+            # ensure weight is in the simplex
+            weight = np.abs(wc.value) / np.linalg.norm(wc.value, ord=1, keepdims=True)
             return weight
         else:
             return None
