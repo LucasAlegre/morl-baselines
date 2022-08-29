@@ -27,9 +27,9 @@ class OLS:
     ):
         self.num_objectives = num_objectives
         self.epsilon = epsilon
-        self.W = []
+        self.visited_weights = []  # List of already tested weight vectors
         self.ccs = []
-        self.ccs_weights = []
+        self.ccs_weights = [] # List of weight vectors for each value vector in the CCS
         self.queue = []
         self.iteration = 0
         self.verbose = verbose
@@ -37,13 +37,14 @@ class OLS:
             self.queue.append((float("inf"), w))
 
     def next_weight(self) -> np.ndarray:
+        """"Returns the next weight vector with highest priority."""
         return self.queue.pop(0)[1]
 
     def get_ccs_weights(self) -> List[np.ndarray]:
         return deepcopy(self.ccs_weights)
 
     def get_corner_weights(self, top_k: Optional[int] = None) -> List[np.ndarray]:
-        weights = [w for (p, w) in self.queue]
+        weights = [w.copy() for (p, w) in self.queue]
         if top_k is not None:
             return weights[:top_k]
         else:
@@ -64,7 +65,7 @@ class OLS:
             print(f"Adding value: {value} to CCS.")
 
         self.iteration += 1
-        self.W.append(w)
+        self.visited_weights.append(w)
         if self.is_dominated_or_equal(value):
             if self.verbose:
                 print("Value is dominated. Discarding.")
@@ -125,33 +126,47 @@ class OLS:
         return W_del
 
     def remove_obsolete_values(self, value: np.ndarray) -> List[int]:
+        """Removes the values vectors which are dominated by the new value for all visited weight vectors.
+           Returns the indices of the removed values. 
+        """
         removed_indx = []
         for i in reversed(range(len(self.ccs))):
             best_in_all = True
-            for j in range(len(self.W)):
-                w = self.W[j]
+            for j in range(len(self.visited_weights)):
+                w = self.visited_weights[j]
                 if np.dot(value, w) < np.dot(self.ccs[i], w):
                     best_in_all = False
                     break
+
             if best_in_all:
                 removed_indx.append(i)
                 self.ccs.pop(i)
                 self.ccs_weights.pop(i)
+
         return removed_indx
 
     def max_value_lp(self, w_new: np.ndarray) -> float:
+        """Returns an upper-bound for the maximum value of the scalarized objective"""
+
+        # No upper bound if no values in CCS
         if len(self.ccs) == 0:
             return float("inf")
+
         w = cp.Parameter(self.num_objectives)
         w.value = w_new
         v = cp.Variable(self.num_objectives)
-        W_ = np.vstack(self.W)
-        V_ = np.array([self.max_scalarized_value(weight) for weight in self.W])
+
+        W_ = np.vstack(self.visited_weights)
         W = cp.Parameter(W_.shape)
         W.value = W_
+
+        V_ = np.array([self.max_scalarized_value(weight) for weight in self.visited_weights])
         V = cp.Parameter(V_.shape)
         V.value = V_
+
+        # Maximum value for weight vector w
         objective = cp.Maximize(w @ v)
+        # such that it is consistent with other optimal values for other visited weights
         constraints = [W @ v <= V]
         prob = cp.Problem(objective, constraints)
         return prob.solve(verbose=False)
@@ -182,21 +197,24 @@ class OLS:
                 wc = self.corner_weight(v_new, x)
                 W_new.append(wc)
 
-        filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.W] + [np.allclose(wc, w_old) for p, w_old in self.queue]))
+        filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights] + [np.allclose(wc, w_old) for p, w_old in self.queue]))
         W_new = list(filter(filter_fn, W_new))
         W_new = np.unique(W_new, axis=0)
         return W_new
 
     def corner_weight(self, v_new: np.ndarray, v_set: List[np.ndarray]) -> np.ndarray:
+        """Returns the weight vector for which v_new intersects with all values in v_set"""
         wc = cp.Variable(self.num_objectives)
         v_n = cp.Parameter(self.num_objectives)
         v_n.value = v_new
+
         objective = cp.Minimize(v_n @ wc)  # cp.Minimize(0)
         constraints = [0 <= wc, cp.sum(wc) == 1]
         for v in v_set:
             v_par = cp.Parameter(self.num_objectives)
             v_par.value = v
-            constraints.append(v_par @ wc == v_n @ wc)
+            constraints.append(v_par @ wc == v_n @ wc) # values intersect at wc
+
         prob = cp.Problem(objective, constraints)
         prob.solve(verbose=False)  # (solver='SCS', verbose=False, eps=1e-5)
         if prob.status == cp.OPTIMAL:
