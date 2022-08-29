@@ -1,5 +1,6 @@
 from itertools import combinations
 from typing import List, Optional
+from copy import deepcopy
 
 import cvxpy as cp
 import numpy as np
@@ -39,7 +40,7 @@ class OLS:
         return self.queue.pop(0)[1]
 
     def get_ccs_weights(self) -> List[np.ndarray]:
-        return self.ccs_weights.copy()
+        return deepcopy(self.ccs_weights)
 
     def get_corner_weights(self, top_k: Optional[int] = None) -> List[np.ndarray]:
         weights = [w for (p, w) in self.queue]
