@@ -154,6 +154,7 @@ class MOQLearning(MOPolicy, MOAgent):
                 if self.log and self.global_step % 1000 == 0:
                     print("SPS:", int(self.global_step / (time.time() - start_time)))
                     self.writer.add_scalar(f"charts{self.idstr}/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
-                    log_episode_info(info["episode"], self.scalarization, self.weights, self.global_step, self.id, self.writer)
+                    if "episode" in info:
+                        log_episode_info(info["episode"], self.scalarization, self.weights, self.global_step, self.id, self.writer)
             else:
                 self.obs = self.next_obs
