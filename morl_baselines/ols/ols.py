@@ -103,16 +103,15 @@ class OLS:
         return priority
 
     def max_scalarized_value(self, w: np.ndarray) -> float:
+        """Returns the maximum scalarized value for weight vector w."""
         if not self.ccs:
             return None
         return np.max([np.dot(v, w) for v in self.ccs])
 
-    def get_set_max_policy_index(self, w: np.ndarray) -> int:
-        if not self.ccs:
-            return None
-        return np.argmax([np.dot(v, w) for v in self.ccs])
-
     def remove_obsolete_weights(self, new_value: np.ndarray) -> List[np.ndarray]:
+        """Remove from the queue the weight vectors for which the new value vector is better than previous values.
+           Returns a list of the removed weight vectors.
+        """
         if len(self.ccs) == 0:
             return []
         W_del = []
@@ -147,7 +146,6 @@ class OLS:
 
     def max_value_lp(self, w_new: np.ndarray) -> float:
         """Returns an upper-bound for the maximum value of the scalarized objective"""
-
         # No upper bound if no values in CCS
         if len(self.ccs) == 0:
             return float("inf")
@@ -225,6 +223,7 @@ class OLS:
             return None
 
     def extrema_weights(self) -> List[np.ndarray]:
+        """Returns the weight vectors which have one component equal to 1 and the rest equal to 0"""
         extrema_weights = []
         for i in range(self.num_objectives):
             w = np.zeros(self.num_objectives)
