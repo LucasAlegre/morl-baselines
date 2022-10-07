@@ -91,12 +91,19 @@ class MOAgent(ABC):
         # So env can be None. It is the reponsibility of the implemented MORLAlgorithm to call this method in those cases
         if env is not None:
             self.env = env
-            self.observation_shape = self.env.observation_space.shape
-            self.observation_dim = self.env.observation_space.shape[0]
+            if isinstance(self.env.observation_space, spaces.Discrete):
+                self.observation_shape = (1,)
+                self.observation_dim = self.env.observation_space.n
+            else:
+                self.observation_shape = self.env.observation_space.shape
+                self.observation_dim = self.env.observation_space.shape[0]
+
             self.action_space = env.action_space
             if isinstance(self.env.action_space, (spaces.Discrete, spaces.MultiBinary)):
+                self.action_shape = (1,)
                 self.action_dim = self.env.action_space.n
             else:
+                self.action_shape = self.env.action_space.shape
                 self.action_dim = self.env.action_space.shape[0]
             self.reward_dim = self.env.reward_space.shape[0]
 
@@ -118,7 +125,7 @@ class MOAgent(ABC):
             sync_tensorboard=True,
             config=self.get_config(),
             name=self.experiment_name,
-            monitor_gym=True,
+            monitor_gym=False,
             save_code=True,
         )
         self.writer = SummaryWriter(f"/tmp/{self.experiment_name}")

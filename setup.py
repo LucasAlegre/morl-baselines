@@ -7,7 +7,7 @@ setup(
     version="0.1",
     packages=[package for package in find_packages() if package.startswith("morl_baselines")],
     install_requires=[
-        "gym==0.24.1",  # Fixed version due to breaking changes in 0.25
+        "gym",
         "numpy",
         "torch>=1.11",
         "pymoo"
