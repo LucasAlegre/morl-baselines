@@ -33,10 +33,19 @@ Just add entries in the table above so we know who is on what. Then a proper PR 
 
 ```bibtex
 @misc{morl_baselines,
-    ...
+    author = {Florian Felten and Lucas N. Alegre},
+    title = {MORL-Baselines: Multi-Objective Reinforcement Learning algorithms implementations},
+    year = {2022},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://github.com/LucasAlegre/morl-baselines}},
 }
 ```
 
 ## Maintainers
 
-MORL-Baselines is currently maintained by [Lucas N. Alegre](https://www.inf.ufrgs.br/~lnalegre/) (@LucasAlegre), [Florian Felten](https://ffelten.github.io/), ...
+MORL-Baselines is currently maintained by [Lucas N. Alegre](https://www.inf.ufrgs.br/~lnalegre/) (@LucasAlegre), [Florian Felten](https://ffelten.github.io/) (@ffelten)
+
+## Acknowledgements
+* Willem Röpke, for his implementation of Pareto Q-Learning (@wilrop)
+* Denis Steckelmacher and Conor F. Hayes, for providing us with the original implementation of EUPG.
