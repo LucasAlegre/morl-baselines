@@ -10,7 +10,7 @@ if __name__ == "__main__":
     eval_env = mo_gym.make('fishwood-v0')
     scalarization = lambda r: min(r[0], r[1] // 2)
 
-    agent = EUPG(env, scalarization=scalarization, gamma=0.99, log=True, buffer_size=200)
-    agent.train(total_timesteps=int(1e6), eval_env=eval_env, eval_freq=1000)
+    agent = EUPG(env, scalarization=scalarization, gamma=0.99, log=True, buffer_size=200, learning_rate=0.001)
+    agent.train(total_timesteps=int(4e6), eval_env=eval_env, eval_freq=1000)
 
-    print(mo_gym.eval_mo_esr(agent, env=eval_env, scalarization=scalarization))
+    print(mo_gym.eval_mo_reward_conditioned(agent, env=eval_env, scalarization=scalarization))

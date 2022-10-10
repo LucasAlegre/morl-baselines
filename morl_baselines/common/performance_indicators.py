@@ -3,6 +3,7 @@ from typing import List
 
 import numpy as np
 from pymoo.factory import get_performance_indicator
+from pymoo.indicators.hv import HV
 
 
 def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
@@ -15,8 +16,7 @@ def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
     Returns:
         float: Hypervolume metric
     """
-    hv = get_performance_indicator("hv", ref_point=ref_point * -1)
-    return hv.do(np.array(points) * -1)
+    return HV(ref_point=ref_point * - 1)(np.array(points) * - 1)
 
 
 def sparsity(front: List[np.ndarray]) -> float:

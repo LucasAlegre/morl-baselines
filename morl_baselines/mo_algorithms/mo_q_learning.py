@@ -72,10 +72,10 @@ class MOQLearning(MOPolicy, MOAgent):
 
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
         """Greedily chooses best action using the scalarization method"""
-        obs = tuple(obs)
-        if obs not in self.q_table:
+        t_obs = tuple(obs)
+        if t_obs not in self.q_table:
             return int(self.env.action_space.sample())
-        scalarized = np.array([self.scalarization(state_action_value, self.weights) for state_action_value in self.q_table[obs]])
+        scalarized = np.array([self.scalarization(state_action_value, self.weights) for state_action_value in self.q_table[t_obs]])
         return int(np.argmax(scalarized))
 
     def update(self):
@@ -90,7 +90,7 @@ class MOQLearning(MOPolicy, MOAgent):
             self.q_table[next_obs] = np.zeros((self.action_dim, self.reward_dim))
 
         max_q = self.q_table[next_obs][self.eval(self.next_obs)]
-        td_error = self.reward + (1 - self.terminal) * self.gamma * max_q - self.q_table[obs][self.action]
+        td_error = self.reward + (1 - self.terminated) * self.gamma * max_q - self.q_table[obs][self.action]
         self.q_table[obs][self.action] += self.learning_rate * td_error
 
         if self.epsilon_decay_steps is not None:
@@ -129,7 +129,7 @@ class MOQLearning(MOPolicy, MOAgent):
         :param eval_freq: number of timesteps between each policy evaluation
         """
         num_episodes = 0
-        self.obs, done = self.env.reset(), False
+        self.obs, _ = self.env.reset()
 
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
@@ -138,16 +138,15 @@ class MOQLearning(MOPolicy, MOAgent):
             self.global_step += 1
 
             self.action = self.__act(self.obs)
-            self.next_obs, self.reward, done, info = self.env.step(self.action)
-            self.terminal = done if "TimeLimit.truncated" not in info else not info["TimeLimit.truncated"]
+            self.next_obs, self.reward, self.terminated, _, info = self.env.step(self.action)
 
             self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, self.weights, self.writer)
+                self.policy_eval(eval_env, weights=self.weights, writer=self.writer)
 
-            if done:
-                self.obs, done = self.env.reset(), False
+            if self.terminated:
+                self.obs, _ = self.env.reset()
                 num_episodes += 1
                 self.num_episodes += 1
 

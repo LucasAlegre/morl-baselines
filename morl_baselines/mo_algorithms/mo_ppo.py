@@ -253,13 +253,13 @@ class MOPPO(MOPolicy):
                 value = value.view(self.num_envs, self.networks.reward_dim)
 
             # Perform action on the environment
-            next_obs, reward, next_done, info = self.envs.step(action.cpu().numpy())
+            next_obs, reward, next_terminated, _, info = self.envs.step(action.cpu().numpy())
             reward = th.tensor(reward).to(self.device).view(self.num_envs, self.networks.reward_dim)
             # storing to batch
             self.batch.add(obs, action, logprob, reward, done, value)
 
             # Next iteration
-            obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(next_done).to(self.device)
+            obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(next_terminated).to(self.device)
 
             # Episode info logging
             if "episode" in info.keys():
@@ -412,7 +412,8 @@ class MOPPO(MOPolicy):
         """
         A training iteration: trains PPO for self.steps_per_iteration * self.num_envs.
         """
-        next_obs = th.Tensor(self.envs.reset(seed=self.seed)).to(self.device)  # num_envs x obs
+        next_obs, _ = self.envs.reset(seed=self.seed)
+        next_obs = th.Tensor(next_obs).to(self.device)  # num_envs x obs
         next_done = th.zeros(self.num_envs).to(self.device)
 
         # Annealing the rate if instructed to do so.

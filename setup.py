@@ -9,6 +9,7 @@ setup(
     install_requires=[
         "gym",
         "numpy",
+        "cvxpy",
         "torch>=1.11",
         "pymoo"
     ],

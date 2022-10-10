@@ -35,9 +35,6 @@ class PolicyNet(nn.Module):
         self.apply(layer_init)
 
     def forward(self, obs: th.Tensor, acc_reward: th.Tensor):
-        if len(obs.size()) == 0 or len(acc_reward.size()) == 0:
-            print(obs)
-            print(acc_reward)
         input = th.cat((obs, acc_reward), dim=acc_reward.dim() - 1)
         pi = self.net(input)
         # Normalized sigmoid
@@ -101,25 +98,25 @@ class EUPG(MOPolicy, MOAgent):
         else:
             obs = th.as_tensor(obs).to(self.device)
         accrued_reward = th.as_tensor(accrued_reward).float().to(self.device)
-        return self.max_action(obs, accrued_reward)
+        return self.choose_action(obs, accrued_reward)
 
     @th.no_grad()
-    def max_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
-        probs = self.net(obs, accrued_reward)
-        max_act = th.argmax(probs, dim=1)
-        return max_act.detach().item()
+    def choose_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
+        action = self.net.distribution(obs, accrued_reward).sample().detach().item()
+        return action
 
     def update(self):
         obs, accrued_rewards, actions, rewards, next_obs, terminateds = self.buffer.get_all_data(to_tensor=True,
                                                                                                  device=self.device)
         # Scalarized episodic reward, our target :-)
-        episodic_reward = th.sum(rewards, dim=0)
-        scalarized_reward = self.scalarization(episodic_reward)
+        episodic_return = th.sum(rewards, dim=0)
+        scalarized_return = self.scalarization(episodic_return)
 
+        # For each sample in the batch, get the distribution over actions
         current_distribution = self.net.distribution(obs, accrued_rewards)
         # Policy gradient
-        log_probs = -current_distribution.log_prob(actions)
-        loss = th.sum(log_probs * scalarized_reward)
+        log_probs = current_distribution.log_prob(actions)
+        loss = -th.sum(log_probs * scalarized_return)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -127,38 +124,7 @@ class EUPG(MOPolicy, MOAgent):
 
         if self.log:
             self.writer.add_scalar("losses/loss", loss, self.global_step)
-            self.writer.add_scalar("metrics/scalarized_episodic_return", scalarized_reward, self.global_step)
-
-    # TODO we should find a way to unify ESR, SER, multi-policy and single-policy into one. The problems are:
-    #  some require conditioning on weights, some require the scalarization, some require conditioning on accrued
-    #  reward
-    def policy_eval(self, eval_env, writer: SummaryWriter):
-        """
-        Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
-        :param eval_env: evaluation environment
-        :param writer: wandb writer
-        :return: a tuple containing the evaluations
-        """
-
-        scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward = eval_mo_esr(self, eval_env,
-                                                                                                         self.scalarization)
-        if self.id is None:
-            idstr = ""
-        else:
-            idstr = f"_{self.id}"
-
-        writer.add_scalar(f"eval{idstr}/scalarized_reward", scalarized_reward, self.global_step)
-        writer.add_scalar(f"eval{idstr}/scalarized_discounted_reward", scalarized_discounted_reward, self.global_step)
-        for i in range(vec_reward.shape[0]):
-            writer.add_scalar(f"eval{idstr}/vec_{i}", vec_reward[i], self.global_step)
-            writer.add_scalar(f"eval{idstr}/discounted_vec_{i}", discounted_vec_reward[i], self.global_step)
-
-        return (
-            scalarized_reward,
-            scalarized_discounted_reward,
-            vec_reward,
-            discounted_vec_reward
-        )
+            self.writer.add_scalar("metrics/scalarized_episodic_return", scalarized_return, self.global_step)
 
     def train(
             self,
@@ -168,7 +134,6 @@ class EUPG(MOPolicy, MOAgent):
     ):
         # Init
         obs, _, = self.env.reset()
-        terminated = False
         accrued_reward_tensor = th.zeros(self.reward_dim, dtype=th.float32).float().to(self.device)
 
         # Training loop
@@ -177,7 +142,7 @@ class EUPG(MOPolicy, MOAgent):
 
             with th.no_grad():
                 # For training, takes action randomly according to the policy
-                action = self.net.distribution(th.Tensor([obs]).to(self.device), accrued_reward_tensor).sample().item()
+                action = self.choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, _, info = self.env.step(action)
 
             # Memory update
@@ -185,13 +150,12 @@ class EUPG(MOPolicy, MOAgent):
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, self.writer)
+                self.policy_eval_esr(eval_env, self.writer)
 
             if terminated:
                 # NN is updated at the end of each episode
                 self.update()
                 obs, _ = self.env.reset()
-                terminated = False
                 self.num_episodes += 1
                 accrued_reward_tensor = th.zeros(self.reward_dim).float().to(self.device)
 

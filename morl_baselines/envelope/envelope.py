@@ -289,7 +289,7 @@ class Envelope(MOPolicy, MOAgent):
     def train(
         self,
         total_timesteps: int,
-        weight: Optional[np.ndarray] = None, # Weight vector. If None, it is randomly sampled every episode (as done in the paper).
+        weight: Optional[np.ndarray] = None, # Weight vector. If None, it is randomly sampled every episode (as terminated in the paper).
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
@@ -302,7 +302,7 @@ class Envelope(MOPolicy, MOAgent):
             self.learning_starts = self.global_step
 
         num_episodes = 0
-        obs, done = self.env.reset(), False
+        obs, _ = self.env.reset()
 
         w = weight if weight is not None else random_weights(self.reward_dim, 1)
         tensor_w = th.tensor(w).float().to(self.device)
@@ -317,19 +317,18 @@ class Envelope(MOPolicy, MOAgent):
             else:
                 action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
-            next_obs, vec_reward, done, info = self.env.step(action)
-            terminal = done if "TimeLimit.truncated" not in info else not info["TimeLimit.truncated"]
+            next_obs, vec_reward, terminated, _, info = self.env.step(action)
 
-            self.replay_buffer.add(obs, action, vec_reward, next_obs, terminal)
+            self.replay_buffer.add(obs, action, vec_reward, next_obs, terminated)
 
             if self.global_step >= self.learning_starts:
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, w, self.writer)
+                self.policy_eval(eval_env, weights=w, writer=self.writer)
 
-            if done:
-                obs, done = self.env.reset(), False
+            if terminated:
+                obs, _ = self.env.reset()
                 num_episodes += 1
                 self.num_episodes += 1
 
