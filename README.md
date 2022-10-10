@@ -5,18 +5,19 @@ This repository aims at containing standard MORL algorithms, compatible with the
 ## TODO
 
 ### Multi-policy
-| Person          | Algo                             | Paper                                                                                                                        | Existing implem                                                                  | Done?              |
-|-----------------|----------------------------------|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|--------------------|
-| Lucas | Envelope Q-Learning              | https://arxiv.org/pdf/1908.08342.pdf                                                                                         | https://github.com/RunzheYang/MORL                                               |      :heavy_check_mark:              |
-| Florian         | PGMORL                           | https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf / https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf         | https://github.com/mit-gfx/PGMORL                                                | :heavy_check_mark: |
-| Willem          | Pareto Q-Learning                | https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf                                                           | https://gitlab.ai.vub.ac.be/mreymond/deep-sea-treasure/-/blob/master/pareto_q.py |          :heavy_check_mark:          |
-| Florian         | MPMOQLearning  (outer loop MOQL) | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques |                                                                                  | :heavy_check_mark: |
-| Lucas | Optimistic Linear Support (OLS) | Section 3.3 of http://roijers.info/pub/thesis.pdf | |:heavy_check_mark: |
+| Person  | Algo                             | Paper                                                                                                                        | Existing implem                                                                  | Done?              |
+|---------|----------------------------------|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|--------------------|
+| Lucas   | Envelope Q-Learning              | https://arxiv.org/pdf/1908.08342.pdf                                                                                         | https://github.com/RunzheYang/MORL                                               | :heavy_check_mark: |
+| Florian | PGMORL                           | https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf / https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf         | https://github.com/mit-gfx/PGMORL                                                | :heavy_check_mark: |
+| Willem  | Pareto Q-Learning                | https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf                                                           | https://gitlab.ai.vub.ac.be/mreymond/deep-sea-treasure/-/blob/master/pareto_q.py | :heavy_check_mark: |
+| Florian | MPMOQLearning  (outer loop MOQL) | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques |                                                                                  | :heavy_check_mark: |
+| Lucas   | Optimistic Linear Support (OLS)  | Section 3.3 of http://roijers.info/pub/thesis.pdf                                                                            |                                                                                  | :heavy_check_mark: |
 
 ### Single-policy
-| Person  | Algo        | Paper                                                                                                                        | Existing implem | Done?              |
-|---------|-------------|------------------------------------------------------------------------------------------------------------------------------|-----------------|--------------------|
-| Florian / Lucas | MOQLearning | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques | -               | :heavy_check_mark: |
+| Person          | Algo        | Paper                                                                                                                            | Existing implem | Done?              |
+|-----------------|-------------|----------------------------------------------------------------------------------------------------------------------------------|-----------------|--------------------|
+| Florian / Lucas | MOQLearning | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques     | -               | :heavy_check_mark: |
+| Florian         | EUPG (ESR)  | https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return | -               | :heavy_check_mark: |
 
 ## Misc/utils ideas
 - [ ] Dump Pareto front every x timesteps into a file (reporting)
@@ -38,4 +39,4 @@ Just add entries in the table above so we know who is on what. Then a proper PR 
 
 ## Maintainers
 
-MORL-Baselines is currently maintained by [Lucas N. Alegre](https://www.inf.ufrgs.br/~lnalegre/) (@LucasAlegre), Florian Felten (@ffelten), ...
+MORL-Baselines is currently maintained by [Lucas N. Alegre](https://www.inf.ufrgs.br/~lnalegre/) (@LucasAlegre), [Florian Felten](https://ffelten.github.io/), ...
