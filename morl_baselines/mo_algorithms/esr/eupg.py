@@ -5,7 +5,6 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.optim as optim
-from mo_gym.evaluation import eval_mo_esr
 from torch.distributions import Categorical
 
 from morl_baselines.common.accrued_reward_buffer import AccruedRewardReplayBuffer
@@ -116,7 +115,7 @@ class EUPG(MOPolicy, MOAgent):
         current_distribution = self.net.distribution(obs, accrued_rewards)
         # Policy gradient
         log_probs = current_distribution.log_prob(actions)
-        loss = -th.sum(log_probs * scalarized_return)
+        loss = -th.mean(log_probs * scalarized_return)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -150,11 +149,12 @@ class EUPG(MOPolicy, MOAgent):
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval_esr(eval_env, self.writer)
+                self.policy_eval_esr(eval_env, scalarization=self.scalarization, writer=self.writer)
 
             if terminated:
                 # NN is updated at the end of each episode
                 self.update()
+                self.buffer.cleanup()
                 obs, _ = self.env.reset()
                 self.num_episodes += 1
                 accrued_reward_tensor = th.zeros(self.reward_dim).float().to(self.device)

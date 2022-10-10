@@ -50,6 +50,9 @@ class AccruedRewardReplayBuffer:
         else:
             return experience_tuples
 
+    def cleanup(self):
+        self.size, self.ptr = 0, 0
+
     def get_all_data(self, max_samples=None, to_tensor=False, device=None):
         """
         Returns the whole buffer
