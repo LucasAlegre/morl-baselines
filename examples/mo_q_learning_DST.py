@@ -18,4 +18,4 @@ if __name__ == "__main__":
     agent = MOQLearning(env, scalarization=scalarization, weights=weights, log=True)
     agent.train(total_timesteps=int(1e5), start_time=time.time(), eval_freq=100, eval_env=eval_env)
 
-    print(mo_gym.eval_mo(agent, scalarization=np.dot, env=eval_env, w=weights))
+    print(mo_gym.eval_mo(agent, env=eval_env, w=weights))

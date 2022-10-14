@@ -317,7 +317,7 @@ class Envelope(MOPolicy, MOAgent):
             else:
                 action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
-            next_obs, vec_reward, terminated, _, info = self.env.step(action)
+            next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             self.replay_buffer.add(obs, action, vec_reward, next_obs, terminated)
 
@@ -327,7 +327,7 @@ class Envelope(MOPolicy, MOAgent):
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval(eval_env, weights=w, writer=self.writer)
 
-            if terminated:
+            if terminated or truncated:
                 obs, _ = self.env.reset()
                 num_episodes += 1
                 self.num_episodes += 1

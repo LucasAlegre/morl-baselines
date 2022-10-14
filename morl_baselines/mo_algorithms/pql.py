@@ -281,11 +281,12 @@ class ParetoQ(MOAgent):
             obs, _ = self.env.reset()
             state = self.flatten_observation(obs)
             terminated = False
+            truncated = False
             timestep = 0
 
-            while not terminated and timestep < max_timesteps:
+            while not (terminated or truncated) and timestep < max_timesteps:
                 action = self.select_action(state)
-                next_state, r, terminated, _, prob = self.env.step(action)
+                next_state, r, terminated, truncated, prob = self.env.step(action)
                 next_state = self.flatten_observation(next_state)
                 self.update(state, action, next_state, r)
                 state = next_state

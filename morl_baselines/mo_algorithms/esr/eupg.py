@@ -142,7 +142,7 @@ class EUPG(MOPolicy, MOAgent):
             with th.no_grad():
                 # For training, takes action randomly according to the policy
                 action = self.choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
-            next_obs, vec_reward, terminated, _, info = self.env.step(action)
+            next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
             self.buffer.add(obs, accrued_reward_tensor, action, vec_reward, next_obs, terminated)
@@ -151,7 +151,7 @@ class EUPG(MOPolicy, MOAgent):
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval_esr(eval_env, scalarization=self.scalarization, writer=self.writer)
 
-            if terminated:
+            if terminated or truncated:
                 # NN is updated at the end of each episode
                 self.update()
                 self.buffer.cleanup()

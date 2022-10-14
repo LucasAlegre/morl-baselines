@@ -138,14 +138,14 @@ class MOQLearning(MOPolicy, MOAgent):
             self.global_step += 1
 
             self.action = self.__act(self.obs)
-            self.next_obs, self.reward, self.terminated, _, info = self.env.step(self.action)
+            self.next_obs, self.reward, self.terminated, self.truncated, info = self.env.step(self.action)
 
             self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval(eval_env, weights=self.weights, writer=self.writer)
 
-            if self.terminated:
+            if self.terminated or self.truncated:
                 self.obs, _ = self.env.reset()
                 num_episodes += 1
                 self.num_episodes += 1
