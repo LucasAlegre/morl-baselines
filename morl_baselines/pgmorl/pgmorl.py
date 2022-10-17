@@ -8,6 +8,7 @@ import mo_gym
 import numpy as np
 import torch as th
 from scipy.optimize import least_squares
+from pymoo.util.ref_dirs import get_reference_directions
 
 from morl_baselines.common.performance_indicators import sparsity, hypervolume
 from morl_baselines.common.morl_algorithm import MOAgent
@@ -140,14 +141,17 @@ class PerformancePredictor:
         return delta_predictions, delta_predictions + policy_eval
 
 
-def generate_weights(delta_weight: float) -> np.ndarray:
+def generate_weights(delta_weight: float, num_objs: int) -> np.ndarray:
     """
     Generates weights uniformly distributed over the objective dimensions. These weight vectors are separated by
     delta_weight distance.
     :param delta_weight: distance between weight vectors
+    :param num_objs: number of objectives
     :return: all the candidate weights
     """
-    return np.linspace((0., 1.), (1., 0.), int(1 / delta_weight) + 1, dtype=np.float32)
+    number_of_vectors = int(1/delta_weight) + 1
+
+    return get_reference_directions("energy", num_objs, number_of_vectors, seed=1).astype(np.float32)
 
 
 class PerformanceBuffer:
@@ -321,7 +325,7 @@ class PGMORL(MOAgent):
             for _ in range(self.pop_size)
         ]
 
-        weights = generate_weights(self.delta_weight)
+        weights = generate_weights(self.delta_weight, self.reward_dim)
         print(f"Warmup phase - sampled weights: {weights}")
         self.pop_size = len(weights)
 
@@ -394,7 +398,7 @@ class PGMORL(MOAgent):
         """
         Chooses agents and weights to train at the next iteration based on the current population and prediction model.
         """
-        candidate_weights = generate_weights(self.delta_weight / 2.)  # Generates more weights than agents
+        candidate_weights = generate_weights(self.delta_weight / 2., num_objs=self.reward_dim)  # Generates more weights than agents
         np.random.shuffle(candidate_weights)  # Randomize
 
         current_front = deepcopy(self.archive.evaluations)

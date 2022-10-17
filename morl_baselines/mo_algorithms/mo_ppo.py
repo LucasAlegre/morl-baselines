@@ -73,8 +73,8 @@ def make_env(env_id, seed, idx, run_name, gamma):
     def thunk():
         env = mo_gym.make(env_id)
         reward_dim = env.reward_space.shape[0]
-        if idx == 0:
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}_{seed}", episode_trigger=lambda e: e % 1000 == 0)
+        # if idx == 0:
+        #     env = gym.wrappers.RecordVideo(env, f"videos/{run_name}_{seed}", episode_trigger=lambda e: e % 1000 == 0)
         env = gym.wrappers.ClipAction(env)
         env = gym.wrappers.NormalizeObservation(env)
         env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
