@@ -302,7 +302,7 @@ class Envelope(MOPolicy, MOAgent):
             self.learning_starts = self.global_step
 
         num_episodes = 0
-        obs, done = self.env.reset(), False
+        obs, _ = self.env.reset()
 
         w = weight if weight is not None else random_weights(self.reward_dim, 1)
         tensor_w = th.tensor(w).float().to(self.device)
@@ -317,19 +317,18 @@ class Envelope(MOPolicy, MOAgent):
             else:
                 action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
-            next_obs, vec_reward, done, info = self.env.step(action)
-            terminal = done if "TimeLimit.truncated" not in info else not info["TimeLimit.truncated"]
+            next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
-            self.replay_buffer.add(obs, action, vec_reward, next_obs, terminal)
+            self.replay_buffer.add(obs, action, vec_reward, next_obs, terminated)
 
             if self.global_step >= self.learning_starts:
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, w, self.writer)
+                self.policy_eval(eval_env, weights=w, writer=self.writer)
 
-            if done:
-                obs, done = self.env.reset(), False
+            if terminated or truncated:
+                obs, _ = self.env.reset()
                 num_episodes += 1
                 self.num_episodes += 1
 

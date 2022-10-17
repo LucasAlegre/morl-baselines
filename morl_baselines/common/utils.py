@@ -92,7 +92,7 @@ def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str =
     return w
 
 
-def log_episode_info(info: dict, scalarization, weights: np.ndarray, global_timestep: int, id: Optional[int] = None,
+def log_episode_info(info: dict, scalarization, weights: Optional[np.ndarray], global_timestep: int, id: Optional[int] = None,
                      writer: Optional[SummaryWriter] = None):
     """
     Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper)
@@ -106,8 +106,13 @@ def log_episode_info(info: dict, scalarization, weights: np.ndarray, global_time
     episode_time = info["t"]
     episode_return = info["r"]
     disc_episode_return = info["dr"]
-    scal_return = scalarization(episode_return, weights)
-    disc_scal_return = scalarization(disc_episode_return, weights)
+    if weights is None:
+        scal_return = scalarization(episode_return)
+        disc_scal_return = scalarization(disc_episode_return)
+    else:
+        scal_return = scalarization(episode_return, weights)
+        disc_scal_return = scalarization(disc_episode_return, weights)
+
     print(f"Episode infos:")
     print(f"Steps: {episode_ts}, Time: {episode_time}")
     print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")

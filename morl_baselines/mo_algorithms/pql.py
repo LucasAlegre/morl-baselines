@@ -278,13 +278,15 @@ class ParetoQ(MOAgent):
             self.setup_wandb(project_name, experiment_name)
 
         for i in range(iterations):
-            state = self.flatten_observation(self.env.reset())
-            done = False
+            obs, _ = self.env.reset()
+            state = self.flatten_observation(obs)
+            terminated = False
+            truncated = False
             timestep = 0
 
-            while not done and timestep < max_timesteps:
+            while not (terminated or truncated) and timestep < max_timesteps:
                 action = self.select_action(state)
-                next_state, r, done, prob = self.env.step(action)
+                next_state, r, terminated, truncated, prob = self.env.step(action)
                 next_state = self.flatten_observation(next_state)
                 self.update(state, action, next_state, r)
                 state = next_state
