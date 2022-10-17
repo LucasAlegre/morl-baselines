@@ -12,7 +12,7 @@ from scipy.optimize import least_squares
 from morl_baselines.common.performance_indicators import sparsity, hypervolume
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.mo_algorithms.mo_ppo import make_env, MOPPONet, MOPPO
+from morl_baselines.single_policy.ser.mo_ppo import make_env, MOPPONet, MOPPO
 
 
 # Some code in this file has been adapted from the original code provided by the authors of the paper

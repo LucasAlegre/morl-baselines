@@ -1,8 +1,7 @@
-import gym
 import mo_gym
 
-from morl_baselines.ols.ols import OLS
-from morl_baselines.mo_algorithms.mo_q_learning import MOQLearning
+from morl_baselines.multi_policy.ols.ols import OLS
+from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
 
 def main():

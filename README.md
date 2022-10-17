@@ -1,33 +1,35 @@
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/LucasAlegre/mo-gym/blob/main/LICENSE)
+[![Discord](https://img.shields.io/discord/999693014618362036?style=plastic)](https://discord.gg/ygmkfnBvKA)
+
 # MORL Baselines
 
 This repository aims at containing standard MORL algorithms, compatible with the [mo-gym](https://github.com/LucasAlegre/mo-gym) API.
 
-## TODO
+## Implemented algorithms
 
-### Multi-policy
-| Person  | Algo                             | Paper                                                                                                                        | Existing implem                                                                  | Done?              |
-|---------|----------------------------------|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|--------------------|
-| Lucas   | Envelope Q-Learning              | https://arxiv.org/pdf/1908.08342.pdf                                                                                         | https://github.com/RunzheYang/MORL                                               | :heavy_check_mark: |
-| Florian | PGMORL                           | https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf / https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf         | https://github.com/mit-gfx/PGMORL                                                | :heavy_check_mark: |
-| Willem  | Pareto Q-Learning                | https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf                                                           | https://gitlab.ai.vub.ac.be/mreymond/deep-sea-treasure/-/blob/master/pareto_q.py | :heavy_check_mark: |
-| Florian | MPMOQLearning  (outer loop MOQL) | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques |                                                                                  | :heavy_check_mark: |
-| Lucas   | Optimistic Linear Support (OLS)  | Section 3.3 of http://roijers.info/pub/thesis.pdf                                                                            |                                                                                  | :heavy_check_mark: |
+| Algo                                                                                                                                                                 | Single/Multi-policy | ESR/SER | Observation space | Action space | Paper                                                                                                                       |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|---------|------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [Envelope Q-Learning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/envelope/envelope.py)                                      | Multi               | SER     | Continuous       | Discrete     | https://arxiv.org/pdf/1908.08342.pdf                                                                                        |
+| [PGMORL](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pgmorl/pgmorl.py)                                                       | Multi               | SER     | Continuous       | Continuous   | https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf / https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf        |
+| [Pareto Q-Learning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pareto_q_learning/pql.py)                                    | Multi               | SER     | Discrete         | Discrete     | https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf                                                          |
+| [MO Q learning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/mo_q_learning.py)                                           | Single              | SER     | Discrete         | Discrete     | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques                                                                                                                             |
+| [MPMOQLearning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/multi_policy_moqlearning/mp_mo_q_learning.py)  (outer loop MOQL) | Multi               | SER     | Discrete         | Discrete     | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques |
+| [Optimistic Linear Support (OLS)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py)                                    | Multi               | SER     | /                | /            | Section 3.3 of http://roijers.info/pub/thesis.pdf     |
+| [Expected Utility Policy Gradient (EUPG)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py)                          | Single              | ESR     | Discrete         | Discrete     |   https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return                                                    |
 
-### Single-policy
-| Person          | Algo        | Paper                                                                                                                            | Existing implem | Done?              |
-|-----------------|-------------|----------------------------------------------------------------------------------------------------------------------------------|-----------------|--------------------|
-| Florian / Lucas | MOQLearning | https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques     | -               | :heavy_check_mark: |
-| Florian         | EUPG (ESR)  | https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return | -               | :heavy_check_mark: |
+## Structure
+As much as possible, this repo tries to follow the single-file implementation rule for all algorithms.
 
-## Misc/utils ideas
-- [ ] Dump Pareto front every x timesteps into a file (reporting)
-- [ ] Standardized API for training (parser)
-- [ ] Plotting helpers
-- [ ] Perf Indicators helpers (e.g. hypervolume from pymoo assumes minimization whilst most problems here are maximization) 
-- [ ] Statistics (avg, std, confidence interval)
+* `examples/` contains a set of examples to use MORL Baselines with mo-gym environments.
+* `common/` contains the implementation recurring concepts: replay buffers, neural nets, etc.
+* `multi_policy/` contains the implementations of multi-policy algorithms.
+* `single_policy/` contains the implementations of single-policy algorithms.
 
-## Contributions
-Just add entries in the table above so we know who is on what. Then a proper PR with the implementation.
+## Utilities
+Performances are automatically reported in Weights and Biases dashboards
+
+![](images/wandb.png)
 
 ## Citing the Project
 
