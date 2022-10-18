@@ -8,11 +8,21 @@ import mo_gym
 import numpy as np
 import torch as th
 from scipy.optimize import least_squares
+from pymoo.util.ref_dirs import get_reference_directions
+
 
 from morl_baselines.common.performance_indicators import sparsity, hypervolume
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.mo_algorithms.mo_ppo import make_env, MOPPONet, MOPPO
+
+
+def best_vector(values, w):
+    max_v = values[0]
+    for i in range(1, len(values)):
+        if values[i] @ w > max_v @ w:
+            max_v = values[i]
+    return max_v
 
 
 # Some code in this file has been adapted from the original code provided by the authors of the paper
@@ -330,6 +340,8 @@ class PGMORL(MOAgent):
             for i in range(self.pop_size)
         ]
 
+        self.test_tasks = get_reference_directions("energy", 2, 100, seed=42)
+
     def get_config(self) -> dict:
         return {
             "env_id": self.env_id,
@@ -382,6 +394,9 @@ class PGMORL(MOAgent):
             if add_to_prediction:
                 self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], discounted_reward)
             evaluations_before_train[i] = discounted_reward
+
+        avg_utility = np.mean([np.dot(best_vector(self.archive.evaluations, w), w) for w in self.test_tasks])
+        self.writer.add_scalar("eval/Mean Utility No GPI", avg_utility, self.iteration)
 
         print("Current pareto archive:")
         print(self.archive.evaluations)
