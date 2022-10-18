@@ -478,7 +478,7 @@ class PGMORL(MOAgent):
             print(f"Warmup iteration #{self.iteration}")
             self.__train_all_agents()
             self.iteration += 1
-        self.__eval_all_agents(current_evaluations)
+            self.__eval_all_agents(current_evaluations)
 
         # Evolution
         remaining_iterations = max(self.max_iterations - self.warmup_iterations, self.evolutionary_iterations)
