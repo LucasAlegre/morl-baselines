@@ -387,12 +387,12 @@ class PGMORL(MOAgent):
         Evaluates all agents and store their current performances on the buffer and pareto archive
         """
         for i, agent in enumerate(self.agents):
-            _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], weights=agent.weights, writer=self.writer)
+            _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], weights=agent.weights.cpu().detach().numpy(), writer=self.writer)
             # Storing current results
             self.population.add(agent, discounted_reward)
             self.archive.add(agent, discounted_reward)
             if add_to_prediction:
-                self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], discounted_reward)
+                self.predictor.add(agent.weights.cpu().detach().numpy(), evaluations_before_train[i], discounted_reward)
             evaluations_before_train[i] = discounted_reward
 
         avg_utility = np.mean([np.dot(best_vector(self.archive.evaluations, w), w) for w in self.test_tasks])
