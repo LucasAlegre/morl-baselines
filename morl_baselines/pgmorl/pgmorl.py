@@ -260,7 +260,7 @@ class PGMORL(MOAgent):
     ):
         super().__init__(env, device=device)
         # Env dimensions
-        self.tmp_env = mo_gym.make(env_id, cost_objective=False)
+        self.tmp_env = mo_gym.make(env_id, forward_reward_weight=0.1)
         self.extract_env_info(self.tmp_env)
         self.env_id = env_id
         self.num_envs = num_envs

@@ -74,7 +74,7 @@ def make_env(env_id, seed, idx, run_name, gamma):
         if env_id == 'mo-hopper-v4':
             env = mo_gym.make(env_id, cost_objective=False)
         else:
-            env = mo_gym.make(env_id)
+            env = mo_gym.make(env_id, forward_reward_weight=0.1)
         reward_dim = env.reward_space.shape[0]
         if idx == 0:
             env = gym.wrappers.RecordVideo(env, f"videos/{run_name}_{seed}", episode_trigger=lambda e: e % 1000 == 0)
