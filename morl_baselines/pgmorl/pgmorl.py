@@ -478,7 +478,8 @@ class PGMORL(MOAgent):
             print(f"Warmup iteration #{self.iteration}")
             self.__train_all_agents()
             self.iteration += 1
-            self.__eval_all_agents(current_evaluations)
+            self.__eval_all_agents(current_evaluations, add_to_prediction=False)
+        self.__eval_all_agents(current_evaluations)
 
         # Evolution
         remaining_iterations = max(self.max_iterations - self.warmup_iterations, self.evolutionary_iterations)
@@ -495,6 +496,8 @@ class PGMORL(MOAgent):
                 self.writer.add_scalar("charts/evolutionary_iterations", self.iteration - self.warmup_iterations)
                 self.__train_all_agents()
                 self.iteration += 1
+                self.__eval_all_agents(current_evaluations, add_to_prediction=False)
+
             self.__eval_all_agents(current_evaluations)
             evolutionary_generation += 1
 
