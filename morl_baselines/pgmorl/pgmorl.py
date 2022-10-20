@@ -382,6 +382,14 @@ class PGMORL(MOAgent):
         for i, agent in enumerate(self.agents):
             agent.train(self.start_time, self.iteration, self.max_iterations)
 
+    def eval_utility(self):
+        evals = self.archive.evaluations.copy()
+        for i, agent in enumerate(self.agents):
+            _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], weights=agent.weights.cpu().detach().numpy(), writer=self.writer)
+            evals.append(discounted_reward)
+        avg_utility = np.mean([np.dot(best_vector(evals, w), w) for w in self.test_tasks])
+        self.writer.add_scalar("eval/Mean Utility No GPI", avg_utility, self.iteration)
+
     def __eval_all_agents(self, evaluations_before_train: List[np.ndarray], add_to_prediction: bool = True):
         """
         Evaluates all agents and store their current performances on the buffer and pareto archive
@@ -478,7 +486,7 @@ class PGMORL(MOAgent):
             print(f"Warmup iteration #{self.iteration}")
             self.__train_all_agents()
             self.iteration += 1
-            self.__eval_all_agents(current_evaluations, add_to_prediction=False)
+            self.eval_utility()
         self.__eval_all_agents(current_evaluations)
 
         # Evolution
@@ -496,7 +504,7 @@ class PGMORL(MOAgent):
                 self.writer.add_scalar("charts/evolutionary_iterations", self.iteration - self.warmup_iterations)
                 self.__train_all_agents()
                 self.iteration += 1
-                self.__eval_all_agents(current_evaluations, add_to_prediction=False)
+                self.eval_utility()
 
             self.__eval_all_agents(current_evaluations)
             evolutionary_generation += 1
