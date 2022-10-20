@@ -72,7 +72,7 @@ def make_env(env_id, seed, idx, run_name, gamma):
 
     def thunk():
         if env_id == 'mo-hopper-v4':
-            env = mo_gym.make(env_id, cost_objective=False)
+            env = mo_gym.make(env_id, cost_objective=False, max_episode_steps=500)
         else:
             env = mo_gym.make(env_id, forward_reward_weight=0.1)
         reward_dim = env.reward_space.shape[0]
