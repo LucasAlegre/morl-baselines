@@ -4,9 +4,14 @@
 
 # MORL Baselines
 
-This repository aims at containing standard MORL algorithms, compatible with the [mo-gym](https://github.com/LucasAlegre/mo-gym) API.
+MORL Baselines is a library of Multi-Objective Reinforcement Learning (MORL) algorithms. 
+This repository aims at containing reliable MORL algorithms implementations in PyTorch.
 
-## Implemented algorithms
+MORL Baselines stricly follows [MO-Gym](https://github.com/LucasAlegre/mo-gym) API, which differs from the standard [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) API only in that the environment returns a numpy array as the reward.
+
+For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we suggest reading [A practical guide to multi-objective reinforcement learning and planning](https://link.springer.com/article/10.1007/s10458-022-09552-y).
+
+## Implemented Algorithms
 
 | Algo                                                                                                                                                                 | Single/Multi-policy | ESR/SER | Observation space | Action space | Paper                                                                                                                       |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|---------|------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------|
@@ -27,6 +32,7 @@ As much as possible, this repo tries to follow the single-file implementation ru
 * `single_policy/` contains the implementations of single-policy algorithms.
 
 ## Utilities
+
 Performances are automatically reported in Weights and Biases dashboards
 
 ![](images/wandb.png)
@@ -46,7 +52,7 @@ Performances are automatically reported in Weights and Biases dashboards
 
 ## Maintainers
 
-MORL-Baselines is currently maintained by [Lucas N. Alegre](https://www.inf.ufrgs.br/~lnalegre/) (@LucasAlegre), [Florian Felten](https://ffelten.github.io/) (@ffelten)
+MORL-Baselines is currently maintained by [Florian Felten](https://ffelten.github.io/) (@ffelten) and [Lucas N. Alegre](https://www.inf.ufrgs.br/~lnalegre/) (@LucasAlegre).
 
 ## Acknowledgements
 * Willem Röpke, for his implementation of Pareto Q-Learning (@wilrop)
