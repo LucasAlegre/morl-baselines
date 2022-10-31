@@ -4,6 +4,9 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # MORL Baselines
+<div style="text-align: center;">
+<img src="images/mo_cheetah.gif" alt="Multiple policies" width="400"/>
+</div>
 
 MORL Baselines is a library of Multi-Objective Reinforcement Learning (MORL) algorithms. 
 This repository aims at containing reliable MORL algorithms implementations in PyTorch.
