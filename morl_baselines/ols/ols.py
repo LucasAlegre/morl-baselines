@@ -2,6 +2,7 @@ from itertools import combinations
 from typing import List, Optional
 from copy import deepcopy
 
+import cdd
 import cvxpy as cp
 import numpy as np
 
@@ -66,7 +67,7 @@ class OLS:
 
         self.iteration += 1
         self.visited_weights.append(w)
-        if self.is_dominated_or_equal(value):
+        if self.is_dominated(value):
             if self.verbose:
                 print("Value is dominated. Discarding.")
             return [len(self.ccs)]
@@ -76,12 +77,12 @@ class OLS:
 
         removed_indx = self.remove_obsolete_values(value)
 
-        W_corner = self.new_corner_weights(value, W_del)
-
         self.ccs.append(value)
         self.ccs_weights.append(w)
 
-        print("W_corner", W_corner)
+        W_corner = self.compute_corner_weights()
+
+        self.queue.clear()
         for wc in W_corner:
             priority = self.get_priority(wc)
             if priority > self.epsilon:
@@ -169,58 +170,54 @@ class OLS:
         prob = cp.Problem(objective, constraints)
         return prob.solve(verbose=False)
 
-    def new_corner_weights(self, v_new: np.ndarray, W_del: List[np.ndarray]) -> List[np.ndarray]:
-        if len(self.ccs) == 0:
-            return []
-        V_rel = []
-        W_new = []
-        for w in W_del:
-            best = [self.ccs[0]]
-            for v in self.ccs[1:]:
-                if np.allclose(np.dot(w, v), np.dot(w, best[0])):
-                    best.append(v)
-                elif np.dot(w, v) > np.dot(w, best[0]):
-                    best = [v]
-            V_rel += best
-            if len(best) < self.num_objectives:
-                wc = self.corner_weight(v_new, best)
-                W_new.append(wc)
-                W_new.extend(self.extrema_weights())
+    def compute_corner_weights(self) -> List[np.ndarray]:
+        """Returns the corner weights for the current set of values.
+        See http://roijers.info/pub/thesis.pdf Definition 19
+        Obs: there is a typo in the definition of the corner weights in the thesis, the >= sign should be <=.
+        """
+        A = np.vstack(self.ccs)
+        A = np.round_(A, decimals=4)  # Round to avoid numerical issues 
+        A = np.concatenate((A, -np.ones(A.shape[0]).reshape(-1,1)), axis=1)
 
-        V_rel = np.unique(V_rel, axis=0)
-        for comb in range(1, self.num_objectives):
-            for x in combinations(V_rel, comb):
-                if not x:
-                    continue
-                wc = self.corner_weight(v_new, x)
-                W_new.append(wc)
+        A_plus = np.ones(A.shape[1]).reshape(1,-1)
+        A_plus[0,-1] = 0
+        A = np.concatenate((A, A_plus), axis=0)
+        A_plus = -np.ones(A.shape[1]).reshape(1,-1)
+        A_plus[0,-1] = 0
+        A = np.concatenate((A, A_plus), axis=0)
 
-        filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights] + [np.allclose(wc, w_old) for p, w_old in self.queue]))
-        W_new = list(filter(filter_fn, W_new))
-        W_new = np.unique(W_new, axis=0)
-        return W_new
+        for i in range(self.num_objectives):
+            A_plus = np.zeros(A.shape[1]).reshape(1,-1)
+            A_plus[0, i] = -1
+            A = np.concatenate((A, A_plus), axis=0)
 
-    def corner_weight(self, v_new: np.ndarray, v_set: List[np.ndarray]) -> np.ndarray:
-        """Returns the weight vector for which v_new intersects with all values in v_set"""
-        wc = cp.Variable(self.num_objectives)
-        v_n = cp.Parameter(self.num_objectives)
-        v_n.value = v_new
+        b = np.zeros(len(self.ccs) + 2 + self.num_objectives)
+        b[len(self.ccs)] = 1
+        b[len(self.ccs) + 1] = -1
 
-        objective = cp.Minimize(v_n @ wc)  # cp.Minimize(0)
-        constraints = [0 <= wc, cp.sum(wc) == 1]
-        for v in v_set:
-            v_par = cp.Parameter(self.num_objectives)
-            v_par.value = v
-            constraints.append(v_par @ wc == v_n @ wc) # values intersect at wc
+        def compute_poly_vertices(A, b):
+            # Based on https://stackoverflow.com/questions/65343771/solve-linear-inequalities
+            b = b.reshape((b.shape[0], 1))
+            mat = cdd.Matrix(np.hstack([b, -A]), number_type='float')
+            mat.rep_type = cdd.RepType.INEQUALITY
+            P = cdd.Polyhedron(mat)
+            g = P.get_generators()
+            V = np.array(g)
+            vertices = []
+            for i in range(V.shape[0]):
+                if V[i, 0] != 1: continue
+                if i not in g.lin_set:
+                    vertices.append(V[i, 1:])
+            return vertices
 
-        prob = cp.Problem(objective, constraints)
-        prob.solve(verbose=False)  # (solver='SCS', verbose=False, eps=1e-5)
-        if prob.status == cp.OPTIMAL:
-            # ensure weight is in the simplex
-            weight = np.abs(wc.value) / np.linalg.norm(wc.value, ord=1, keepdims=True)
-            return weight
-        else:
-            return None
+        vertices = compute_poly_vertices(A, b)
+        corners = []
+        for v in vertices:
+            corners.append(v[:-1])
+        # Do not include corner weights already in visited weights
+        filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights]))
+        corners = list(filter(filter_fn, corners))
+        return corners
 
     def extrema_weights(self) -> List[np.ndarray]:
         """Returns the weight vectors which have one component equal to 1 and the rest equal to 0"""
@@ -231,11 +228,13 @@ class OLS:
             extrema_weights.append(w)
         return extrema_weights
 
-    def is_dominated_or_equal(self, value: np.ndarray) -> bool:
-        for v in self.ccs:
-            if ((v >= value).all() and (v > value).any()) or np.allclose(v, value):
-                return True
-        return False
+    def is_dominated(self, value: np.ndarray) -> bool:
+        if len(self.ccs) == 0: 
+            return False
+        for w in self.visited_weights:
+            if np.dot(value, w) >= self.max_scalarized_value(w):
+                return False
+        return True
 
 
 if __name__ == "__main__":
@@ -243,10 +242,10 @@ if __name__ == "__main__":
     def solve(w):
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
-    num_objectives = 4
-    ols = OLS(num_objectives=num_objectives, epsilon=0.0001) #, min_value=0.0, max_value=1 / (1 - 0.95) * 1)
+    num_objectives = 3
+    ols = OLS(num_objectives=num_objectives, epsilon=0.0001, verbose=True) #, min_value=0.0, max_value=1 / (1 - 0.95) * 1)
     while not ols.ended():
-        w = ols.next_w()
+        w = ols.next_weight()
         print("w:", w)
         value = solve(w)
         ols.add_solution(value, w)
