@@ -1,10 +1,8 @@
 import numpy as np
-import gym
-from gym.wrappers.record_video import RecordVideo
 import mo_gym
 from mo_gym.utils import MORecordEpisodeStatistics
 
-from morl_baselines.envelope.envelope import Envelope
+from morl_baselines.multi_policy.envelope.envelope import Envelope
 
 
 def main():

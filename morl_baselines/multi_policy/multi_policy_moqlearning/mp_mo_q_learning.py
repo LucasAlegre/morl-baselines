@@ -7,7 +7,7 @@ from mo_gym import eval_mo
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.scalarization import weighted_sum
-from morl_baselines.mo_algorithms.mo_q_learning import MOQLearning
+from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
 
 class MPMOQLearning(MOAgent):

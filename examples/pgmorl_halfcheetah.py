@@ -1,8 +1,8 @@
 import mo_gym
 import numpy as np
 
-from morl_baselines.mo_algorithms.mo_ppo import make_env
-from morl_baselines.pgmorl.pgmorl import PGMORL
+from morl_baselines.single_policy.ser.mo_ppo import make_env
+from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 
 if __name__ == "__main__":
     env_id = "mo-halfcheetah-v4"

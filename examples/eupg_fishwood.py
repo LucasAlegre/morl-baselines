@@ -3,7 +3,7 @@ import mo_gym
 from mo_gym.utils import MORecordEpisodeStatistics
 from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
 
-from morl_baselines.mo_algorithms.esr.eupg import EUPG
+from morl_baselines.single_policy.esr.eupg import EUPG
 
 if __name__ == "__main__":
     env = MORecordEpisodeStatistics(mo_gym.make('fishwood-v0'), gamma=0.99)

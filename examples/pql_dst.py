@@ -3,7 +3,7 @@ from pymoo.indicators.hv import HV
 
 import mo_gym
 from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
-from morl_baselines.mo_algorithms.pql import ParetoQ
+from morl_baselines.multi_policy.pareto_q_learning.pql import ParetoQ
 
 if __name__ == "__main__":
     env_id = "deep-sea-treasure-v0"
