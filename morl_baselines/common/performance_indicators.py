@@ -16,7 +16,7 @@ def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
     Returns:
         float: Hypervolume metric
     """
-    return HV(ref_point=ref_point * - 1)(np.array(points) * - 1)
+    return HV(ref_point=ref_point * -1)(np.array(points) * -1)
 
 
 def sparsity(front: List[np.ndarray]) -> float:
@@ -25,15 +25,15 @@ def sparsity(front: List[np.ndarray]) -> float:
     :param front: current pareto front to compute the sparsity on
     """
     if len(front) < 2:
-        return 0.
+        return 0.0
 
-    sparsity_value = 0.
+    sparsity_value = 0.0
     m = len(front[0])
     front = np.array(front)
     for dim in range(m):
         objs_i = np.sort(deepcopy(front.T[dim]))
         for i in range(1, len(objs_i)):
             sparsity_value += np.square(objs_i[i] - objs_i[i - 1])
-    sparsity_value /= (len(front) - 1)
+    sparsity_value /= len(front) - 1
 
     return sparsity_value

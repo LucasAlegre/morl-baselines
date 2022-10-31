@@ -12,14 +12,15 @@ np.set_printoptions(precision=4)
 
 
 class OLS:
-    """ Optimistic Linear Support (Section 3.3 of http://roijers.info/pub/thesis.pdf)
-        Outer loop method to select next weight vector
+    """Optimistic Linear Support (Section 3.3 of http://roijers.info/pub/thesis.pdf)
+    Outer loop method to select next weight vector
 
-        Args:
-            num_objectives (int): Number of objectives
-            epsilon (float, optional): Minimum improvement per iteration. Defaults to 0.0.
-            verbose (bool): Defaults to False.
+    Args:
+        num_objectives (int): Number of objectives
+        epsilon (float, optional): Minimum improvement per iteration. Defaults to 0.0.
+        verbose (bool): Defaults to False.
     """
+
     def __init__(
         self,
         num_objectives: int,
@@ -30,7 +31,7 @@ class OLS:
         self.epsilon = epsilon
         self.visited_weights = []  # List of already tested weight vectors
         self.ccs = []
-        self.ccs_weights = [] # List of weight vectors for each value vector in the CCS
+        self.ccs_weights = []  # List of weight vectors for each value vector in the CCS
         self.queue = []
         self.iteration = 0
         self.verbose = verbose
@@ -38,7 +39,7 @@ class OLS:
             self.queue.append((float("inf"), w))
 
     def next_weight(self) -> np.ndarray:
-        """"Returns the next weight vector with highest priority."""
+        """ "Returns the next weight vector with highest priority."""
         return self.queue.pop(0)[1]
 
     def get_ccs_weights(self) -> List[np.ndarray]:
@@ -61,7 +62,7 @@ class OLS:
             w (np.ndarray): Weight vector
         Returns:
             List of indices of value vectors removed from the CCS for being dominated.
-        """        
+        """
         if self.verbose:
             print(f"Adding value: {value} to CCS.")
 
@@ -89,7 +90,9 @@ class OLS:
                 if self.verbose:
                     print(f"Adding weight: {wc} to queue with priority {priority}.")
                 self.queue.append((priority, wc))
-        self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
+        self.queue.sort(
+            key=lambda t: t[0], reverse=True
+        )  # Sort in descending order of priority
 
         if self.verbose:
             print(f"CCS: {self.ccs}")
@@ -111,7 +114,7 @@ class OLS:
 
     def remove_obsolete_weights(self, new_value: np.ndarray) -> List[np.ndarray]:
         """Remove from the queue the weight vectors for which the new value vector is better than previous values.
-           Returns a list of the removed weight vectors.
+        Returns a list of the removed weight vectors.
         """
         if len(self.ccs) == 0:
             return []
@@ -127,7 +130,7 @@ class OLS:
 
     def remove_obsolete_values(self, value: np.ndarray) -> List[int]:
         """Removes the values vectors which are dominated by the new value for all visited weight vectors.
-           Returns the indices of the removed values. 
+        Returns the indices of the removed values.
         """
         removed_indx = []
         for i in reversed(range(len(self.ccs))):
@@ -159,7 +162,9 @@ class OLS:
         W = cp.Parameter(W_.shape)
         W.value = W_
 
-        V_ = np.array([self.max_scalarized_value(weight) for weight in self.visited_weights])
+        V_ = np.array(
+            [self.max_scalarized_value(weight) for weight in self.visited_weights]
+        )
         V = cp.Parameter(V_.shape)
         V.value = V_
 
@@ -176,18 +181,18 @@ class OLS:
         Obs: there is a typo in the definition of the corner weights in the thesis, the >= sign should be <=.
         """
         A = np.vstack(self.ccs)
-        A = np.round_(A, decimals=4)  # Round to avoid numerical issues 
-        A = np.concatenate((A, -np.ones(A.shape[0]).reshape(-1,1)), axis=1)
+        A = np.round_(A, decimals=4)  # Round to avoid numerical issues
+        A = np.concatenate((A, -np.ones(A.shape[0]).reshape(-1, 1)), axis=1)
 
-        A_plus = np.ones(A.shape[1]).reshape(1,-1)
-        A_plus[0,-1] = 0
+        A_plus = np.ones(A.shape[1]).reshape(1, -1)
+        A_plus[0, -1] = 0
         A = np.concatenate((A, A_plus), axis=0)
-        A_plus = -np.ones(A.shape[1]).reshape(1,-1)
-        A_plus[0,-1] = 0
+        A_plus = -np.ones(A.shape[1]).reshape(1, -1)
+        A_plus[0, -1] = 0
         A = np.concatenate((A, A_plus), axis=0)
 
         for i in range(self.num_objectives):
-            A_plus = np.zeros(A.shape[1]).reshape(1,-1)
+            A_plus = np.zeros(A.shape[1]).reshape(1, -1)
             A_plus[0, i] = -1
             A = np.concatenate((A, A_plus), axis=0)
 
@@ -198,14 +203,15 @@ class OLS:
         def compute_poly_vertices(A, b):
             # Based on https://stackoverflow.com/questions/65343771/solve-linear-inequalities
             b = b.reshape((b.shape[0], 1))
-            mat = cdd.Matrix(np.hstack([b, -A]), number_type='float')
+            mat = cdd.Matrix(np.hstack([b, -A]), number_type="float")
             mat.rep_type = cdd.RepType.INEQUALITY
             P = cdd.Polyhedron(mat)
             g = P.get_generators()
             V = np.array(g)
             vertices = []
             for i in range(V.shape[0]):
-                if V[i, 0] != 1: continue
+                if V[i, 0] != 1:
+                    continue
                 if i not in g.lin_set:
                     vertices.append(V[i, 1:])
             return vertices
@@ -215,7 +221,9 @@ class OLS:
         for v in vertices:
             corners.append(v[:-1])
         # Do not include corner weights already in visited weights
-        filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights]))
+        filter_fn = lambda wc: (wc is not None) and (
+            not any([np.allclose(wc, w_old) for w_old in self.visited_weights])
+        )
         corners = list(filter(filter_fn, corners))
         return corners
 
@@ -229,7 +237,7 @@ class OLS:
         return extrema_weights
 
     def is_dominated(self, value: np.ndarray) -> bool:
-        if len(self.ccs) == 0: 
+        if len(self.ccs) == 0:
             return False
         for w in self.visited_weights:
             if np.dot(value, w) >= self.max_scalarized_value(w):
@@ -243,7 +251,9 @@ if __name__ == "__main__":
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
     num_objectives = 3
-    ols = OLS(num_objectives=num_objectives, epsilon=0.0001, verbose=True) #, min_value=0.0, max_value=1 / (1 - 0.95) * 1)
+    ols = OLS(
+        num_objectives=num_objectives, epsilon=0.0001, verbose=True
+    )  # , min_value=0.0, max_value=1 / (1 - 0.95) * 1)
     while not ols.ended():
         w = ols.next_weight()
         print("w:", w)

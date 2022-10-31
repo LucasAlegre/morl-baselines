@@ -2,9 +2,9 @@ import numpy as np
 import torch as th
 
 
-
 class AccruedRewardReplayBuffer:
     """Replay buffer with accrued rewards stored (for ESR algorithms)"""
+
     def __init__(
         self,
         obs_shape,
@@ -33,7 +33,9 @@ class AccruedRewardReplayBuffer:
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 
-    def sample(self, batch_size, replace=True, use_cer=False, to_tensor=False, device=None):
+    def sample(
+        self, batch_size, replace=True, use_cer=False, to_tensor=False, device=None
+    ):
         inds = np.random.choice(self.size, batch_size, replace=replace)
         if use_cer:
             inds[0] = self.ptr - 1  # always use last experience
@@ -59,10 +61,12 @@ class AccruedRewardReplayBuffer:
         :param max_samples: the number of samples to return, if not specified, returns the full buffer (ordered!)
         """
         if max_samples is not None:
-            inds = np.random.choice(self.size, min(max_samples, self.size), replace=False)
+            inds = np.random.choice(
+                self.size, min(max_samples, self.size), replace=False
+            )
         else:
             inds = np.arange(self.size)
-        experience_tuples =  (
+        experience_tuples = (
             self.obs[inds],
             self.accrued_rewards[inds],
             self.actions[inds],

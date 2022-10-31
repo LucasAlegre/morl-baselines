@@ -21,9 +21,15 @@ class MOPolicy(ABC):
     eval() requires a weight vector as input.
     """
 
-    def __init__(self, id: Optional[int] = None, device: Union[th.device, str] = "auto") -> None:
+    def __init__(
+        self, id: Optional[int] = None, device: Union[th.device, str] = "auto"
+    ) -> None:
         self.id = id
-        self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
+        self.device = (
+            th.device("cuda" if th.cuda.is_available() else "cpu")
+            if device == "auto"
+            else device
+        )
         self.global_step = 0
 
     @abstractmethod
@@ -38,8 +44,14 @@ class MOPolicy(ABC):
             np.array or int: Action
         """
 
-    def __report(self, scalarized_return, scalarized_discounted_return, vec_return, discounted_vec_return,
-                 writer: SummaryWriter):
+    def __report(
+        self,
+        scalarized_return,
+        scalarized_discounted_return,
+        vec_return,
+        discounted_vec_return,
+        writer: SummaryWriter,
+    ):
         """
         Writes the data to wandb summary
         """
@@ -48,21 +60,36 @@ class MOPolicy(ABC):
         else:
             idstr = f"_{self.id}"
 
-        writer.add_scalar(f"eval{idstr}/scalarized_return", scalarized_return, self.global_step)
-        writer.add_scalar(f"eval{idstr}/scalarized_discounted_return", scalarized_discounted_return, self.global_step)
+        writer.add_scalar(
+            f"eval{idstr}/scalarized_return", scalarized_return, self.global_step
+        )
+        writer.add_scalar(
+            f"eval{idstr}/scalarized_discounted_return",
+            scalarized_discounted_return,
+            self.global_step,
+        )
         for i in range(vec_return.shape[0]):
             writer.add_scalar(f"eval{idstr}/vec_{i}", vec_return[i], self.global_step)
-            writer.add_scalar(f"eval{idstr}/discounted_vec_{i}", discounted_vec_return[i], self.global_step)
+            writer.add_scalar(
+                f"eval{idstr}/discounted_vec_{i}",
+                discounted_vec_return[i],
+                self.global_step,
+            )
 
         return (
             scalarized_return,
             scalarized_discounted_return,
             vec_return,
-            discounted_vec_return
+            discounted_vec_return,
         )
 
-    def policy_eval(self, eval_env, scalarization=np.dot, weights: Optional[np.ndarray] = None,
-                    writer: SummaryWriter = None):
+    def policy_eval(
+        self,
+        eval_env,
+        scalarization=np.dot,
+        weights: Optional[np.ndarray] = None,
+        writer: SummaryWriter = None,
+    ):
         """
         Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
         :param scalarization: scalarization function
@@ -75,11 +102,23 @@ class MOPolicy(ABC):
             scalarized_reward,
             scalarized_discounted_reward,
             vec_reward,
-            discounted_vec_reward
-         ) = eval_mo(self, eval_env, scalarization=scalarization, w=weights)
-        return self.__report(scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward, writer)
+            discounted_vec_reward,
+        ) = eval_mo(self, eval_env, scalarization=scalarization, w=weights)
+        return self.__report(
+            scalarized_reward,
+            scalarized_discounted_reward,
+            vec_reward,
+            discounted_vec_reward,
+            writer,
+        )
 
-    def policy_eval_esr(self, eval_env, scalarization, weights: Optional[np.ndarray] = None, writer: SummaryWriter = None):
+    def policy_eval_esr(
+        self,
+        eval_env,
+        scalarization,
+        weights: Optional[np.ndarray] = None,
+        writer: SummaryWriter = None,
+    ):
         """
         Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
         :param eval_env: evaluation environment
@@ -91,9 +130,15 @@ class MOPolicy(ABC):
             scalarized_reward,
             scalarized_discounted_reward,
             vec_reward,
-            discounted_vec_reward
+            discounted_vec_reward,
         ) = eval_mo_reward_conditioned(self, eval_env, scalarization, weights)
-        return self.__report(scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward, writer)
+        return self.__report(
+            scalarized_reward,
+            scalarized_discounted_reward,
+            vec_reward,
+            discounted_vec_reward,
+            writer,
+        )
 
     @abstractmethod
     def update(self):
@@ -106,9 +151,15 @@ class MOAgent(ABC):
     Contains helpers to extract features from the environment, setup logging etc.
     """
 
-    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto") -> None:
+    def __init__(
+        self, env: Optional[gym.Env], device: Union[th.device, str] = "auto"
+    ) -> None:
         self.extract_env_info(env)
-        self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
+        self.device = (
+            th.device("cuda" if th.cuda.is_available() else "cpu")
+            if device == "auto"
+            else device
+        )
 
         self.global_step = 0
         self.num_episodes = 0
@@ -163,5 +214,6 @@ class MOAgent(ABC):
 
     def close_wandb(self):
         import wandb
+
         self.writer.close()
         wandb.finish()

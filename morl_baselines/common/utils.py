@@ -7,7 +7,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 @th.no_grad()
-def layer_init(layer, method="orthogonal", weight_gain: float = 1, bias_const: float = 0) -> None:
+def layer_init(
+    layer, method="orthogonal", weight_gain: float = 1, bias_const: float = 0
+) -> None:
     if isinstance(layer, (nn.Linear, nn.Conv2d)):
         if method == "xavier":
             th.nn.init.xavier_uniform_(layer.weight, gain=weight_gain)
@@ -18,9 +20,9 @@ def layer_init(layer, method="orthogonal", weight_gain: float = 1, bias_const: f
 
 @th.no_grad()
 def polyak_update(
-        params: Iterable[th.nn.Parameter],
-        target_params: Iterable[th.nn.Parameter],
-        tau: float,
+    params: Iterable[th.nn.Parameter],
+    target_params: Iterable[th.nn.Parameter],
+    tau: float,
 ) -> None:
     for param, target_param in zip(params, target_params):
         if tau == 1:
@@ -34,9 +36,11 @@ def get_grad_norm(params: Iterable[th.nn.Parameter]) -> th.Tensor:
     """This is how the grad norm is computed inside torch.nn.clip_grad_norm_()"""
     parameters = [p for p in params if p.grad is not None]
     if len(parameters) == 0:
-        return th.tensor(0.)
+        return th.tensor(0.0)
     device = parameters[0].grad.device
-    total_norm = th.norm(th.stack([th.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0)
+    total_norm = th.norm(
+        th.stack([th.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0
+    )
     return total_norm
 
 
@@ -44,7 +48,9 @@ def huber(x, min_priority=0.01):
     return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
 
 
-def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, final_value):
+def linearly_decaying_value(
+    initial_value, decay_period, step, warmup_steps, final_value
+):
     """Returns the current value for a linearly decaying parameter.
     This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
     al., 2015). The schedule is as follows:
@@ -62,11 +68,15 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
     steps_left = decay_period + warmup_steps - step
     bonus = (initial_value - final_value) * steps_left / decay_period
     value = final_value + bonus
-    value = np.clip(value, min(initial_value, final_value), max(initial_value, final_value))
+    value = np.clip(
+        value, min(initial_value, final_value), max(initial_value, final_value)
+    )
     return value
 
 
-def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = 'gaussian') -> np.ndarray:
+def random_weights(
+    dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian"
+) -> np.ndarray:
     """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1
     Args:
         dim: size of the weight vector
@@ -79,21 +89,27 @@ def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str =
     else:
         rng = np.random
 
-    if dist == 'gaussian':
+    if dist == "gaussian":
         w = np.random.randn(n, dim)
         w = np.abs(w) / np.linalg.norm(w, ord=1, axis=1, keepdims=True)
-    elif dist == 'dirichlet':
+    elif dist == "dirichlet":
         w = rng.dirichlet(np.ones(dim), n)
     else:
-        raise ValueError(f'Unknown distribution {dist}')
+        raise ValueError(f"Unknown distribution {dist}")
 
     if n == 1:
         return w[0]
     return w
 
 
-def log_episode_info(info: dict, scalarization, weights: Optional[np.ndarray], global_timestep: int, id: Optional[int] = None,
-                     writer: Optional[SummaryWriter] = None):
+def log_episode_info(
+    info: dict,
+    scalarization,
+    weights: Optional[np.ndarray],
+    global_timestep: int,
+    id: Optional[int] = None,
+    writer: Optional[SummaryWriter] = None,
+):
     """
     Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper)
     :param info: info dictionary containing the episode statistics
@@ -123,11 +139,27 @@ def log_episode_info(info: dict, scalarization, weights: Optional[np.ndarray], g
             idstr = "_" + str(id)
         else:
             idstr = ""
-        writer.add_scalar(f"charts{idstr}/timesteps_per_episode", episode_ts, global_timestep)
+        writer.add_scalar(
+            f"charts{idstr}/timesteps_per_episode", episode_ts, global_timestep
+        )
         writer.add_scalar(f"charts{idstr}/episode_time", episode_time, global_timestep)
-        writer.add_scalar(f"metrics{idstr}/scalarized_episode_return", scal_return, global_timestep)
-        writer.add_scalar(f"metrics{idstr}/discounted_scalarized_episode_return", disc_scal_return, global_timestep)
+        writer.add_scalar(
+            f"metrics{idstr}/scalarized_episode_return", scal_return, global_timestep
+        )
+        writer.add_scalar(
+            f"metrics{idstr}/discounted_scalarized_episode_return",
+            disc_scal_return,
+            global_timestep,
+        )
 
         for i in range(episode_return.shape[0]):
-            writer.add_scalar(f"metrics{idstr}/episode_return_obj_{i}", episode_return[i], global_timestep)
-            writer.add_scalar(f"metrics{idstr}/disc_episode_return_obj_{i}", disc_episode_return[i], global_timestep)
+            writer.add_scalar(
+                f"metrics{idstr}/episode_return_obj_{i}",
+                episode_return[i],
+                global_timestep,
+            )
+            writer.add_scalar(
+                f"metrics{idstr}/disc_episode_return_obj_{i}",
+                disc_episode_return[i],
+                global_timestep,
+            )

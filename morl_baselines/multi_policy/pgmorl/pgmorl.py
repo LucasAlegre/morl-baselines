@@ -18,8 +18,14 @@ from morl_baselines.single_policy.ser.mo_ppo import make_env, MOPPONet, MOPPO
 # Some code in this file has been adapted from the original code provided by the authors of the paper
 # https://github.com/mit-gfx/PGMORL
 class PerformancePredictor:
-    def __init__(self, neighborhood_threshold: float = 0.1, sigma: float = 0.03, A_bound_min: float = 1.,
-                 A_bound_max: float = 500., f_scale: float = 20.):
+    def __init__(
+        self,
+        neighborhood_threshold: float = 0.1,
+        sigma: float = 0.03,
+        A_bound_min: float = 1.0,
+        A_bound_max: float = 500.0,
+        f_scale: float = 20.0,
+    ):
         """
         Stores the performance deltas along with the used weights after each generation.
         Then, uses these stored samples to perform a regression for predicting the performance of using a given weight
@@ -37,13 +43,23 @@ class PerformancePredictor:
         self.f_scale = f_scale
         self.sigma = sigma
 
-    def add(self, weight: np.ndarray, eval_before_pg: np.ndarray, eval_after_pg: np.ndarray):
+    def add(
+        self, weight: np.ndarray, eval_before_pg: np.ndarray, eval_after_pg: np.ndarray
+    ):
         self.previous_performance.append(eval_before_pg)
         self.next_performance.append(eval_after_pg)
         self.used_weight.append(weight)
 
-    def __build_model_and_predict(self, training_weights, training_deltas, training_next_perfs, current_dim,
-                                  current_eval: np.ndarray, weight_candidate: np.ndarray, sigma: float):
+    def __build_model_and_predict(
+        self,
+        training_weights,
+        training_deltas,
+        training_next_perfs,
+        current_dim,
+        current_eval: np.ndarray,
+        weight_candidate: np.ndarray,
+        sigma: float,
+    ):
         """
         Uses the hyperbolic model on the training data: weights, deltas and next_perfs to predict the next delta
         given the current evaluation and weight.
@@ -55,8 +71,13 @@ class PerformancePredictor:
 
         def __hyperbolic_model(params, x, y):
             # f = A * (exp(a(x - b)) - 1) / (exp(a(x - b)) + 1) + c
-            return (params[0] * (np.exp(params[1] * (x - params[2])) - 1.) / (np.exp(params[1] * (x - params[2])) + 1) +
-                    params[3] - y) * w
+            return (
+                params[0]
+                * (np.exp(params[1] * (x - params[2])) - 1.0)
+                / (np.exp(params[1] * (x - params[2])) + 1)
+                + params[3]
+                - y
+            ) * w
 
         def __jacobian(params, x, y):
             A, a, b, c = params[0], params[1], params[2], params[3]
@@ -64,9 +85,19 @@ class PerformancePredictor:
             # df_dA = (exp(a(x - b)) - 1) / (exp(a(x - b)) + 1)
             J[0] = ((np.exp(a * (x - b)) - 1) / (np.exp(a * (x - b)) + 1)) * w
             # df_da = A(x - b)(2exp(a(x-b)))/(exp(a(x-b)) + 1)^2
-            J[1] = (A * (x - b) * (2. * np.exp(a * (x - b))) / ((np.exp(a * (x - b)) + 1) ** 2)) * w
+            J[1] = (
+                A
+                * (x - b)
+                * (2.0 * np.exp(a * (x - b)))
+                / ((np.exp(a * (x - b)) + 1) ** 2)
+            ) * w
             # df_db = A(-a)(2exp(a(x-b)))/(exp(a(x-b)) + 1)^2
-            J[2] = (A * (-a) * (2. * np.exp(a * (x - b))) / ((np.exp(a * (x - b)) + 1) ** 2)) * w
+            J[2] = (
+                A
+                * (-a)
+                * (2.0 * np.exp(a * (x - b)))
+                / ((np.exp(a * (x - b)) + 1) ** 2)
+            ) * w
             # df_dc = 1
             J[3] = w
 
@@ -89,14 +120,21 @@ class PerformancePredictor:
 
         A_upperbound = np.clip(np.max(train_y) - np.min(train_y), 1.0, 500.0)
         initial_guess = np.ones(4)
-        res_robust = least_squares(__hyperbolic_model, initial_guess, loss='soft_l1', f_scale=self.f_scale,
-                                   args=(train_x, train_y), jac=__jacobian,
-                                   bounds=([0, 0.1, -5., -500.], [A_upperbound, 20., 5., 500.]))
+        res_robust = least_squares(
+            __hyperbolic_model,
+            initial_guess,
+            loss="soft_l1",
+            f_scale=self.f_scale,
+            args=(train_x, train_y),
+            jac=__jacobian,
+            bounds=([0, 0.1, -5.0, -500.0], [A_upperbound, 20.0, 5.0, 500.0]),
+        )
 
         return __f(weight_candidate[current_dim], *res_robust.x)
 
-    def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> Tuple[
-        np.ndarray, np.ndarray]:
+    def predict_next_evaluation(
+        self, weight_candidate: np.ndarray, policy_eval: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Use a part of the collected data (determined by the neighborhood threshold) to predict the performance
         after using weight to train the policy whose current evaluation is policy_eval.
@@ -107,22 +145,25 @@ class PerformancePredictor:
         neighbor_weights = []
         neighbor_deltas = []
         neighbor_next_perf = []
-        current_sigma = self.sigma / 2.
-        current_neighb_threshold = self.neighborhood_threshold / 2.
+        current_sigma = self.sigma / 2.0
+        current_neighb_threshold = self.neighborhood_threshold / 2.0
         # Iterates until we find at least 4 neighbors, enlarges the neighborhood at each iteration
         while len(neighbor_weights) < 4:
             # Enlarging neighborhood
-            current_sigma *= 2.
-            current_neighb_threshold *= 2.
+            current_sigma *= 2.0
+            current_neighb_threshold *= 2.0
 
             # Filtering for neighbors
-            for previous_perf, next_perf, neighb_w in zip(self.previous_performance, self.next_performance, self.used_weight):
-                if np.all(np.abs(previous_perf - policy_eval) < current_neighb_threshold * np.abs(policy_eval)) and \
-                        tuple(next_perf) not in list(map(tuple, neighbor_next_perf)):
+            for previous_perf, next_perf, neighb_w in zip(
+                self.previous_performance, self.next_performance, self.used_weight
+            ):
+                if np.all(
+                    np.abs(previous_perf - policy_eval)
+                    < current_neighb_threshold * np.abs(policy_eval)
+                ) and tuple(next_perf) not in list(map(tuple, neighbor_next_perf)):
                     neighbor_weights.append(neighb_w)
                     neighbor_deltas.append(next_perf - previous_perf)
                     neighbor_next_perf.append(next_perf)
-
 
         # constructing a prediction model for each objective dimension, and using it to construct the delta predictions
         delta_predictions = [
@@ -133,8 +174,9 @@ class PerformancePredictor:
                 current_dim=obj_num,
                 current_eval=policy_eval,
                 weight_candidate=weight_candidate,
-                sigma=current_sigma
-            ) for obj_num in range(weight_candidate.size)
+                sigma=current_sigma,
+            )
+            for obj_num in range(weight_candidate.size)
         ]
         delta_predictions = np.array(delta_predictions)
         return delta_predictions, delta_predictions + policy_eval
@@ -147,7 +189,9 @@ def generate_weights(delta_weight: float) -> np.ndarray:
     :param delta_weight: distance between weight vectors
     :return: all the candidate weights
     """
-    return np.linspace((0., 1.), (1., 0.), int(1 / delta_weight) + 1, dtype=np.float32)
+    return np.linspace(
+        (0.0, 1.0), (1.0, 0.0), int(1 / delta_weight) + 1, dtype=np.float32
+    )
 
 
 class PerformanceBuffer:
@@ -176,7 +220,7 @@ class PerformanceBuffer:
     def add(self, candidate, evaluation: np.ndarray):
         def center_eval(eval):
             # Objectives must be positive
-            return np.clip(eval + self.origin, 0., float('inf'))
+            return np.clip(eval + self.origin, 0.0, float("inf"))
 
         centered_eval = center_eval(evaluation)
         norm_eval = np.linalg.norm(centered_eval)
@@ -210,43 +254,43 @@ class PGMORL(MOAgent):
     """
 
     def __init__(
-            self,
-            env_id: str = "mo-halfcheetah-v4",
-            ref_point: np.ndarray = np.array([0., -5.]),
-            num_envs: int = 4,
-            pop_size: int = 6,
-            warmup_iterations: int = 80,
-            steps_per_iteration: int = 2048,
-            limit_env_steps: int = int(5e6),
-            evolutionary_iterations: int = 20,
-            num_weight_candidates: int = 7,
-            num_performance_buffer: int = 100,
-            performance_buffer_size: int = 2,
-            min_weight: float = 0.,
-            max_weight: float = 1.,
-            delta_weight: float = 0.2,
-            env=None,
-            gamma: float = 0.995,
-            project_name: str = "MORL-baselines",
-            experiment_name: str = "PGMORL",
-            seed: int = 0,
-            torch_deterministic: bool = True,
-            log: bool = True,
-            net_arch: List = [64, 64],
-            num_minibatches: int = 32,
-            update_epochs: int = 10,
-            learning_rate: float = 3e-4,
-            anneal_lr: bool = False,
-            clip_coef: float = .2,
-            ent_coef: float = 0.,
-            vf_coef: float = .5,
-            clip_vloss: bool = True,
-            max_grad_norm: float = .5,
-            norm_adv: bool = True,
-            target_kl: Optional[float] = None,
-            gae: bool = True,
-            gae_lambda: float = .95,
-            device: Union[th.device, str] = "auto",
+        self,
+        env_id: str = "mo-halfcheetah-v4",
+        ref_point: np.ndarray = np.array([0.0, -5.0]),
+        num_envs: int = 4,
+        pop_size: int = 6,
+        warmup_iterations: int = 80,
+        steps_per_iteration: int = 2048,
+        limit_env_steps: int = int(5e6),
+        evolutionary_iterations: int = 20,
+        num_weight_candidates: int = 7,
+        num_performance_buffer: int = 100,
+        performance_buffer_size: int = 2,
+        min_weight: float = 0.0,
+        max_weight: float = 1.0,
+        delta_weight: float = 0.2,
+        env=None,
+        gamma: float = 0.995,
+        project_name: str = "MORL-baselines",
+        experiment_name: str = "PGMORL",
+        seed: int = 0,
+        torch_deterministic: bool = True,
+        log: bool = True,
+        net_arch: List = [64, 64],
+        num_minibatches: int = 32,
+        update_epochs: int = 10,
+        learning_rate: float = 3e-4,
+        anneal_lr: bool = False,
+        clip_coef: float = 0.2,
+        ent_coef: float = 0.0,
+        vf_coef: float = 0.5,
+        clip_vloss: bool = True,
+        max_grad_norm: float = 0.5,
+        norm_adv: bool = True,
+        target_kl: Optional[float] = None,
+        gae: bool = True,
+        gae_lambda: float = 0.95,
+        device: Union[th.device, str] = "auto",
     ):
         super().__init__(env, device=device)
         # Env dimensions
@@ -254,7 +298,9 @@ class PGMORL(MOAgent):
         self.extract_env_info(self.tmp_env)
         self.env_id = env_id
         self.num_envs = num_envs
-        assert isinstance(self.action_space, gym.spaces.Box), "only continuous action space is supported"
+        assert isinstance(
+            self.action_space, gym.spaces.Box
+        ), "only continuous action space is supported"
         self.tmp_env.close()
         self.gamma = gamma
         self.ref_point = ref_point
@@ -269,13 +315,18 @@ class PGMORL(MOAgent):
         self.max_weight = max_weight
         self.delta_weight = delta_weight
         self.limit_env_steps = limit_env_steps
-        self.max_iterations = self.limit_env_steps // self.steps_per_iteration // self.num_envs
+        self.max_iterations = (
+            self.limit_env_steps // self.steps_per_iteration // self.num_envs
+        )
         self.iteration = 0
         self.num_performance_buffer = num_performance_buffer
         self.performance_buffer_size = performance_buffer_size
         self.archive = ParetoArchive()
-        self.population = PerformanceBuffer(num_bins=self.num_performance_buffer, max_size=self.performance_buffer_size,
-                                            ref_point=self.ref_point)
+        self.population = PerformanceBuffer(
+            num_bins=self.num_performance_buffer,
+            max_size=self.performance_buffer_size,
+            ref_point=self.ref_point,
+        )
         self.predictor = PerformancePredictor()
 
         # PPO Parameters
@@ -306,10 +357,15 @@ class PGMORL(MOAgent):
         self.num_envs = num_envs
         if env is None:
             self.env = mo_gym.MOSyncVectorEnv(
-                [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
+                [
+                    make_env(env_id, self.seed + i, i, experiment_name, self.gamma)
+                    for i in range(self.num_envs)
+                ]
             )
         else:
-            raise ValueError("Environments should be vectorized for PPO. You should provide an environment id instead.")
+            raise ValueError(
+                "Environments should be vectorized for PPO. You should provide an environment id instead."
+            )
 
         # Logging
         self.log = log
@@ -317,7 +373,12 @@ class PGMORL(MOAgent):
             self.setup_wandb(project_name, experiment_name)
 
         self.networks = [
-            MOPPONet(self.observation_shape, self.action_space.shape, self.reward_dim, self.net_arch).to(self.device)
+            MOPPONet(
+                self.observation_shape,
+                self.action_space.shape,
+                self.reward_dim,
+                self.net_arch,
+            ).to(self.device)
             for _ in range(self.pop_size)
         ]
 
@@ -326,7 +387,16 @@ class PGMORL(MOAgent):
         self.pop_size = len(weights)
 
         self.agents = [
-            MOPPO(i, self.networks[i], weights[i], self.env, self.writer, gamma=self.gamma, device=self.device, seed=self.seed)
+            MOPPO(
+                i,
+                self.networks[i],
+                weights[i],
+                self.env,
+                self.writer,
+                gamma=self.gamma,
+                device=self.device,
+                seed=self.seed,
+            )
             for i in range(self.pop_size)
         ]
 
@@ -370,17 +440,25 @@ class PGMORL(MOAgent):
         for i, agent in enumerate(self.agents):
             agent.train(self.start_time, self.iteration, self.max_iterations)
 
-    def __eval_all_agents(self, evaluations_before_train: List[np.ndarray], add_to_prediction: bool = True):
+    def __eval_all_agents(
+        self, evaluations_before_train: List[np.ndarray], add_to_prediction: bool = True
+    ):
         """
         Evaluates all agents and store their current performances on the buffer and pareto archive
         """
         for i, agent in enumerate(self.agents):
-            _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], weights=agent.weights, writer=self.writer)
+            _, _, _, discounted_reward = agent.policy_eval(
+                self.env.envs[0], weights=agent.weights, writer=self.writer
+            )
             # Storing current results
             self.population.add(agent, discounted_reward)
             self.archive.add(agent, discounted_reward)
             if add_to_prediction:
-                self.predictor.add(agent.weights.detach().numpy(), evaluations_before_train[i], discounted_reward)
+                self.predictor.add(
+                    agent.weights.detach().numpy(),
+                    evaluations_before_train[i],
+                    discounted_reward,
+                )
             evaluations_before_train[i] = discounted_reward
 
         print("Current pareto archive:")
@@ -394,7 +472,9 @@ class PGMORL(MOAgent):
         """
         Chooses agents and weights to train at the next iteration based on the current population and prediction model.
         """
-        candidate_weights = generate_weights(self.delta_weight / 2.)  # Generates more weights than agents
+        candidate_weights = generate_weights(
+            self.delta_weight / 2.0
+        )  # Generates more weights than agents
         np.random.shuffle(candidate_weights)  # Randomize
 
         current_front = deepcopy(self.archive.evaluations)
@@ -403,7 +483,7 @@ class PGMORL(MOAgent):
         selected_tasks = []
         # For each worker, select a (policy, weight) tuple
         for i in range(len(self.agents)):
-            max_improv = float('-inf')
+            max_improv = float("-inf")
             best_candidate = None
             best_eval = None
             best_predicted_eval = None
@@ -411,18 +491,28 @@ class PGMORL(MOAgent):
             # In each selection, look at every possible candidate in the current population and every possible weight generated
             for candidate, last_candidate_eval in zip(population, population_eval):
                 # Pruning the already selected (candidate, weight) pairs
-                candidate_tuples = [(last_candidate_eval, weight) for weight in candidate_weights
-                                    if (tuple(last_candidate_eval), tuple(weight)) not in selected_tasks]
+                candidate_tuples = [
+                    (last_candidate_eval, weight)
+                    for weight in candidate_weights
+                    if (tuple(last_candidate_eval), tuple(weight)) not in selected_tasks
+                ]
 
                 # Prediction of improvements of each pair
-                delta_predictions, predicted_evals = \
-                    map(list,
-                        zip(*[self.predictor.predict_next_evaluation(weight, candidate_eval) for candidate_eval, weight
-                              in candidate_tuples]))
+                delta_predictions, predicted_evals = map(
+                    list,
+                    zip(
+                        *[
+                            self.predictor.predict_next_evaluation(
+                                weight, candidate_eval
+                            )
+                            for candidate_eval, weight in candidate_tuples
+                        ]
+                    ),
+                )
                 # optimization criterion is a hypervolume - sparsity
                 mixture_metrics = [
-                    hypervolume(self.ref_point, current_front + [predicted_eval]) - sparsity(
-                        current_front + [predicted_eval])
+                    hypervolume(self.ref_point, current_front + [predicted_eval])
+                    - sparsity(current_front + [predicted_eval])
                     for predicted_eval in predicted_evals
                 ]
                 # Best among all the weights for the current candidate
@@ -432,7 +522,10 @@ class PGMORL(MOAgent):
                 # Best among all candidates, weight tuple update
                 if max_improv < current_candidate_improv:
                     max_improv = current_candidate_improv
-                    best_candidate = (candidate, candidate_tuples[current_candidate_weight][1])
+                    best_candidate = (
+                        candidate,
+                        candidate_tuples[current_candidate_weight][1],
+                    )
                     best_eval = last_candidate_eval
                     best_predicted_eval = predicted_evals[current_candidate_weight]
 
@@ -449,11 +542,14 @@ class PGMORL(MOAgent):
 
             print(f"Agent #{self.agents[i].id} - weights {best_candidate[1]}")
             print(
-                f"current eval: {best_eval} - estimated next: {best_predicted_eval} - deltas {(best_predicted_eval - best_eval)}")
+                f"current eval: {best_eval} - estimated next: {best_predicted_eval} - deltas {(best_predicted_eval - best_eval)}"
+            )
 
     def train(self):
         # Init
-        current_evaluations = [np.zeros(self.reward_dim) for _ in range(len(self.agents))]
+        current_evaluations = [
+            np.zeros(self.reward_dim) for _ in range(len(self.agents))
+        ]
         self.__eval_all_agents(current_evaluations, add_to_prediction=False)
         self.start_time = time.time()
 
@@ -466,18 +562,27 @@ class PGMORL(MOAgent):
         self.__eval_all_agents(current_evaluations)
 
         # Evolution
-        remaining_iterations = max(self.max_iterations - self.warmup_iterations, self.evolutionary_iterations)
+        remaining_iterations = max(
+            self.max_iterations - self.warmup_iterations, self.evolutionary_iterations
+        )
         evolutionary_generation = 1
         while self.iteration < remaining_iterations:
             # Every evolutionary iterations, change the task - weight assignments
             self.__task_weight_selection()
             print(f"Evolutionary generation #{evolutionary_generation}")
-            self.writer.add_scalar("charts/evolutionary_generation", evolutionary_generation)
+            self.writer.add_scalar(
+                "charts/evolutionary_generation", evolutionary_generation
+            )
 
             for _ in range(self.evolutionary_iterations):
                 # Run training of every agent for evolutionary iterations.
-                print(f"Evolutionary iteration #{self.iteration - self.warmup_iterations}")
-                self.writer.add_scalar("charts/evolutionary_iterations", self.iteration - self.warmup_iterations)
+                print(
+                    f"Evolutionary iteration #{self.iteration - self.warmup_iterations}"
+                )
+                self.writer.add_scalar(
+                    "charts/evolutionary_iterations",
+                    self.iteration - self.warmup_iterations,
+                )
                 self.__train_all_agents()
                 self.iteration += 1
             self.__eval_all_agents(current_evaluations)

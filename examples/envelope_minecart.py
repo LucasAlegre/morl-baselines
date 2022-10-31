@@ -13,7 +13,8 @@ def main():
         return env
 
     env = make_env()
-    eval_env = make_env()  # RecordVideo(make_env(), "videos/minecart/", episode_trigger=lambda e: e % 1000 == 0)
+    eval_env = make_env()
+    # RecordVideo(make_env(), "videos/minecart/", episode_trigger=lambda e: e % 1000 == 0)
 
     agent = Envelope(
         env,
@@ -47,9 +48,9 @@ def main():
         eval_env=eval_env,
         eval_freq=1000,
         reset_num_timesteps=False,
-        reset_learning_starts=False
+        reset_learning_starts=False,
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

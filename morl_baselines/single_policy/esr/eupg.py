@@ -19,6 +19,7 @@ from morl_baselines.common.utils import layer_init, log_episode_info
 # Scalarize the rewards based on the episodic return (accrued + future rewards)
 # Paper: D. Roijers, D. Steckelmacher, and A. Nowe, Multi-objective Reinforcement Learning for the Expected Utility of the Return. 2018.
 
+
 class PolicyNet(nn.Module):
     def __init__(self, obs_shape, action_dim, rew_dim, net_arch):
         super().__init__()
@@ -48,18 +49,19 @@ class PolicyNet(nn.Module):
 
 
 class EUPG(MOPolicy, MOAgent):
-    def __init__(self,
-                 env: gym.Env,
-                 scalarization,
-                 buffer_size: int = int(1e5),
-                 net_arch: List = [50],
-                 gamma: float = 0.99,
-                 learning_rate: float = 1e-3,
-                 project_name: str = "MORL-Baselines",
-                 experiment_name: str = "EUPG",
-                 log: bool = True,
-                 device: Union[th.device, str] = "auto",
-                 ):
+    def __init__(
+        self,
+        env: gym.Env,
+        scalarization,
+        buffer_size: int = int(1e5),
+        net_arch: List = [50],
+        gamma: float = 0.99,
+        learning_rate: float = 1e-3,
+        project_name: str = "MORL-Baselines",
+        experiment_name: str = "EUPG",
+        log: bool = True,
+        device: Union[th.device, str] = "auto",
+    ):
         MOAgent.__init__(self, env, device)
         MOPolicy.__init__(self, None, device)
 
@@ -78,10 +80,14 @@ class EUPG(MOPolicy, MOAgent):
             rew_dim=self.reward_dim,
             max_size=self.buffer_size,
             obs_dtype=np.int32,
-            action_dtype=np.int32
+            action_dtype=np.int32,
         )
-        self.net = PolicyNet(obs_shape=self.observation_shape, rew_dim=self.reward_dim, action_dim=self.action_dim,
-                             net_arch=self.net_arch)
+        self.net = PolicyNet(
+            obs_shape=self.observation_shape,
+            rew_dim=self.reward_dim,
+            action_dim=self.action_dim,
+            net_arch=self.net_arch,
+        )
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.learning_rate)
 
         # Logging
@@ -91,7 +97,9 @@ class EUPG(MOPolicy, MOAgent):
         if log:
             self.setup_wandb(project_name, experiment_name)
 
-    def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
+    def eval(
+        self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]
+    ) -> Union[int, np.ndarray]:
         if type(obs) is int:
             obs = th.as_tensor([obs]).to(self.device)
         else:
@@ -105,8 +113,14 @@ class EUPG(MOPolicy, MOAgent):
         return action
 
     def update(self):
-        obs, accrued_rewards, actions, rewards, next_obs, terminateds = self.buffer.get_all_data(to_tensor=True,
-                                                                                                 device=self.device)
+        (
+            obs,
+            accrued_rewards,
+            actions,
+            rewards,
+            next_obs,
+            terminateds,
+        ) = self.buffer.get_all_data(to_tensor=True, device=self.device)
         # Scalarized episodic reward, our target :-)
         episodic_return = th.sum(rewards, dim=0)
         scalarized_return = self.scalarization(episodic_return)
@@ -123,17 +137,26 @@ class EUPG(MOPolicy, MOAgent):
 
         if self.log:
             self.writer.add_scalar("losses/loss", loss, self.global_step)
-            self.writer.add_scalar("metrics/scalarized_episodic_return", scalarized_return, self.global_step)
+            self.writer.add_scalar(
+                "metrics/scalarized_episodic_return",
+                scalarized_return,
+                self.global_step,
+            )
 
     def train(
-            self,
-            total_timesteps: int,
-            eval_env: Optional[gym.Env] = None,
-            eval_freq: int = 1000
+        self,
+        total_timesteps: int,
+        eval_env: Optional[gym.Env] = None,
+        eval_freq: int = 1000,
     ):
         # Init
-        obs, _, = self.env.reset()
-        accrued_reward_tensor = th.zeros(self.reward_dim, dtype=th.float32).float().to(self.device)
+        (
+            obs,
+            _,
+        ) = self.env.reset()
+        accrued_reward_tensor = (
+            th.zeros(self.reward_dim, dtype=th.float32).float().to(self.device)
+        )
 
         # Training loop
         for _ in range(1, total_timesteps + 1):
@@ -141,15 +164,21 @@ class EUPG(MOPolicy, MOAgent):
 
             with th.no_grad():
                 # For training, takes action randomly according to the policy
-                action = self.choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
+                action = self.choose_action(
+                    th.Tensor([obs]).to(self.device), accrued_reward_tensor
+                )
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
-            self.buffer.add(obs, accrued_reward_tensor, action, vec_reward, next_obs, terminated)
+            self.buffer.add(
+                obs, accrued_reward_tensor, action, vec_reward, next_obs, terminated
+            )
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval_esr(eval_env, scalarization=self.scalarization, writer=self.writer)
+                self.policy_eval_esr(
+                    eval_env, scalarization=self.scalarization, writer=self.writer
+                )
 
             if terminated or truncated:
                 # NN is updated at the end of each episode
@@ -157,10 +186,18 @@ class EUPG(MOPolicy, MOAgent):
                 self.buffer.cleanup()
                 obs, _ = self.env.reset()
                 self.num_episodes += 1
-                accrued_reward_tensor = th.zeros(self.reward_dim).float().to(self.device)
+                accrued_reward_tensor = (
+                    th.zeros(self.reward_dim).float().to(self.device)
+                )
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], self.scalarization, None, self.global_step, self.writer)
+                    log_episode_info(
+                        info["episode"],
+                        self.scalarization,
+                        None,
+                        self.global_step,
+                        self.writer,
+                    )
 
             else:
                 obs = next_obs

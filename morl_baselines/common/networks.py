@@ -9,7 +9,7 @@ def mlp(
     input_dim: int,
     output_dim: int,
     net_arch: List[int],
-    activation_fn: Type[nn.Module] = nn.ReLU
+    activation_fn: Type[nn.Module] = nn.ReLU,
 ) -> nn.Sequential:
     """
     Create a multi layer perceptron (MLP), which is
@@ -56,11 +56,13 @@ class NatureCNN(nn.Module):
             nn.ReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
             nn.ReLU(),
-            nn.Flatten()
+            nn.Flatten(),
         )
         # Compute shape by doing one forward pass
         with th.no_grad():
-            n_flatten = self.cnn(th.as_tensor(np.zeros(observation_shape)[np.newaxis]).float()).shape[1]
+            n_flatten = self.cnn(
+                th.as_tensor(np.zeros(observation_shape)[np.newaxis]).float()
+            ).shape[1]
 
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
