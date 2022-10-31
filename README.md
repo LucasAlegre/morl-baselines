@@ -5,7 +5,7 @@
 
 # MORL Baselines
 <div style="text-align: center;">
-<img src="images/mo_cheetah.gif" alt="Multiple policies" width="400"/>
+<img src="images/mo_cheetah.gif" alt="Multiple policies"/>
 </div>
 
 MORL Baselines is a library of Multi-Objective Reinforcement Learning (MORL) algorithms. 
