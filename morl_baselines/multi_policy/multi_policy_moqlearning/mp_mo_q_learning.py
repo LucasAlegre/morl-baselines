@@ -16,22 +16,22 @@ class MPMOQLearning(MOAgent):
     """
 
     def __init__(
-            self,
-            env,
-            ref_point: np.ndarray,
-            weights_step_size: float = 0.1,
-            scalarization=weighted_sum,
-            learning_rate: float = 0.1,
-            gamma: float = 0.9,
-            initial_epsilon: float = 0.1,
-            final_epsilon: float = 0.1,
-            epsilon_decay_steps: int = None,
-            learning_starts: int = 0,
-            num_timesteps: int = int(5e5),
-            eval_freq: int = 1000,
-            project_name: str = "MORL-baselines",
-            experiment_name: str = "MultiPolicy MO Q-Learning",
-            log: bool = True
+        self,
+        env,
+        ref_point: np.ndarray,
+        weights_step_size: float = 0.1,
+        scalarization=weighted_sum,
+        learning_rate: float = 0.1,
+        gamma: float = 0.9,
+        initial_epsilon: float = 0.1,
+        final_epsilon: float = 0.1,
+        epsilon_decay_steps: int = None,
+        learning_starts: int = 0,
+        num_timesteps: int = int(5e5),
+        eval_freq: int = 1000,
+        project_name: str = "MORL-baselines",
+        experiment_name: str = "MultiPolicy MO Q-Learning",
+        log: bool = True,
     ):
         super().__init__(env)
         # Learning
@@ -55,24 +55,29 @@ class MPMOQLearning(MOAgent):
         self.weights = self.__generate_weights(self.weights_step_size)
         print(f"Generated weights: {self.weights}")
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
+            self.setup_wandb(
+                project_name=self.project_name, experiment_name=self.experiment_name
+            )
 
-        self.agents = [MOQLearning(
-            env,
-            id=i,
-            weights=w,
-            scalarization=scalarization,
-            learning_rate=learning_rate,
-            gamma=gamma,
-            initial_epsilon=initial_epsilon,
-            final_epsilon=final_epsilon,
-            epsilon_decay_steps=epsilon_decay_steps,
-            learning_starts=learning_starts,
-            project_name=project_name,
-            experiment_name=experiment_name,
-            log=log,
-            parent_writer=self.writer
-        ) for i, w in enumerate(self.weights)]
+        self.agents = [
+            MOQLearning(
+                env,
+                id=i,
+                weights=w,
+                scalarization=scalarization,
+                learning_rate=learning_rate,
+                gamma=gamma,
+                initial_epsilon=initial_epsilon,
+                final_epsilon=final_epsilon,
+                epsilon_decay_steps=epsilon_decay_steps,
+                learning_starts=learning_starts,
+                project_name=project_name,
+                experiment_name=experiment_name,
+                log=log,
+                parent_writer=self.writer,
+            )
+            for i, w in enumerate(self.weights)
+        ]
 
     def get_config(self) -> dict:
         return {
@@ -87,19 +92,22 @@ class MPMOQLearning(MOAgent):
         }
 
     def __generate_weights(self, step_size):
-        return np.linspace((0., 1.), (1., 0.), int(1 / step_size) + 1, dtype=np.float32)
+        return np.linspace(
+            (0.0, 1.0), (1.0, 0.0), int(1 / step_size) + 1, dtype=np.float32
+        )
 
     def eval_all_agents(self):
         discounted_rewards = []
         rewards = []
         for a in self.agents:
-            _, _, vec, discounted_vec = a.policy_eval(eval_env=self.env, weights=a.weights, writer=self.writer)
+            _, _, vec, discounted_vec = a.policy_eval(
+                eval_env=self.env, weights=a.weights, writer=self.writer
+            )
             discounted_rewards.append(discounted_vec)
             rewards.append(vec)
         print(f"Evaluation of all agents: {rewards}")
         print(f"discounted: {discounted_rewards}")
         return rewards, discounted_rewards
-
 
     def train(self):
         start_time = time.time()
@@ -107,7 +115,11 @@ class MPMOQLearning(MOAgent):
         for e in range(training_epoch):
             print(f"Training epoch #{e}")
             for a in self.agents:
-                a.train(start_time, total_timesteps=self.eval_freq, reset_num_timesteps=False)
+                a.train(
+                    start_time,
+                    total_timesteps=self.eval_freq,
+                    reset_num_timesteps=False,
+                )
             self.global_step += len(self.agents) * self.eval_freq
             rewards, disc_rewards = self.eval_all_agents()
             hv = hypervolume(self.ref_point, rewards)

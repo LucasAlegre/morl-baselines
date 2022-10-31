@@ -60,11 +60,14 @@ class PrioritizedReplayBuffer:
         max_size=100000,
         obs_dtype=np.float32,
         action_dtype=np.float32,
-        eps=1e-5
+        eps=1e-5,
     ):
         self.max_size = max_size
-        self.ptr, self.size, = 0, 0
-        self.obs = np.zeros((max_size,) +  (obs_shape), dtype=obs_dtype)
+        self.ptr, self.size, = (
+            0,
+            0,
+        )
+        self.obs = np.zeros((max_size,) + (obs_shape), dtype=obs_dtype)
         self.next_obs = np.zeros((max_size,) + (obs_shape), dtype=obs_dtype)
         self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
         self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
@@ -97,7 +100,9 @@ class PrioritizedReplayBuffer:
             self.dones[idxes],
         )
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples)) + (idxes,)  # , weights)
+            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples)) + (
+                idxes,
+            )  # , weights)
         else:
             return experience_tuples + (idxes,)
 

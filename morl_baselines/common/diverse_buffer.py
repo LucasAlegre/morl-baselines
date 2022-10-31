@@ -15,7 +15,7 @@ class SumTree:
         self.write = 0
         self.trees = {}
         self.main_tree = MAIN_TREE
-        self.data = np.repeat(((None, None, None), ), capacity, axis=0)
+        self.data = np.repeat(((None, None, None),), capacity, axis=0)
         self.updates = {}
         self.e = e
         self.a = a
@@ -94,8 +94,7 @@ class SumTree:
         if s <= self.trees[tree_id][left]:
             return self._retrieve(left, s, tree_id)
         else:
-            return self._retrieve(right, s - self.trees[tree_id][left],
-                                  tree_id)
+            return self._retrieve(right, s - self.trees[tree_id][left], tree_id)
 
     def total(self, tree_id=None):
         """Returns the tree's total priority
@@ -144,8 +143,7 @@ class SumTree:
         # Save replaced data to eventually save in secondary memory
         replaced_data = np.copy(self.data[write])
         replaced_priorities = {
-            tree: np.copy(self.trees[tree][idx])
-            for tree in self.trees
+            tree: np.copy(self.trees[tree][idx]) for tree in self.trees
         }
         replaced = (replaced_data, replaced_priorities)
 
@@ -224,15 +222,15 @@ class DiverseMemory:
     """
 
     def __init__(
-            self,
-            main_capacity,
-            sec_capacity=0,
-            trace_diversity=True,
-            crowding_diversity=True,
-            value_function=lambda trace, trace_id, memory_indices: np.random.random(
-                1),
-            e=0.01,
-            a=2):
+        self,
+        main_capacity,
+        sec_capacity=0,
+        trace_diversity=True,
+        crowding_diversity=True,
+        value_function=lambda trace, trace_id, memory_indices: np.random.random(1),
+        e=0.01,
+        a=2,
+    ):
 
         self.len = 0
         self.trace_diversity = trace_diversity
@@ -256,7 +254,7 @@ class DiverseMemory:
             float -- priority
         """
 
-        return (error + self.e)**self.a
+        return (error + self.e) ** self.a
 
     def _getError(self, priority):
         """Given a priority, computes the corresponding error
@@ -268,7 +266,7 @@ class DiverseMemory:
             float -- error
         """
 
-        return priority**(1 / self.a) - self.e
+        return priority ** (1 / self.a) - self.e
 
     def dupe(self, trg_i, src_i):
         """Copies the tree src_i into a new tree trg_i
@@ -282,9 +280,9 @@ class DiverseMemory:
 
     def main_mem_is_full(self):
         """
-            Because of the circular way in which we fill the memory, checking
-            whether the current write position is free is sufficient to know
-            if the memory is full.
+        Because of the circular way in which we fill the memory, checking
+        whether the current write position is free is sufficient to know
+        if the memory is full.
         """
         return self.tree.data[self.tree.write][1] is not None
 
@@ -330,8 +328,11 @@ class DiverseMemory:
         self.len = min(self.len + 1, self.capacity)
         self.tree.create(tree_id)
 
-        sample = (trace_id, sample, None
-                  if pred_idx is None else (pred_idx - self.capacity + 1))
+        sample = (
+            trace_id,
+            sample,
+            None if pred_idx is None else (pred_idx - self.capacity + 1),
+        )
 
         # Free up space in main memory if necessary
         if self.main_mem_is_full():
@@ -398,29 +399,29 @@ class DiverseMemory:
 
     def get_sec_write(self, secondary_traces, trace, reserved_idx=None):
         """
-            Given a trace, find free spots in the secondary memory to store it
-            by recursively removing past traces with a low crowding distance
+        Given a trace, find free spots in the secondary memory to store it
+        by recursively removing past traces with a low crowding distance
         """
 
         if reserved_idx is None:
             reserved_idx = []
-            
+
         if len(trace) > self.sec_capacity:
             return None
-            
+
         if len(reserved_idx) >= len(trace):
-            return reserved_idx[:len(trace)]
+            return reserved_idx[: len(trace)]
 
         # Find free spots in the secondary memory
         # TODO: keep track of free spots so recomputation isn't necessary
         free_spots = [
-            i + self.main_capacity for i in range(self.sec_capacity)
+            i + self.main_capacity
+            for i in range(self.sec_capacity)
             if (self.tree.data[self.main_capacity + i][1]) is None
         ]
-        
+
         if len(free_spots) > len(reserved_idx):
-            return self.get_sec_write(secondary_traces, trace,
-                                      free_spots[:len(trace)])
+            return self.get_sec_write(secondary_traces, trace, free_spots[: len(trace)])
 
         # Get crowding distance of traces stored in the secondary buffer
         idx_dist, _ = self.sec_distances(secondary_traces)
@@ -447,7 +448,7 @@ class DiverseMemory:
 
         # Recover trace that needs to be moved
         if end <= start:
-            indices = np.r_[start:self.main_capacity, 0:end]
+            indices = np.r_[start : self.main_capacity, 0:end]
         else:
             indices = np.r_[start:end]
         if not self.trace_diversity:
@@ -483,10 +484,8 @@ class DiverseMemory:
         # Remove trace from main memory
         self.remove_trace((None, indices))
 
-
     def add_sample(self, transition, error, write=None):
-        """Stores the transition into the priority tree
-        """
+        """Stores the transition into the priority tree"""
 
         p = {k: self._getPriority(error[k]) for k in error}
         _, idx = self.tree.add(p, transition, write=write)
@@ -502,7 +501,7 @@ class DiverseMemory:
         self.tree.create(tree_id)
 
     def get_data(self, include_indices=False):
-        """Get all the data stored in the replay buffer 
+        """Get all the data stored in the replay buffer
 
         Keyword Arguments:
             include_indices {bool} -- Whether to include each sample's position in the replay buffer (default: {False})
@@ -512,7 +511,8 @@ class DiverseMemory:
         """
 
         all_data = list(np.arange(self.capacity) + self.capacity - 1), list(
-            self.tree.data)
+            self.tree.data
+        )
         indices = []
         data = []
         for i, d in zip(all_data[0], all_data[1]):
@@ -540,7 +540,7 @@ class DiverseMemory:
 
         if n < 1:
             return None, None, None
-        batch = np.zeros((n, ), dtype=np.ndarray)
+        batch = np.zeros((n,), dtype=np.ndarray)
         ids = np.zeros(n, dtype=int)
         priorities = np.zeros(n, dtype=float)
         segment = self.tree.total(tree_id) / n
@@ -550,8 +550,7 @@ class DiverseMemory:
 
             s = np.random.uniform(a, b)
             (idx, p, data) = self.tree.get(s, tree_id)
-            while (data[1]) is None or (
-                    idx - self.capacity + 1 >= self.capacity):
+            while (data[1]) is None or (idx - self.capacity + 1 >= self.capacity):
                 s = np.random.uniform(0, self.tree.total(tree_id))
                 (idx, p, data) = self.tree.get(s, tree_id)
             ids[i] = idx
@@ -597,7 +596,7 @@ class DiverseMemory:
         priority = self.tree.trees[tree_id][idx]
         return self._getError(priority)
 
-    
+
 def crowd_dist(datas):
     """Given a list of vectors, this method computes the crowding distance of each vector, i.e. the sum of distances between neighbors for each dimension
     Arguments:
@@ -605,6 +604,7 @@ def crowd_dist(datas):
     Returns:
         list -- list of crowding distances
     """
+
     @dataclass
     class Point:
         data: np.ndarray
@@ -616,7 +616,7 @@ def crowd_dist(datas):
     for i, d in enumerate(datas):
         points[i].data = d
         points[i].i = i
-        points[i].distance = 0.
+        points[i].distance = 0.0
 
     # Compute the distance between neighbors for each dimension and add it to
     # each point's global distance
@@ -627,8 +627,7 @@ def crowd_dist(datas):
             if i == 0 or i == len(points) - 1:
                 p.distance += float("inf")
             else:
-                p.distance += (
-                    points[i + 1].data[d] - points[i - 1].data[d]) / spread
+                p.distance += (points[i + 1].data[d] - points[i - 1].data[d]) / spread
 
     # Sort points back to their original order
     points = sorted(points, key=lambda p: p.i)

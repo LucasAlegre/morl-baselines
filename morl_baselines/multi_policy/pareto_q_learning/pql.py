@@ -16,21 +16,29 @@ def get_non_dominated(candidates):
     The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.
     """
     candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
-    candidates = candidates[candidates.sum(1).argsort()[::-1]]  # Sort candidates by decreasing sum of coordinates.
+    candidates = candidates[
+        candidates.sum(1).argsort()[::-1]
+    ]  # Sort candidates by decreasing sum of coordinates.
     for i in range(candidates.shape[0]):  # Process each point in turn.
         n = candidates.shape[0]  # Check current size of the candidates.
         if i >= n:  # If we've eliminated everything up until this size we stop.
             break
-        nd = np.ones(candidates.shape[0], dtype=bool)  # Initialize a boolean mask for undominated points.
+        nd = np.ones(
+            candidates.shape[0], dtype=bool
+        )  # Initialize a boolean mask for undominated points.
         # find all points not dominated by i
         # since points are sorted by coordinate sum
         # i cannot dominate any points in 1,...,i-1
-        nd[i + 1:] = np.any(candidates[i + 1:] > candidates[i], axis=1)
-        candidates = candidates[nd]  # Grab only the non-dominated vectors using the generated bitmask.
+        nd[i + 1 :] = np.any(candidates[i + 1 :] > candidates[i], axis=1)
+        candidates = candidates[
+            nd
+        ]  # Grab only the non-dominated vectors using the generated bitmask.
 
     non_dominated = set()
     for candidate in candidates:
-        non_dominated.add(tuple(candidate))  # Add the non dominated vectors to a set again.
+        non_dominated.add(
+            tuple(candidate)
+        )  # Add the non dominated vectors to a set again.
     return non_dominated
 
 
@@ -43,15 +51,23 @@ def get_best(candidates, max_points=10):
     """
     non_dominated = get_non_dominated(candidates)  # Get the non dominated points.
 
-    if max_points is None:  # If we want to keep everything return the non-dominated vectors already.
+    if (
+        max_points is None
+    ):  # If we want to keep everything return the non-dominated vectors already.
         return non_dominated
 
-    points_to_remove = len(non_dominated) - max_points  # Calculate the number of points left to remove.
+    points_to_remove = (
+        len(non_dominated) - max_points
+    )  # Calculate the number of points left to remove.
 
     if points_to_remove > 0:  # If we still need to discard points.
         nd_array = np.array(list(non_dominated))  # Transform the set to an array.
-        crowding_distances = crowding_distance_assignment(nd_array)  # Calculate the crowding distances.
-        max_ind = np.argsort(crowding_distances)[points_to_remove:]  # Get the indices of the best points.
+        crowding_distances = crowding_distance_assignment(
+            nd_array
+        )  # Calculate the crowding distances.
+        max_ind = np.argsort(crowding_distances)[
+            points_to_remove:
+        ]  # Get the indices of the best points.
         best_points = nd_array[max_ind]  # Select the best points using these indices.
 
         best_set = set()  # Place everything back into a set.
@@ -77,12 +93,17 @@ def crowding_distance_assignment(nd_array):
     minima = np.min(nd_array, axis=0)  # The minima of each objective.
 
     for obj in range(num_objectives):  # Loop over all objectives.
-        crowding_distances[sorted_ind[0, obj]] = np.inf  # Always include the outer points.
+        crowding_distances[
+            sorted_ind[0, obj]
+        ] = np.inf  # Always include the outer points.
         crowding_distances[sorted_ind[-1, obj]] = np.inf
         norm_factor = maxima[obj] - minima[obj]
 
         for i in range(1, size - 1):  # Loop over all other points.
-            distance = nd_array[sorted_ind[i + 1, obj], obj] - nd_array[sorted_ind[i - 1, obj], obj]
+            distance = (
+                nd_array[sorted_ind[i + 1, obj], obj]
+                - nd_array[sorted_ind[i - 1, obj], obj]
+            )
             crowding_distances[sorted_ind[i, obj]] += distance / norm_factor
 
     return crowding_distances
@@ -93,16 +114,18 @@ class ParetoQ(MOAgent):
     An implementation for a pareto Q learning agent that is able to deal with stochastic environments.
     """
 
-    def __init__(self,
-                 env: Optional[gym.Env],
-                 perf_indic: Callable,
-                 gamma: float = 0.8,
-                 init_epsilon: float = 1.,
-                 epsilon_decay: float = 0.99,
-                 decay_every: int = 10,
-                 min_epsilon: float = 0.2,
-                 decimals: int = 2,
-                 novec: int = 30) -> None:
+    def __init__(
+        self,
+        env: Optional[gym.Env],
+        perf_indic: Callable,
+        gamma: float = 0.8,
+        init_epsilon: float = 1.0,
+        epsilon_decay: float = 0.99,
+        decay_every: int = 10,
+        min_epsilon: float = 0.2,
+        decimals: int = 2,
+        novec: int = 30,
+    ) -> None:
         super().__init__(env)
 
         self.env = env
@@ -115,7 +138,9 @@ class ParetoQ(MOAgent):
             print(self.num_states)
             self.num_objectives = env.reward_space.shape[0]
         except Exception:
-            raise Exception('Pareto Q-learning is only supported on the deep sea treasure environment.')
+            raise Exception(
+                "Pareto Q-learning is only supported on the deep sea treasure environment."
+            )
 
         self.gamma = gamma
         self.init_epsilon = init_epsilon
@@ -128,10 +153,18 @@ class ParetoQ(MOAgent):
 
         # Implemented as recommended by Van Moffaert et al. by substituting (s, a) with (s, a, s').
         self.non_dominated = [
-            [[{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_states)] for _ in range(self.num_actions)]
-            for _ in range(self.num_states)]
-        self.avg_r = np.zeros((self.num_states, self.num_actions, self.num_states, self.num_objectives))
-        self.transitions = np.zeros((self.num_states, self.num_actions, self.num_states))
+            [
+                [{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_states)]
+                for _ in range(self.num_actions)
+            ]
+            for _ in range(self.num_states)
+        ]
+        self.avg_r = np.zeros(
+            (self.num_states, self.num_actions, self.num_states, self.num_objectives)
+        )
+        self.transitions = np.zeros(
+            (self.num_states, self.num_actions, self.num_states)
+        )
 
     def calc_q_set(self, state, action):
         """Calculate a Q-set for the state-action pair.
@@ -145,8 +178,12 @@ class ParetoQ(MOAgent):
         """
         q_set = set()
 
-        transition_probs = self.transitions[state, action] / max(1, np.sum(self.transitions[state, action]))
-        next_states = np.where(self.transitions[state, action, :] > 0)[0]  # Next states with prob > 0
+        transition_probs = self.transitions[state, action] / max(
+            1, np.sum(self.transitions[state, action])
+        )
+        next_states = np.where(self.transitions[state, action, :] > 0)[
+            0
+        ]  # Next states with prob > 0
 
         next_sets = []
         for next_state in next_states:
@@ -160,8 +197,12 @@ class ParetoQ(MOAgent):
                 next_state = next_states[idx]
                 transition_prob = transition_probs[next_state]
                 disc_future_reward = self.gamma * np.array(next_vector)
-                expected_vec += transition_prob * (self.avg_r[state, action, next_state] + disc_future_reward)
-            expected_vec = tuple(np.around(expected_vec, decimals=self.decimals))  # Round the future reward.
+                expected_vec += transition_prob * (
+                    self.avg_r[state, action, next_state] + disc_future_reward
+                )
+            expected_vec = tuple(
+                np.around(expected_vec, decimals=self.decimals)
+            )  # Round the future reward.
             q_set.add(tuple(expected_vec))
         return q_set
 
@@ -202,9 +243,12 @@ class ParetoQ(MOAgent):
         q_sets = []
         for a in range(self.num_actions):
             q_sets.append(self.calc_q_set(next_state, a))
-        self.non_dominated[state][action][next_state] = get_best(set().union(*q_sets), max_points=self.novec)
-        self.avg_r[state, action, next_state] += (r - self.avg_r[state, action, next_state]) / self.transitions[
-            state, action, next_state]
+        self.non_dominated[state][action][next_state] = get_best(
+            set().union(*q_sets), max_points=self.novec
+        )
+        self.avg_r[state, action, next_state] += (
+            r - self.avg_r[state, action, next_state]
+        ) / self.transitions[state, action, next_state]
 
     def construct_pcs(self):
         """Construct the Pareto Coverage Set.
@@ -212,8 +256,10 @@ class ParetoQ(MOAgent):
         Returns:
             List[List[Set]]: A set of undominated rewards per state-action pair.
         """
-        pcs = [[{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_actions)] for _ in
-               range(self.num_states)]
+        pcs = [
+            [{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_actions)]
+            for _ in range(self.num_states)
+        ]
         for state in range(self.num_states):
             for action in range(self.num_actions):
                 pcs[state][action] = get_non_dominated(self.calc_q_set(state, action))
@@ -253,13 +299,15 @@ class ParetoQ(MOAgent):
     def flatten_observation(self, obs):
         return int(np.ravel_multi_index(obs, (11, 11)))
 
-    def train(self,
-              iterations: int = 3000,
-              max_timesteps: int = 1000,
-              log: bool = False,
-              log_every: int = 1,
-              project_name: str = "PQL",
-              experiment_name: str = "PQL"):
+    def train(
+        self,
+        iterations: int = 3000,
+        max_timesteps: int = 1000,
+        log: bool = False,
+        log_every: int = 1,
+        project_name: str = "PQL",
+        experiment_name: str = "PQL",
+    ):
         """Train the agent.
 
         Args:

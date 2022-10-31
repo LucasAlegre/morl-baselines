@@ -13,21 +13,29 @@ def get_non_dominated(candidates: set):
     The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.
     """
     candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
-    candidates = candidates[candidates.sum(1).argsort()[::-1]]  # Sort candidates by decreasing sum of coordinates.
+    candidates = candidates[
+        candidates.sum(1).argsort()[::-1]
+    ]  # Sort candidates by decreasing sum of coordinates.
     for i in range(candidates.shape[0]):  # Process each point in turn.
         n = candidates.shape[0]  # Check current size of the candidates.
         if i >= n:  # If we've eliminated everything up until this size we stop.
             break
-        nd = np.ones(candidates.shape[0], dtype=bool)  # Initialize a boolean mask for undominated points.
+        nd = np.ones(
+            candidates.shape[0], dtype=bool
+        )  # Initialize a boolean mask for undominated points.
         # find all points not dominated by i
         # since points are sorted by coordinate sum
         # i cannot dominate any points in 1,...,i-1
-        nd[i + 1:] = np.any(candidates[i + 1:] > candidates[i], axis=1)
-        candidates = candidates[nd]  # Grab only the non-dominated vectors using the generated bitmask.
+        nd[i + 1 :] = np.any(candidates[i + 1 :] > candidates[i], axis=1)
+        candidates = candidates[
+            nd
+        ]  # Grab only the non-dominated vectors using the generated bitmask.
 
     non_dominated = set()
     for candidate in candidates:
-        non_dominated.add(tuple(candidate))  # Add the non dominated vectors to a set again.
+        non_dominated.add(
+            tuple(candidate)
+        )  # Add the non dominated vectors to a set again.
 
     return non_dominated
 

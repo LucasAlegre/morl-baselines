@@ -20,9 +20,17 @@ from morl_baselines.common.utils import layer_init, log_episode_info
 # This code has been adapted from the PPO implementation of clean RL
 # https://github.com/vwxyzjn/cleanrl/blob/master/cleanrl/ppo_continuous_action.py
 
+
 class PPOReplayBuffer:
-    def __init__(self, size: int, num_envs: int, obs_shape: tuple, action_shape: tuple, reward_dim: int,
-                 device: Union[th.device, str]):
+    def __init__(
+        self,
+        size: int,
+        num_envs: int,
+        obs_shape: tuple,
+        action_shape: tuple,
+        reward_dim: int,
+        device: Union[th.device, str],
+    ):
         self.size = size
         self.ptr = 0
         self.num_envs = num_envs
@@ -30,9 +38,13 @@ class PPOReplayBuffer:
         self.obs = th.zeros((self.size, self.num_envs) + obs_shape).to(device)
         self.actions = th.zeros((self.size, self.num_envs) + action_shape).to(device)
         self.logprobs = th.zeros((self.size, self.num_envs)).to(device)
-        self.rewards = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
+        self.rewards = th.zeros(
+            (self.size, self.num_envs, reward_dim), dtype=th.float32
+        ).to(device)
         self.dones = th.zeros((self.size, self.num_envs)).to(device)
-        self.values = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
+        self.values = th.zeros(
+            (self.size, self.num_envs, reward_dim), dtype=th.float32
+        ).to(device)
 
     def add(self, obs, actions, logprobs, rewards, dones, values):
         self.obs[self.ptr] = obs
@@ -50,7 +62,7 @@ class PPOReplayBuffer:
             self.logprobs[step],
             self.rewards[step],
             self.dones[step],
-            self.values[step]
+            self.values[step],
         )
 
     def get_all(self):
@@ -60,7 +72,7 @@ class PPOReplayBuffer:
             self.logprobs,
             self.rewards,
             self.dones,
-            self.values
+            self.values,
         )
 
 
@@ -74,7 +86,11 @@ def make_env(env_id, seed, idx, run_name, gamma):
         env = mo_gym.make(env_id)
         reward_dim = env.reward_space.shape[0]
         if idx == 0:
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}_{seed}", episode_trigger=lambda e: e % 1000 == 0)
+            env = gym.wrappers.RecordVideo(
+                env,
+                f"videos/{run_name}_{seed}",
+                episode_trigger=lambda e: e % 1000 == 0,
+            )
         env = gym.wrappers.ClipAction(env)
         env = gym.wrappers.NormalizeObservation(env)
         env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
@@ -91,19 +107,25 @@ def make_env(env_id, seed, idx, run_name, gamma):
 
 
 def hidden_layer_init(layer):
-    layer_init(layer, weight_gain=np.sqrt(2), bias_const=0.)
+    layer_init(layer, weight_gain=np.sqrt(2), bias_const=0.0)
 
 
 def critic_init(layer):
-    layer_init(layer, weight_gain=1.)
+    layer_init(layer, weight_gain=1.0)
 
 
 def value_init(layer):
-    layer_init(layer, weight_gain=.01)
+    layer_init(layer, weight_gain=0.01)
 
 
 class MOPPONet(nn.Module):
-    def __init__(self, obs_shape: tuple, action_shape: tuple, reward_dim: int, net_arch: List = [64, 64]):
+    def __init__(
+        self,
+        obs_shape: tuple,
+        action_shape: tuple,
+        reward_dim: int,
+        net_arch: List = [64, 64],
+    ):
         super().__init__()
         self.obs_shape = obs_shape
         self.action_shape = action_shape
@@ -111,17 +133,27 @@ class MOPPONet(nn.Module):
         self.net_arch = net_arch
 
         # S -> ... -> |R| (multi-objective)
-        self.critic = mlp(input_dim=np.array(self.obs_shape).prod(), output_dim=self.reward_dim, net_arch=net_arch,
-                          activation_fn=nn.Tanh)
+        self.critic = mlp(
+            input_dim=np.array(self.obs_shape).prod(),
+            output_dim=self.reward_dim,
+            net_arch=net_arch,
+            activation_fn=nn.Tanh,
+        )
         self.critic.apply(hidden_layer_init)
         critic_init(list(self.critic.modules())[-1])
 
         # S -> ... -> A (continuous)
-        self.actor_mean = mlp(input_dim=np.array(self.obs_shape).prod(), output_dim=np.array(self.action_shape).prod(),
-                              net_arch=net_arch, activation_fn=nn.Tanh)
+        self.actor_mean = mlp(
+            input_dim=np.array(self.obs_shape).prod(),
+            output_dim=np.array(self.action_shape).prod(),
+            net_arch=net_arch,
+            activation_fn=nn.Tanh,
+        )
         self.actor_mean.apply(hidden_layer_init)
         value_init(list(self.actor_mean.modules())[-1])
-        self.actor_logstd = nn.Parameter(th.zeros(1, np.array(self.action_shape).prod()))
+        self.actor_logstd = nn.Parameter(
+            th.zeros(1, np.array(self.action_shape).prod())
+        )
 
     def get_value(self, x):
         return self.critic(x)
@@ -133,37 +165,43 @@ class MOPPONet(nn.Module):
         probs = Normal(action_mean, action_std)
         if action is None:
             action = probs.sample()
-        return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)
+        return (
+            action,
+            probs.log_prob(action).sum(1),
+            probs.entropy().sum(1),
+            self.critic(x),
+        )
 
 
 class MOPPO(MOPolicy):
     """
     Modifies PPO to have a multi-objective value net (returning a vector).
     """
+
     def __init__(
-            self,
-            id: int,
-            networks: MOPPONet,
-            weights: np.ndarray,
-            envs: gym.vector.SyncVectorEnv,
-            writer: SummaryWriter,
-            steps_per_iteration: int = 2048,
-            num_minibatches: int = 32,
-            update_epochs: int = 10,
-            learning_rate: float = 3e-4,
-            gamma: float = .995,
-            anneal_lr: bool = False,
-            clip_coef: float = .2,
-            ent_coef: float = 0.,
-            vf_coef: float = .5,
-            clip_vloss: bool = True,
-            max_grad_norm: float = .5,
-            norm_adv: bool = True,
-            target_kl: Optional[float] = None,
-            gae: bool = True,
-            gae_lambda: float = .95,
-            device: Union[th.device, str] = "auto",
-            seed: int = 42,
+        self,
+        id: int,
+        networks: MOPPONet,
+        weights: np.ndarray,
+        envs: gym.vector.SyncVectorEnv,
+        writer: SummaryWriter,
+        steps_per_iteration: int = 2048,
+        num_minibatches: int = 32,
+        update_epochs: int = 10,
+        learning_rate: float = 3e-4,
+        gamma: float = 0.995,
+        anneal_lr: bool = False,
+        clip_coef: float = 0.2,
+        ent_coef: float = 0.0,
+        vf_coef: float = 0.5,
+        clip_vloss: bool = True,
+        max_grad_norm: float = 0.5,
+        norm_adv: bool = True,
+        target_kl: Optional[float] = None,
+        gae: bool = True,
+        gae_lambda: float = 0.95,
+        device: Union[th.device, str] = "auto",
+        seed: int = 42,
     ):
         super().__init__(id, device)
         self.id = id
@@ -194,11 +232,19 @@ class MOPPO(MOPolicy):
         self.writer = writer
         self.gae = gae
 
-        self.optimizer = optim.Adam(networks.parameters(), lr=self.learning_rate, eps=1e-5)
+        self.optimizer = optim.Adam(
+            networks.parameters(), lr=self.learning_rate, eps=1e-5
+        )
 
         # Storage setup (the batch)
-        self.batch = PPOReplayBuffer(self.steps_per_iteration, self.num_envs, self.networks.obs_shape,
-                                     self.networks.action_shape, self.networks.reward_dim, self.device)
+        self.batch = PPOReplayBuffer(
+            self.steps_per_iteration,
+            self.num_envs,
+            self.networks.obs_shape,
+            self.networks.action_shape,
+            self.networks.reward_dim,
+            self.device,
+        )
 
     def __deepcopy__(self, memo):
         copied_net = deepcopy(self.networks)
@@ -223,11 +269,13 @@ class MOPPO(MOPolicy):
             self.target_kl,
             self.gae,
             self.gae_lambda,
-            self.device
+            self.device,
         )
 
         copied.global_step = self.global_step
-        copied.optimizer = optim.Adam(copied_net.parameters(), lr=self.learning_rate, eps=1e-5)
+        copied.optimizer = optim.Adam(
+            copied_net.parameters(), lr=self.learning_rate, eps=1e-5
+        )
         copied.batch = deepcopy(self.batch)
         return copied
 
@@ -253,18 +301,33 @@ class MOPPO(MOPolicy):
                 value = value.view(self.num_envs, self.networks.reward_dim)
 
             # Perform action on the environment
-            next_obs, reward, next_terminated, _, info = self.envs.step(action.cpu().numpy())
-            reward = th.tensor(reward).to(self.device).view(self.num_envs, self.networks.reward_dim)
+            next_obs, reward, next_terminated, _, info = self.envs.step(
+                action.cpu().numpy()
+            )
+            reward = (
+                th.tensor(reward)
+                .to(self.device)
+                .view(self.num_envs, self.networks.reward_dim)
+            )
             # storing to batch
             self.batch.add(obs, action, logprob, reward, done, value)
 
             # Next iteration
-            obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(next_terminated).to(self.device)
+            obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(
+                next_terminated
+            ).to(self.device)
 
             # Episode info logging
             if "episode" in info.keys():
                 for item in info["episode"]:
-                    log_episode_info(item, np.dot, self.weights, self.global_step, self.id, self.writer)
+                    log_episode_info(
+                        item,
+                        np.dot,
+                        self.weights,
+                        self.global_step,
+                        self.id,
+                        self.writer,
+                    )
                     break
 
         return obs, done
@@ -290,8 +353,13 @@ class MOPPO(MOPolicy):
 
                     nextnonterminal = self.__extend_to_reward_dim(nextnonterminal)
                     _, _, _, reward_t, _, value_t = self.batch.get(t)
-                    delta = reward_t + self.gamma * nextvalues * nextnonterminal - value_t
-                    advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
+                    delta = (
+                        reward_t + self.gamma * nextvalues * nextnonterminal - value_t
+                    )
+                    advantages[t] = lastgaelam = (
+                        delta
+                        + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
+                    )
                 returns = advantages + self.batch.values
             else:
                 returns = th.zeros_like(self.batch.rewards).to(self.device)
@@ -319,7 +387,9 @@ class MOPPO(MOPolicy):
         :return: action as a numpy array (continuous actions)
         """
         obs = th.as_tensor(obs).float().to(self.device)
-        obs = obs.unsqueeze(0).repeat(self.num_envs, 1)  # duplicate observation to fit the NN input
+        obs = obs.unsqueeze(0).repeat(
+            self.num_envs, 1
+        )  # duplicate observation to fit the NN input
         with th.no_grad():
             action, _, _, _ = self.networks.get_action_and_value(obs)
 
@@ -346,8 +416,9 @@ class MOPPO(MOPolicy):
                 # mb == minibatch
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue = self.networks.get_action_and_value(b_obs[mb_inds],
-                                                                                      b_actions[mb_inds])
+                _, newlogprob, entropy, newvalue = self.networks.get_action_and_value(
+                    b_obs[mb_inds], b_actions[mb_inds]
+                )
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
 
@@ -355,15 +426,21 @@ class MOPPO(MOPolicy):
                     # calculate approx_kl http://joschu.net/blog/kl-approx.html
                     old_approx_kl = (-logratio).mean()
                     approx_kl = ((ratio - 1) - logratio).mean()
-                    clipfracs += [((ratio - 1.0).abs() > self.clip_coef).float().mean().item()]
+                    clipfracs += [
+                        ((ratio - 1.0).abs() > self.clip_coef).float().mean().item()
+                    ]
 
                 mb_advantages = b_advantages[mb_inds]
                 if self.norm_adv:
-                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
+                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (
+                        mb_advantages.std() + 1e-8
+                    )
 
                 # Policy loss
                 pg_loss1 = -mb_advantages * ratio
-                pg_loss2 = -mb_advantages * th.clamp(ratio, 1 - self.clip_coef, 1 + self.clip_coef)
+                pg_loss2 = -mb_advantages * th.clamp(
+                    ratio, 1 - self.clip_coef, 1 + self.clip_coef
+                )
                 pg_loss = th.max(pg_loss1, pg_loss2).mean()
 
                 # Value loss
@@ -398,15 +475,32 @@ class MOPPO(MOPolicy):
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
         # record rewards for plotting purposes
-        self.writer.add_scalar(f"charts_{self.id}/learning_rate", self.optimizer.param_groups[0]["lr"],
-                               self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/value_loss", v_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/policy_loss", pg_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/entropy", entropy_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/old_approx_kl", old_approx_kl.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/approx_kl", approx_kl.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/clipfrac", np.mean(clipfracs), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/explained_variance", explained_var, self.global_step)
+        self.writer.add_scalar(
+            f"charts_{self.id}/learning_rate",
+            self.optimizer.param_groups[0]["lr"],
+            self.global_step,
+        )
+        self.writer.add_scalar(
+            f"losses_{self.id}/value_loss", v_loss.item(), self.global_step
+        )
+        self.writer.add_scalar(
+            f"losses_{self.id}/policy_loss", pg_loss.item(), self.global_step
+        )
+        self.writer.add_scalar(
+            f"losses_{self.id}/entropy", entropy_loss.item(), self.global_step
+        )
+        self.writer.add_scalar(
+            f"losses_{self.id}/old_approx_kl", old_approx_kl.item(), self.global_step
+        )
+        self.writer.add_scalar(
+            f"losses_{self.id}/approx_kl", approx_kl.item(), self.global_step
+        )
+        self.writer.add_scalar(
+            f"losses_{self.id}/clipfrac", np.mean(clipfracs), self.global_step
+        )
+        self.writer.add_scalar(
+            f"losses_{self.id}/explained_variance", explained_var, self.global_step
+        )
 
     def train(self, start_time, current_iteration, max_iterations):
         """
@@ -433,4 +527,8 @@ class MOPPO(MOPolicy):
 
         # Logging
         print("SPS:", int(self.global_step / (time.time() - start_time)))
-        self.writer.add_scalar("charts/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
+        self.writer.add_scalar(
+            "charts/SPS",
+            int(self.global_step / (time.time() - start_time)),
+            self.global_step,
+        )
