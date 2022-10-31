@@ -71,13 +71,12 @@ class MOPolicy(ABC):
         :param writer: wandb writer
         :return: a tuple containing the evaluations
         """
-
         (
             scalarized_reward,
             scalarized_discounted_reward,
             vec_reward,
             discounted_vec_reward
-         ) = eval_mo(self, eval_env, scalarization, weights)
+         ) = eval_mo(self, eval_env, scalarization=scalarization, w=weights)
         return self.__report(scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward, writer)
 
     def policy_eval_esr(self, eval_env, scalarization, weights: Optional[np.ndarray] = None, writer: SummaryWriter = None):
