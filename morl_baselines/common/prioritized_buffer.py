@@ -100,9 +100,7 @@ class PrioritizedReplayBuffer:
             self.dones[idxes],
         )
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples)) + (
-                idxes,
-            )  # , weights)
+            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples)) + (idxes,)  # , weights)
         else:
             return experience_tuples + (idxes,)
 

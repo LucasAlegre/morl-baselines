@@ -142,9 +142,7 @@ class SumTree:
 
         # Save replaced data to eventually save in secondary memory
         replaced_data = np.copy(self.data[write])
-        replaced_priorities = {
-            tree: np.copy(self.trees[tree][idx]) for tree in self.trees
-        }
+        replaced_priorities = {tree: np.copy(self.trees[tree][idx]) for tree in self.trees}
         replaced = (replaced_data, replaced_priorities)
 
         # Set new priorities
@@ -415,9 +413,7 @@ class DiverseMemory:
         # Find free spots in the secondary memory
         # TODO: keep track of free spots so recomputation isn't necessary
         free_spots = [
-            i + self.main_capacity
-            for i in range(self.sec_capacity)
-            if (self.tree.data[self.main_capacity + i][1]) is None
+            i + self.main_capacity for i in range(self.sec_capacity) if (self.tree.data[self.main_capacity + i][1]) is None
         ]
 
         if len(free_spots) > len(reserved_idx):
@@ -454,10 +450,7 @@ class DiverseMemory:
         if not self.trace_diversity:
             assert len(indices) == 1
         trace = np.copy(self.tree.data[indices])
-        priorities = {
-            tree_id: self.tree.trees[tree_id][indices + self.tree.capacity - 1]
-            for tree_id in self.tree.trees
-        }
+        priorities = {tree_id: self.tree.trees[tree_id][indices + self.tree.capacity - 1] for tree_id in self.tree.trees}
 
         # Get destination indices in secondary memory
         write_indices = self.get_sec_write(self.secondary_traces, trace)
@@ -510,9 +503,7 @@ class DiverseMemory:
             The data
         """
 
-        all_data = list(np.arange(self.capacity) + self.capacity - 1), list(
-            self.tree.data
-        )
+        all_data = list(np.arange(self.capacity) + self.capacity - 1), list(self.tree.data)
         indices = []
         data = []
         for i, d in zip(all_data[0], all_data[1]):

@@ -90,9 +90,7 @@ class OLS:
                 if self.verbose:
                     print(f"Adding weight: {wc} to queue with priority {priority}.")
                 self.queue.append((priority, wc))
-        self.queue.sort(
-            key=lambda t: t[0], reverse=True
-        )  # Sort in descending order of priority
+        self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
 
         if self.verbose:
             print(f"CCS: {self.ccs}")
@@ -162,9 +160,7 @@ class OLS:
         W = cp.Parameter(W_.shape)
         W.value = W_
 
-        V_ = np.array(
-            [self.max_scalarized_value(weight) for weight in self.visited_weights]
-        )
+        V_ = np.array([self.max_scalarized_value(weight) for weight in self.visited_weights])
         V = cp.Parameter(V_.shape)
         V.value = V_
 
@@ -221,9 +217,7 @@ class OLS:
         for v in vertices:
             corners.append(v[:-1])
         # Do not include corner weights already in visited weights
-        filter_fn = lambda wc: (wc is not None) and (
-            not any([np.allclose(wc, w_old) for w_old in self.visited_weights])
-        )
+        filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights]))
         corners = list(filter(filter_fn, corners))
         return corners
 
@@ -251,9 +245,7 @@ if __name__ == "__main__":
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
     num_objectives = 3
-    ols = OLS(
-        num_objectives=num_objectives, epsilon=0.0001, verbose=True
-    )  # , min_value=0.0, max_value=1 / (1 - 0.95) * 1)
+    ols = OLS(num_objectives=num_objectives, epsilon=0.0001, verbose=True)  # , min_value=0.0, max_value=1 / (1 - 0.95) * 1)
     while not ols.ended():
         w = ols.next_weight()
         print("w:", w)

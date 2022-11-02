@@ -7,9 +7,7 @@ from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 def main():
 
     GAMMA = 0.99
-    env = mo_gym.MORecordEpisodeStatistics(
-        mo_gym.make("deep-sea-treasure-v0"), gamma=GAMMA
-    )
+    env = mo_gym.MORecordEpisodeStatistics(mo_gym.make("deep-sea-treasure-v0"), gamma=GAMMA)
 
     ols = OLS(num_objectives=2, epsilon=0.0, verbose=True)
     policies = []
@@ -27,9 +25,7 @@ def main():
         )
         new_policy.train(0, total_timesteps=int(2e5))
 
-        _, _, vec, discounted_vec = new_policy.policy_eval(
-            eval_env=env, weights=w, writer=new_policy.writer
-        )
+        _, _, vec, discounted_vec = new_policy.policy_eval(eval_env=env, weights=w, writer=new_policy.writer)
         policies.append(new_policy)
 
         removed_inds = ols.add_solution(discounted_vec, w)

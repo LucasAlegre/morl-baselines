@@ -97,9 +97,7 @@ class EUPG(MOPolicy, MOAgent):
         if log:
             self.setup_wandb(project_name, experiment_name)
 
-    def eval(
-        self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]
-    ) -> Union[int, np.ndarray]:
+    def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         if type(obs) is int:
             obs = th.as_tensor([obs]).to(self.device)
         else:
@@ -154,9 +152,7 @@ class EUPG(MOPolicy, MOAgent):
             obs,
             _,
         ) = self.env.reset()
-        accrued_reward_tensor = (
-            th.zeros(self.reward_dim, dtype=th.float32).float().to(self.device)
-        )
+        accrued_reward_tensor = th.zeros(self.reward_dim, dtype=th.float32).float().to(self.device)
 
         # Training loop
         for _ in range(1, total_timesteps + 1):
@@ -164,21 +160,15 @@ class EUPG(MOPolicy, MOAgent):
 
             with th.no_grad():
                 # For training, takes action randomly according to the policy
-                action = self.choose_action(
-                    th.Tensor([obs]).to(self.device), accrued_reward_tensor
-                )
+                action = self.choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
-            self.buffer.add(
-                obs, accrued_reward_tensor, action, vec_reward, next_obs, terminated
-            )
+            self.buffer.add(obs, accrued_reward_tensor, action, vec_reward, next_obs, terminated)
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval_esr(
-                    eval_env, scalarization=self.scalarization, writer=self.writer
-                )
+                self.policy_eval_esr(eval_env, scalarization=self.scalarization, writer=self.writer)
 
             if terminated or truncated:
                 # NN is updated at the end of each episode
@@ -186,9 +176,7 @@ class EUPG(MOPolicy, MOAgent):
                 self.buffer.cleanup()
                 obs, _ = self.env.reset()
                 self.num_episodes += 1
-                accrued_reward_tensor = (
-                    th.zeros(self.reward_dim).float().to(self.device)
-                )
+                accrued_reward_tensor = th.zeros(self.reward_dim).float().to(self.device)
 
                 if self.log and "episode" in info.keys():
                     log_episode_info(

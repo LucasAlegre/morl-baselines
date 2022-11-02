@@ -21,15 +21,9 @@ class MOPolicy(ABC):
     eval() requires a weight vector as input.
     """
 
-    def __init__(
-        self, id: Optional[int] = None, device: Union[th.device, str] = "auto"
-    ) -> None:
+    def __init__(self, id: Optional[int] = None, device: Union[th.device, str] = "auto") -> None:
         self.id = id
-        self.device = (
-            th.device("cuda" if th.cuda.is_available() else "cpu")
-            if device == "auto"
-            else device
-        )
+        self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
         self.global_step = 0
 
     @abstractmethod
@@ -60,9 +54,7 @@ class MOPolicy(ABC):
         else:
             idstr = f"_{self.id}"
 
-        writer.add_scalar(
-            f"eval{idstr}/scalarized_return", scalarized_return, self.global_step
-        )
+        writer.add_scalar(f"eval{idstr}/scalarized_return", scalarized_return, self.global_step)
         writer.add_scalar(
             f"eval{idstr}/scalarized_discounted_return",
             scalarized_discounted_return,
@@ -151,15 +143,9 @@ class MOAgent(ABC):
     Contains helpers to extract features from the environment, setup logging etc.
     """
 
-    def __init__(
-        self, env: Optional[gym.Env], device: Union[th.device, str] = "auto"
-    ) -> None:
+    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto") -> None:
         self.extract_env_info(env)
-        self.device = (
-            th.device("cuda" if th.cuda.is_available() else "cpu")
-            if device == "auto"
-            else device
-        )
+        self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
 
         self.global_step = 0
         self.num_episodes = 0

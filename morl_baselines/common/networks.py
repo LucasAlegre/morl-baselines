@@ -60,9 +60,7 @@ class NatureCNN(nn.Module):
         )
         # Compute shape by doing one forward pass
         with th.no_grad():
-            n_flatten = self.cnn(
-                th.as_tensor(np.zeros(observation_shape)[np.newaxis]).float()
-            ).shape[1]
+            n_flatten = self.cnn(th.as_tensor(np.zeros(observation_shape)[np.newaxis]).float()).shape[1]
 
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 

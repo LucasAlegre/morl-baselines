@@ -5,9 +5,7 @@ setup(
     name="morl_baselines",
     description="Implementations of multi-objective reinforcement learning (MORL) algorithms.",
     version="0.1",
-    packages=[
-        package for package in find_packages() if package.startswith("morl_baselines")
-    ],
+    packages=[package for package in find_packages() if package.startswith("morl_baselines")],
     install_requires=["gym", "numpy", "cvxpy", "torch>=1.11", "pymoo"],
     tests_require=["pytest", "mock"],
     python_requires=">=3.7",

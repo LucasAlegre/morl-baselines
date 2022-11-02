@@ -10,9 +10,7 @@ if __name__ == "__main__":
     env = mo_gym.make(env_id, dst_map=CONCAVE_MAP)
     ref_point = np.array([0, -25])
     hypervolume = HV(ref_point=-1 * ref_point)
-    perf_indic = lambda vec_set: hypervolume(
-        -1 * np.array(list(vec_set))
-    )  # Pymoo flips everything.
+    perf_indic = lambda vec_set: hypervolume(-1 * np.array(list(vec_set)))  # Pymoo flips everything.
 
     pf = {
         (3.0, -5.0),

@@ -47,9 +47,7 @@ class QNet(nn.Module):
         else:
             input = th.cat((obs, w), dim=w.dim() - 1)
         q_values = self.net(input)
-        return q_values.view(
-            -1, self.action_dim, self.rew_dim
-        )  # Batch size X Actions X Rewards
+        return q_values.view(-1, self.action_dim, self.rew_dim)  # Batch size X Actions X Rewards
 
 
 class Envelope(MOPolicy, MOAgent):
@@ -113,12 +111,8 @@ class Envelope(MOPolicy, MOAgent):
         self.final_homotopy_lambda = final_homotopy_lambda
         self.homotopy_decay_steps = homotopy_decay_steps
 
-        self.q_net = QNet(
-            self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch
-        ).to(self.device)
-        self.target_q_net = QNet(
-            self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch
-        ).to(self.device)
+        self.q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
+        self.target_q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
         self.target_q_net.load_state_dict(self.q_net.state_dict())
         for param in self.target_q_net.parameters():
             param.requires_grad = False
@@ -193,9 +187,7 @@ class Envelope(MOPolicy, MOAgent):
             self.replay_buffer = params["replay_buffer"]
 
     def sample_batch_experiences(self):
-        return self.replay_buffer.sample(
-            self.batch_size, to_tensor=True, device=self.device
-        )
+        return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
 
     def update(self):
         critic_losses = []
@@ -219,13 +211,9 @@ class Envelope(MOPolicy, MOAgent):
                 ) = self.sample_batch_experiences()
 
             sampled_w = (
-                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w))
-                .float()
-                .to(self.device)
+                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w)).float().to(self.device)
             )  # sample num_sample_w random weights
-            w = sampled_w.repeat_interleave(
-                b_obs.size(0), 0
-            )  # repeat the weights for each sample
+            w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = (
                 b_obs.repeat(self.num_sample_w, 1),
                 b_actions.repeat(self.num_sample_w, 1),
@@ -244,9 +232,7 @@ class Envelope(MOPolicy, MOAgent):
             q_values = self.q_net(b_obs, w)
             q_value = q_values.gather(
                 1,
-                b_actions.long()
-                .reshape(-1, 1, 1)
-                .expand(q_values.size(0), 1, q_values.size(2)),
+                b_actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2)),
             )
             q_value = q_value.reshape(-1, self.reward_dim)
 
@@ -256,9 +242,7 @@ class Envelope(MOPolicy, MOAgent):
                 wQ = th.einsum("br,br->b", q_value, w)
                 wTQ = th.einsum("br,br->b", target_q, w)
                 auxiliary_loss = F.mse_loss(wQ, wTQ)
-                critic_loss = (
-                    1 - self.homotopy_lambda
-                ) * critic_loss + self.homotopy_lambda * auxiliary_loss
+                critic_loss = (1 - self.homotopy_lambda) * critic_loss + self.homotopy_lambda * auxiliary_loss
 
             self.q_optim.zero_grad()
             critic_loss.backward()
@@ -281,9 +265,7 @@ class Envelope(MOPolicy, MOAgent):
                 self.replay_buffer.update_priorities(b_inds, priority)
 
         if self.tau != 1 or self.global_step % self.target_net_update_freq == 0:
-            polyak_update(
-                self.q_net.parameters(), self.target_q_net.parameters(), self.tau
-            )
+            polyak_update(self.q_net.parameters(), self.target_q_net.parameters(), self.tau)
 
         if self.epsilon_decay_steps is not None:
             self.epsilon = linearly_decaying_value(
@@ -304,13 +286,9 @@ class Envelope(MOPolicy, MOAgent):
             )
 
         if self.log and self.global_step % 100 == 0:
-            self.writer.add_scalar(
-                "losses/critic_loss", np.mean(critic_losses), self.global_step
-            )
+            self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.global_step)
             self.writer.add_scalar("metrics/epsilon", self.epsilon, self.global_step)
-            self.writer.add_scalar(
-                "metrics/homotopy_lambda", self.homotopy_lambda, self.global_step
-            )
+            self.writer.add_scalar("metrics/homotopy_lambda", self.homotopy_lambda, self.global_step)
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         obs = th.as_tensor(obs).float().to(self.device)
@@ -331,18 +309,14 @@ class Envelope(MOPolicy, MOAgent):
         return max_act.detach().item()
 
     @th.no_grad()
-    def envelope_target(
-        self, obs: th.Tensor, w: th.Tensor, sampled_w: th.Tensor
-    ) -> th.Tensor:
+    def envelope_target(self, obs: th.Tensor, w: th.Tensor, sampled_w: th.Tensor) -> th.Tensor:
         # Repeat the weights for each sample
         W = sampled_w.unsqueeze(0).repeat(obs.size(0), 1, 1)
         # Repeat the observations for each sampled weight
         next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
 
         # Batch size X Num sampled weights X Num actions X Num objectives
-        next_q_values = self.q_net(next_obs, W).view(
-            obs.size(0), sampled_w.size(0), self.action_dim, self.reward_dim
-        )
+        next_q_values = self.q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.reward_dim)
         # Scalarized Q values for each sampled weight
         scalarized_next_q_values = th.einsum("br,bwar->bwa", w, next_q_values)
         # Max Q values for each sampled weight
@@ -358,16 +332,10 @@ class Envelope(MOPolicy, MOAgent):
         # Index the Q-values for the max actions
         max_next_q = next_q_values_target.gather(
             2,
-            ac.unsqueeze(2)
-            .unsqueeze(3)
-            .expand(
-                next_q_values.size(0), next_q_values.size(1), 1, next_q_values.size(3)
-            ),
+            ac.unsqueeze(2).unsqueeze(3).expand(next_q_values.size(0), next_q_values.size(1), 1, next_q_values.size(3)),
         ).squeeze(2)
         # Index the Q-values for the max sampled weights
-        max_next_q = max_next_q.gather(
-            1, pref.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))
-        ).squeeze(1)
+        max_next_q = max_next_q.gather(1, pref.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))).squeeze(1)
         return max_next_q
 
     @th.no_grad()
@@ -380,9 +348,7 @@ class Envelope(MOPolicy, MOAgent):
         q_values_target = self.target_q_net(obs, w)
         q_values_target = q_values_target.gather(
             1,
-            max_acts.long()
-            .reshape(-1, 1, 1)
-            .expand(q_values_target.size(0), 1, q_values_target.size(2)),
+            max_acts.long().reshape(-1, 1, 1).expand(q_values_target.size(0), 1, q_values_target.size(2)),
         )
         q_values_target = q_values_target.reshape(-1, self.reward_dim)
         return q_values_target
@@ -440,9 +406,7 @@ class Envelope(MOPolicy, MOAgent):
                     tensor_w = th.tensor(w).float().to(self.device)
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(
-                        info["episode"], np.dot, w, self.global_step, self.writer
-                    )
+                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer)
 
             else:
                 obs = next_obs

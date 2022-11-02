@@ -38,13 +38,9 @@ class PPOReplayBuffer:
         self.obs = th.zeros((self.size, self.num_envs) + obs_shape).to(device)
         self.actions = th.zeros((self.size, self.num_envs) + action_shape).to(device)
         self.logprobs = th.zeros((self.size, self.num_envs)).to(device)
-        self.rewards = th.zeros(
-            (self.size, self.num_envs, reward_dim), dtype=th.float32
-        ).to(device)
+        self.rewards = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
         self.dones = th.zeros((self.size, self.num_envs)).to(device)
-        self.values = th.zeros(
-            (self.size, self.num_envs, reward_dim), dtype=th.float32
-        ).to(device)
+        self.values = th.zeros((self.size, self.num_envs, reward_dim), dtype=th.float32).to(device)
 
     def add(self, obs, actions, logprobs, rewards, dones, values):
         self.obs[self.ptr] = obs
@@ -151,9 +147,7 @@ class MOPPONet(nn.Module):
         )
         self.actor_mean.apply(hidden_layer_init)
         value_init(list(self.actor_mean.modules())[-1])
-        self.actor_logstd = nn.Parameter(
-            th.zeros(1, np.array(self.action_shape).prod())
-        )
+        self.actor_logstd = nn.Parameter(th.zeros(1, np.array(self.action_shape).prod()))
 
     def get_value(self, x):
         return self.critic(x)
@@ -232,9 +226,7 @@ class MOPPO(MOPolicy):
         self.writer = writer
         self.gae = gae
 
-        self.optimizer = optim.Adam(
-            networks.parameters(), lr=self.learning_rate, eps=1e-5
-        )
+        self.optimizer = optim.Adam(networks.parameters(), lr=self.learning_rate, eps=1e-5)
 
         # Storage setup (the batch)
         self.batch = PPOReplayBuffer(
@@ -273,9 +265,7 @@ class MOPPO(MOPolicy):
         )
 
         copied.global_step = self.global_step
-        copied.optimizer = optim.Adam(
-            copied_net.parameters(), lr=self.learning_rate, eps=1e-5
-        )
+        copied.optimizer = optim.Adam(copied_net.parameters(), lr=self.learning_rate, eps=1e-5)
         copied.batch = deepcopy(self.batch)
         return copied
 
@@ -301,21 +291,13 @@ class MOPPO(MOPolicy):
                 value = value.view(self.num_envs, self.networks.reward_dim)
 
             # Perform action on the environment
-            next_obs, reward, next_terminated, _, info = self.envs.step(
-                action.cpu().numpy()
-            )
-            reward = (
-                th.tensor(reward)
-                .to(self.device)
-                .view(self.num_envs, self.networks.reward_dim)
-            )
+            next_obs, reward, next_terminated, _, info = self.envs.step(action.cpu().numpy())
+            reward = th.tensor(reward).to(self.device).view(self.num_envs, self.networks.reward_dim)
             # storing to batch
             self.batch.add(obs, action, logprob, reward, done, value)
 
             # Next iteration
-            obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(
-                next_terminated
-            ).to(self.device)
+            obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(next_terminated).to(self.device)
 
             # Episode info logging
             if "episode" in info.keys():
@@ -353,13 +335,8 @@ class MOPPO(MOPolicy):
 
                     nextnonterminal = self.__extend_to_reward_dim(nextnonterminal)
                     _, _, _, reward_t, _, value_t = self.batch.get(t)
-                    delta = (
-                        reward_t + self.gamma * nextvalues * nextnonterminal - value_t
-                    )
-                    advantages[t] = lastgaelam = (
-                        delta
-                        + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
-                    )
+                    delta = reward_t + self.gamma * nextvalues * nextnonterminal - value_t
+                    advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
                 returns = advantages + self.batch.values
             else:
                 returns = th.zeros_like(self.batch.rewards).to(self.device)
@@ -387,9 +364,7 @@ class MOPPO(MOPolicy):
         :return: action as a numpy array (continuous actions)
         """
         obs = th.as_tensor(obs).float().to(self.device)
-        obs = obs.unsqueeze(0).repeat(
-            self.num_envs, 1
-        )  # duplicate observation to fit the NN input
+        obs = obs.unsqueeze(0).repeat(self.num_envs, 1)  # duplicate observation to fit the NN input
         with th.no_grad():
             action, _, _, _ = self.networks.get_action_and_value(obs)
 
@@ -416,9 +391,7 @@ class MOPPO(MOPolicy):
                 # mb == minibatch
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue = self.networks.get_action_and_value(
-                    b_obs[mb_inds], b_actions[mb_inds]
-                )
+                _, newlogprob, entropy, newvalue = self.networks.get_action_and_value(b_obs[mb_inds], b_actions[mb_inds])
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
 
@@ -426,21 +399,15 @@ class MOPPO(MOPolicy):
                     # calculate approx_kl http://joschu.net/blog/kl-approx.html
                     old_approx_kl = (-logratio).mean()
                     approx_kl = ((ratio - 1) - logratio).mean()
-                    clipfracs += [
-                        ((ratio - 1.0).abs() > self.clip_coef).float().mean().item()
-                    ]
+                    clipfracs += [((ratio - 1.0).abs() > self.clip_coef).float().mean().item()]
 
                 mb_advantages = b_advantages[mb_inds]
                 if self.norm_adv:
-                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (
-                        mb_advantages.std() + 1e-8
-                    )
+                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
 
                 # Policy loss
                 pg_loss1 = -mb_advantages * ratio
-                pg_loss2 = -mb_advantages * th.clamp(
-                    ratio, 1 - self.clip_coef, 1 + self.clip_coef
-                )
+                pg_loss2 = -mb_advantages * th.clamp(ratio, 1 - self.clip_coef, 1 + self.clip_coef)
                 pg_loss = th.max(pg_loss1, pg_loss2).mean()
 
                 # Value loss
@@ -480,27 +447,13 @@ class MOPPO(MOPolicy):
             self.optimizer.param_groups[0]["lr"],
             self.global_step,
         )
-        self.writer.add_scalar(
-            f"losses_{self.id}/value_loss", v_loss.item(), self.global_step
-        )
-        self.writer.add_scalar(
-            f"losses_{self.id}/policy_loss", pg_loss.item(), self.global_step
-        )
-        self.writer.add_scalar(
-            f"losses_{self.id}/entropy", entropy_loss.item(), self.global_step
-        )
-        self.writer.add_scalar(
-            f"losses_{self.id}/old_approx_kl", old_approx_kl.item(), self.global_step
-        )
-        self.writer.add_scalar(
-            f"losses_{self.id}/approx_kl", approx_kl.item(), self.global_step
-        )
-        self.writer.add_scalar(
-            f"losses_{self.id}/clipfrac", np.mean(clipfracs), self.global_step
-        )
-        self.writer.add_scalar(
-            f"losses_{self.id}/explained_variance", explained_var, self.global_step
-        )
+        self.writer.add_scalar(f"losses_{self.id}/value_loss", v_loss.item(), self.global_step)
+        self.writer.add_scalar(f"losses_{self.id}/policy_loss", pg_loss.item(), self.global_step)
+        self.writer.add_scalar(f"losses_{self.id}/entropy", entropy_loss.item(), self.global_step)
+        self.writer.add_scalar(f"losses_{self.id}/old_approx_kl", old_approx_kl.item(), self.global_step)
+        self.writer.add_scalar(f"losses_{self.id}/approx_kl", approx_kl.item(), self.global_step)
+        self.writer.add_scalar(f"losses_{self.id}/clipfrac", np.mean(clipfracs), self.global_step)
+        self.writer.add_scalar(f"losses_{self.id}/explained_variance", explained_var, self.global_step)
 
     def train(self, start_time, current_iteration, max_iterations):
         """

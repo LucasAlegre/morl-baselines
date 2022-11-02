@@ -7,9 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 @th.no_grad()
-def layer_init(
-    layer, method="orthogonal", weight_gain: float = 1, bias_const: float = 0
-) -> None:
+def layer_init(layer, method="orthogonal", weight_gain: float = 1, bias_const: float = 0) -> None:
     if isinstance(layer, (nn.Linear, nn.Conv2d)):
         if method == "xavier":
             th.nn.init.xavier_uniform_(layer.weight, gain=weight_gain)
@@ -38,9 +36,7 @@ def get_grad_norm(params: Iterable[th.nn.Parameter]) -> th.Tensor:
     if len(parameters) == 0:
         return th.tensor(0.0)
     device = parameters[0].grad.device
-    total_norm = th.norm(
-        th.stack([th.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0
-    )
+    total_norm = th.norm(th.stack([th.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0)
     return total_norm
 
 
@@ -48,9 +44,7 @@ def huber(x, min_priority=0.01):
     return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
 
 
-def linearly_decaying_value(
-    initial_value, decay_period, step, warmup_steps, final_value
-):
+def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, final_value):
     """Returns the current value for a linearly decaying parameter.
     This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
     al., 2015). The schedule is as follows:
@@ -68,15 +62,11 @@ def linearly_decaying_value(
     steps_left = decay_period + warmup_steps - step
     bonus = (initial_value - final_value) * steps_left / decay_period
     value = final_value + bonus
-    value = np.clip(
-        value, min(initial_value, final_value), max(initial_value, final_value)
-    )
+    value = np.clip(value, min(initial_value, final_value), max(initial_value, final_value))
     return value
 
 
-def random_weights(
-    dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian"
-) -> np.ndarray:
+def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
     """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1
     Args:
         dim: size of the weight vector
@@ -139,13 +129,9 @@ def log_episode_info(
             idstr = "_" + str(id)
         else:
             idstr = ""
-        writer.add_scalar(
-            f"charts{idstr}/timesteps_per_episode", episode_ts, global_timestep
-        )
+        writer.add_scalar(f"charts{idstr}/timesteps_per_episode", episode_ts, global_timestep)
         writer.add_scalar(f"charts{idstr}/episode_time", episode_time, global_timestep)
-        writer.add_scalar(
-            f"metrics{idstr}/scalarized_episode_return", scal_return, global_timestep
-        )
+        writer.add_scalar(f"metrics{idstr}/scalarized_episode_return", scal_return, global_timestep)
         writer.add_scalar(
             f"metrics{idstr}/discounted_scalarized_episode_return",
             disc_scal_return,

@@ -55,9 +55,7 @@ class MPMOQLearning(MOAgent):
         self.weights = self.__generate_weights(self.weights_step_size)
         print(f"Generated weights: {self.weights}")
         if self.log:
-            self.setup_wandb(
-                project_name=self.project_name, experiment_name=self.experiment_name
-            )
+            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
 
         self.agents = [
             MOQLearning(
@@ -92,17 +90,13 @@ class MPMOQLearning(MOAgent):
         }
 
     def __generate_weights(self, step_size):
-        return np.linspace(
-            (0.0, 1.0), (1.0, 0.0), int(1 / step_size) + 1, dtype=np.float32
-        )
+        return np.linspace((0.0, 1.0), (1.0, 0.0), int(1 / step_size) + 1, dtype=np.float32)
 
     def eval_all_agents(self):
         discounted_rewards = []
         rewards = []
         for a in self.agents:
-            _, _, vec, discounted_vec = a.policy_eval(
-                eval_env=self.env, weights=a.weights, writer=self.writer
-            )
+            _, _, vec, discounted_vec = a.policy_eval(eval_env=self.env, weights=a.weights, writer=self.writer)
             discounted_rewards.append(discounted_vec)
             rewards.append(vec)
         print(f"Evaluation of all agents: {rewards}")
