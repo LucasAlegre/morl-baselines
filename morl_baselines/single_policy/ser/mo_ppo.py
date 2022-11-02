@@ -251,7 +251,7 @@ class MOPPO(MOPolicy):
         copied = type(self)(
             self.id,
             copied_net,
-            self.weights.detach().numpy(),
+            self.weights.detach().cpu().numpy(),
             self.envs,
             self.writer,
             self.steps_per_iteration,

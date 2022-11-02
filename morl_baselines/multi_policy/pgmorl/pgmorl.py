@@ -455,7 +455,7 @@ class PGMORL(MOAgent):
             self.archive.add(agent, discounted_reward)
             if add_to_prediction:
                 self.predictor.add(
-                    agent.weights.detach().numpy(),
+                    agent.weights.detach().cpu().numpy(),
                     evaluations_before_train[i],
                     discounted_reward,
                 )
