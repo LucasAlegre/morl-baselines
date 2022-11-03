@@ -1,8 +1,8 @@
+import mo_gym
 import numpy as np
+from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 from pymoo.indicators.hv import HV
 
-import mo_gym
-from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 from morl_baselines.multi_policy.pareto_q_learning.pql import ParetoQ
 
 if __name__ == "__main__":

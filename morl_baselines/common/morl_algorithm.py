@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from typing import Optional, Union
 
+import gym
+import mo_gym
 import numpy as np
 import torch as th
-import mo_gym
-from mo_gym import eval_mo, eval_mo_reward_conditioned
-import gym
 from gym import spaces
-
+from mo_gym import eval_mo, eval_mo_reward_conditioned
 from torch.utils.tensorboard import SummaryWriter
 
 

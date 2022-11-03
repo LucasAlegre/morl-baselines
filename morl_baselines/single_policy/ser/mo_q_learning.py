@@ -6,10 +6,9 @@ import numpy as np
 from mo_gym import eval_mo
 from torch.utils.tensorboard import SummaryWriter
 
+from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.scalarization import tchebicheff, weighted_sum
 from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
-from morl_baselines.common.scalarization import weighted_sum, tchebicheff
-
-from morl_baselines.common.morl_algorithm import MOPolicy, MOAgent
 
 
 class MOQLearning(MOPolicy, MOAgent):

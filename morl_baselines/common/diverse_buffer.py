@@ -1,5 +1,6 @@
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 
 MAIN_TREE = 0
 

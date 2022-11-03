@@ -8,21 +8,22 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from mo_gym.evaluation import eval_mo
+
 import wandb as wb
-from morl_baselines.common.morl_algorithm import MOPolicy, MOAgent
 from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.networks import NatureCNN, mlp
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.networks import mlp, NatureCNN
 from morl_baselines.common.utils import (
-    layer_init,
-    polyak_update,
-    linearly_decaying_value,
     get_grad_norm,
     huber,
-    random_weights,
+    layer_init,
+    linearly_decaying_value,
     log_episode_info,
+    polyak_update,
+    random_weights,
 )
-from mo_gym.evaluation import eval_mo
 
 
 class QNet(nn.Module):

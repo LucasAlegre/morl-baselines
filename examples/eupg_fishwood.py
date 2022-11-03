@@ -1,7 +1,7 @@
 import gym
 import mo_gym
+from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP, DeepSeaTreasure
 from mo_gym.utils import MORecordEpisodeStatistics
-from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
 
 from morl_baselines.single_policy.esr.eupg import EUPG
 

@@ -1,5 +1,5 @@
-import numpy as np
 import mo_gym
+import numpy as np
 from mo_gym.utils import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope

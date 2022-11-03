@@ -4,18 +4,16 @@ from typing import List, Optional, Union
 
 import gym
 import mo_gym
-from mo_gym import eval_mo
 import numpy as np
 import torch as th
-from mo_gym import MORecordEpisodeStatistics
+from mo_gym import MORecordEpisodeStatistics, eval_mo
 from torch import nn, optim
 from torch.distributions import Normal
 from torch.utils.tensorboard import SummaryWriter
 
-from morl_baselines.common.networks import mlp
 from morl_baselines.common.morl_algorithm import MOPolicy
+from morl_baselines.common.networks import mlp
 from morl_baselines.common.utils import layer_init, log_episode_info
-
 
 # This code has been adapted from the PPO implementation of clean RL
 # https://github.com/vwxyzjn/cleanrl/blob/master/cleanrl/ppo_continuous_action.py

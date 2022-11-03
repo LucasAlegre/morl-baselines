@@ -1,7 +1,7 @@
 import random
 import time
 from copy import deepcopy
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
 import gym
 import mo_gym
@@ -9,10 +9,10 @@ import numpy as np
 import torch as th
 from scipy.optimize import least_squares
 
-from morl_baselines.common.performance_indicators import sparsity, hypervolume
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.single_policy.ser.mo_ppo import make_env, MOPPONet, MOPPO
+from morl_baselines.common.performance_indicators import hypervolume, sparsity
+from morl_baselines.single_policy.ser.mo_ppo import MOPPO, MOPPONet, make_env
 
 
 # Some code in this file has been adapted from the original code provided by the authors of the paper

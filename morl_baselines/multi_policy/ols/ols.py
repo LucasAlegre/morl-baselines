@@ -1,6 +1,6 @@
+from copy import deepcopy
 from itertools import combinations
 from typing import List, Optional
-from copy import deepcopy
 
 import cdd
 import cvxpy as cp
