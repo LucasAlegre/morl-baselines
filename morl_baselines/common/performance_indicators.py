@@ -2,11 +2,11 @@ from copy import deepcopy
 from typing import List
 
 import numpy as np
-from pymoo.factory import get_performance_indicator
+import numpy.typing as npt
 from pymoo.indicators.hv import HV
 
 
-def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
+def hypervolume(ref_point: np.ndarray, points: List[npt.ArrayLike]) -> float:
     """Computes the hypervolume metric for a set of points (value vectors) and a reference point.
 
     Args:
