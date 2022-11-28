@@ -15,7 +15,7 @@ if __name__ == "__main__":
         ref_point,
         gamma=1.,
         initial_epsilon=1.,
-        epsilon_decay=0.999,
+        epsilon_decay=0.997,
         final_epsilon=0.2,
         seed=1,
         project_name="MORL-baselines",
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     )
 
     num_episodes = 10000
-    pf = agent.train(num_episodes=10000, max_timesteps=1000, log_every=100, action_eval='pareto_cardinality')
+    pf = agent.train(num_episodes=10000, max_timesteps=1000, log_every=100, action_eval='hypervolume')
     print(pf)
 
     # Execute a policy
