@@ -1,6 +1,6 @@
 import numpy as np
-from pymoo.indicators.hv import HV
 
+from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
 
@@ -35,7 +35,6 @@ class PQL(MOAgent):
         self.seed = seed
         self.rng = np.random.default_rng(seed)
         self.ref_point = ref_point
-        self.hypervolume = HV(ref_point=ref_point * -1)
 
         self.num_actions = self.env.action_space.n
         low_bound = self.env.observation_space.low
@@ -102,7 +101,7 @@ class PQL(MOAgent):
             ndarray: A score per action.
         """
         q_sets = [self.get_q_set(state, action) for action in range(self.num_actions)]
-        action_scores = [self.hypervolume(-1 * np.array(list(q_set))) for q_set in q_sets]
+        action_scores = [hypervolume(self.ref_point, list(q_set)) for q_set in q_sets]
         return action_scores
 
     def get_q_set(self, state, action):
@@ -185,13 +184,14 @@ class PQL(MOAgent):
                 self.counts[state, action] += 1
                 self.non_dominated[state][action] = self.calc_non_dominated(next_state)
                 self.avg_reward[state, action] += (reward - self.avg_reward[state, action]) / self.counts[state, action]
-                self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
                 state = next_state
                 timestep += 1
 
+            self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
+
             if self.log and episode % log_every == 0:
                 pf = self.get_local_pcs(state=0)
-                value = self.hypervolume(-1 * np.array(list(pf)))
+                value = hypervolume(self.ref_point, list(pf))
                 print(f'Hypervolume in episode {episode}: {value}')
                 self.writer.add_scalar("train/hypervolume", value, episode)
 
