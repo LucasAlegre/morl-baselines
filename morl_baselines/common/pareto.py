@@ -48,10 +48,12 @@ class ParetoArchive:
 
         # Reconstruct the pareto archive (because ND sorting might change the order of candidates)
         nd_evals = []
+        nd_evals_tup = []
         nd_individuals = []
         for e, i in zip(self.evaluations, self.individuals):
-            if tuple(e) in nd_candidates:
+            if tuple(e) in nd_candidates and tuple(e) not in nd_evals_tup:
                 nd_evals.append(e)
+                nd_evals_tup.append(tuple(e))
                 nd_individuals.append(i)
         self.evaluations = nd_evals
         self.individuals = nd_individuals

@@ -1,14 +1,16 @@
 import time
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 
 import gym
 import mo_gym
 import numpy as np
 import torch as th
+import wandb
 from gym.wrappers import TimeLimit
 from mo_gym import MORecordEpisodeStatistics
 from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
 from pymoo.util.ref_dirs import get_reference_directions
+from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import ParetoArchive
@@ -46,7 +48,9 @@ class MORLD(MOAgent):
     def __init__(
         self,
         env_name: str,
-        policy_factory: Callable[[int, gym.Env, np.ndarray, Callable[[np.ndarray, np.ndarray], float], float], Policy],
+        policy_factory: Callable[
+            [int, gym.Env, np.ndarray, Callable[[np.ndarray, np.ndarray], float], float, Optional[SummaryWriter]], Policy
+        ],
         scalarization_method: str,  # "ws" or "tch"
         evaluation_mode: str,  # "esr" or "ser"
         ref_point: np.ndarray,
@@ -60,7 +64,7 @@ class MORLD(MOAgent):
         shared_buffer: bool = False,
         weight_init_method: str = "uniform",
         project_name: str = "MORL-Baselines",
-        experiment_name: str = "MORL/D",
+        experiment_name: str = "MORL-D",
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
@@ -121,22 +125,17 @@ class MORLD(MOAgent):
         else:
             raise f"Unsupported scalarization method: ${self.scalarization_method}"
 
-        # Policies
-        self.current_policy = 0  # For selection
-        self.policy_factory = policy_factory
-        self.population = [self.policy_factory(i, env, w, self.scalarization, gamma) for i, w in enumerate(self.weights)]
-        self.policy_method = self.population[0].__class__.__name__
-        self.archive = ParetoArchive()
-
         # Sharing schemes
         self.neighborhood_size = neighborhood_size
         self.exchange_every = exchange_every
         self.shared_buffer = shared_buffer
         self.dist_metric = dist_metric
         self.neighborhoods = [
-            nearest_neighbors(n=self.neighborhood_size, current_weight=w, all_weights=self.weights, dist=self.dist_metric)
+            nearest_neighbors(n=self.neighborhood_size, current_weight=w, all_weights=self.weights, sim=self.dist_metric)
             for w in self.weights
         ]
+        print("Weights:", self.weights)
+        print("Neighborhoods:", self.neighborhoods)
 
         # Logging
         self.global_step = 0
@@ -145,12 +144,20 @@ class MORLD(MOAgent):
         self.log = log
 
         if self.log:
+            wandb.tensorboard.patch(root_logdir="/tmp/" + self.experiment_name, pytorch=True)
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
+
+        # Policies
+        self.current_policy = 0  # For selection
+        self.policy_factory = policy_factory
+        self.population = [
+            self.policy_factory(i, env, w, self.scalarization, gamma, self.writer) for i, w in enumerate(self.weights)
+        ]
+        self.archive = ParetoArchive()
 
     def get_config(self) -> dict:
         return {
             "env_name": self.env_name,
-            "policy_method": self.policy_method,
             "scalarization_method": self.scalarization_method,
             "evaluation_mode": self.evaluation_mode,
             "ref_point": self.ref_point,
@@ -199,7 +206,7 @@ class MORLD(MOAgent):
 
     def train(self, total_timesteps: int, reset_num_timesteps: bool = False):
         # Init
-        self.start_time = time.time()
+        start_time = time.time()
 
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
@@ -216,7 +223,15 @@ class MORLD(MOAgent):
             # TODO adaptation
             self.__eval_all_agents()
 
+            # Logging speed
+            print("SPS:", int(self.global_step / (time.time() - start_time)))
+            self.writer.add_scalar(
+                "charts/SPS",
+                int(self.global_step / (time.time() - start_time)),
+                self.global_step,
+            )
+
         print("done!")
-        self.writer.close()
         self.env.close()
         self.eval_env.close()
+        self.close_wandb()

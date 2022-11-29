@@ -63,6 +63,7 @@ class EUPG(MOPolicy, MOAgent):
         project_name: str = "MORL-Baselines",
         experiment_name: str = "EUPG",
         log: bool = True,
+        parent_writer: Optional[SummaryWriter] = None,
         device: Union[th.device, str] = "auto",
     ):
         MOAgent.__init__(self, env, device)
@@ -99,8 +100,10 @@ class EUPG(MOPolicy, MOAgent):
         self.project_name = project_name
         self.experiment_name = experiment_name
         self.log = log
-        if log:
-            self.setup_wandb(self.project_name, experiment_name + "-" + str(self.weights))
+        if parent_writer is not None:
+            self.writer = parent_writer
+        if log and parent_writer is None:
+            self.setup_wandb(self.project_name, self.experiment_name)
 
     def __deepcopy__(self, memo):
         copied_net = deepcopy(self.net)
@@ -116,7 +119,8 @@ class EUPG(MOPolicy, MOAgent):
             self.project_name,
             self.experiment_name,
             self.log,
-            self.device,
+            parent_writer=self.writer,
+            device=self.device,
         )
 
         copied.global_step = self.global_step
