@@ -1,4 +1,5 @@
-from typing import List, Optional, Union
+from copy import deepcopy
+from typing import List, Optional, Union, Callable
 
 import gym
 import numpy as np
@@ -52,7 +53,9 @@ class EUPG(MOPolicy, MOAgent):
     def __init__(
         self,
         env: gym.Env,
-        scalarization,
+        scalarization: Callable[[np.ndarray, np.ndarray], float],
+        weights: np.ndarray = np.ones(2),
+        id: Optional[int] = None,
         buffer_size: int = int(1e5),
         net_arch: List = [50],
         gamma: float = 0.99,
@@ -66,8 +69,10 @@ class EUPG(MOPolicy, MOAgent):
         MOPolicy.__init__(self, None, device)
 
         self.env = env
+        self.id = id
         # RL
         self.scalarization = scalarization
+        self.weights = weights
         self.gamma = gamma
 
         # Learning
@@ -95,7 +100,29 @@ class EUPG(MOPolicy, MOAgent):
         self.experiment_name = experiment_name
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(self.project_name, experiment_name + "-" + str(self.weights))
+
+    def __deepcopy__(self, memo):
+        copied_net = deepcopy(self.net)
+        copied = type(self)(
+            self.env,
+            self.scalarization,
+            self.weights,
+            self.id,
+            self.buffer_size,
+            self.net_arch,
+            self.gamma,
+            self.learning_rate,
+            self.project_name,
+            self.experiment_name,
+            self.log,
+            self.device,
+        )
+
+        copied.global_step = self.global_step
+        copied.optimizer = optim.Adam(copied_net.parameters(), lr=self.learning_rate)
+        copied.buffer = deepcopy(self.buffer)
+        return copied
 
     def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         if type(obs) is int:
@@ -121,7 +148,8 @@ class EUPG(MOPolicy, MOAgent):
         ) = self.buffer.get_all_data(to_tensor=True, device=self.device)
         # Scalarized episodic reward, our target :-)
         episodic_return = th.sum(rewards, dim=0)
-        scalarized_return = self.scalarization(episodic_return)
+        scalarized_return = self.scalarization(episodic_return.cpu().numpy(), self.weights)
+        scalarized_return = th.scalar_tensor(scalarized_return)
 
         # For each sample in the batch, get the distribution over actions
         current_distribution = self.net.distribution(obs, accrued_rewards)
@@ -134,9 +162,10 @@ class EUPG(MOPolicy, MOAgent):
         self.optimizer.step()
 
         if self.log:
-            self.writer.add_scalar("losses/loss", loss, self.global_step)
+            log_str = f"_{self.id}" if self.id is not None else ""
+            self.writer.add_scalar(f"losses{log_str}/loss", loss, self.global_step)
             self.writer.add_scalar(
-                "metrics/scalarized_episodic_return",
+                f"metrics{log_str}/scalarized_episodic_return",
                 scalarized_return,
                 self.global_step,
             )
@@ -160,7 +189,7 @@ class EUPG(MOPolicy, MOAgent):
 
             with th.no_grad():
                 # For training, takes action randomly according to the policy
-                action = self.choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
+                action = self.choose_action(th.Tensor(obs).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
@@ -168,7 +197,7 @@ class EUPG(MOPolicy, MOAgent):
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval_esr(eval_env, scalarization=self.scalarization, writer=self.writer)
+                self.policy_eval_esr(eval_env, scalarization=self.scalarization, weights=self.weights, writer=self.writer)
 
             if terminated or truncated:
                 # NN is updated at the end of each episode
@@ -180,11 +209,12 @@ class EUPG(MOPolicy, MOAgent):
 
                 if self.log and "episode" in info.keys():
                     log_episode_info(
-                        info["episode"],
-                        self.scalarization,
-                        None,
-                        self.global_step,
-                        self.writer,
+                        info=info["episode"],
+                        scalarization=self.scalarization,
+                        weights=self.weights,
+                        id=self.id,
+                        global_timestep=self.global_step,
+                        writer=self.writer,
                     )
 
             else:

@@ -1,4 +1,5 @@
-from typing import Iterable, Optional
+import math
+from typing import Iterable, Optional, List, Callable
 
 import numpy as np
 import torch as th
@@ -90,6 +91,40 @@ def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str =
     if n == 1:
         return w[0]
     return w
+
+
+def nearest_neighbors(
+    n, current_weight: np.ndarray, all_weights: List[np.ndarray], dist: Callable[[np.ndarray, np.ndarray], float] = np.dot
+):
+    """
+    Returns the n closest neighbors of current_weight in all_weights, according to dist metric
+    :param n: number of neighbors
+    :param current_weight: weight vector where we want the nearest neighbors
+    :param all_weights: all the possible weights, can contain current_weight as well
+    :param dist: distance metric
+    :return: the ids of the nearest neighbors in all_weights
+    """
+    assert n < len(all_weights)
+    current_weight_tuple = tuple(current_weight)
+    nearest_neighbors_ids = []
+    nearest_neighbors = []
+
+    while len(nearest_neighbors_ids) < n:
+        closest_neighb_id = -1
+        closest_neighb = np.zeros_like(current_weight)
+        closest_neigh_dist = math.inf
+
+        for i, w in enumerate(all_weights):
+            w_tuple = tuple(w)
+            if w_tuple not in nearest_neighbors and current_weight_tuple != w_tuple:
+                if closest_neigh_dist > dist(current_weight, w):
+                    closest_neighb = w
+                    closest_neighb_id = i
+                    closest_neigh_dist = dist(current_weight, w)
+        nearest_neighbors.append(tuple(closest_neighb))
+        nearest_neighbors_ids.append(closest_neighb_id)
+
+    return nearest_neighbors_ids
 
 
 def log_episode_info(
