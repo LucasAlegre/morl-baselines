@@ -18,7 +18,9 @@ def tchebicheff(tau: float, reward_dim: int):
     def thunk(reward: np.ndarray, weights: np.ndarray):
         for i, r in enumerate(reward):
             if best_so_far[i] < r + tau:
+                print(f"Updating TCH ref point, was {best_so_far}")
                 best_so_far[i] = r + tau
+                print(f"now {best_so_far}")
         return -tch.do(F=reward, weights=weights, utopian_point=np.array(best_so_far))[0][0]
 
     return thunk

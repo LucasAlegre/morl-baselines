@@ -4,6 +4,7 @@ from typing import List
 import numpy as np
 from pymoo.factory import get_performance_indicator
 from pymoo.indicators.hv import HV
+from pymoo.indicators.igd import IGD
 
 
 def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
@@ -37,3 +38,14 @@ def sparsity(front: List[np.ndarray]) -> float:
     sparsity_value /= len(front) - 1
 
     return sparsity_value
+
+
+def igd(known_front: List[np.ndarray], current_estimate: List[np.ndarray]) -> float:
+    """
+    Inverted generational distance metric. Requires to know the front.
+    :param known_front: known pareto front for the problem
+    :param current_estimate: current pareto front
+    :return: a float stating the average distance between a point in current_estimate and its nearest point in known_front
+    """
+    ind = IGD(np.array(known_front))
+    return ind(np.array(current_estimate))

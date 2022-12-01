@@ -1,9 +1,11 @@
+import typing
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from typing import Union, Optional, OrderedDict
 
 import numpy as np
 import torch as th
 import mo_gym
+import torch.nn
 from mo_gym import eval_mo, eval_mo_reward_conditioned
 import gym
 from gym import spaces
@@ -131,6 +133,18 @@ class MOPolicy(ABC):
             discounted_vec_reward,
             writer,
         )
+
+    def get_policy_net(self) -> torch.nn.Module:
+        """Returns the weights of the policy net"""
+        pass
+
+    def get_buffer(self):
+        """Returns a pointer to the replay buffer"""
+        pass
+
+    def set_buffer(self, buffer):
+        """Sets the buffer to the passed buffer"""
+        pass
 
     @abstractmethod
     def update(self):

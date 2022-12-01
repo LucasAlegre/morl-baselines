@@ -1,9 +1,11 @@
+import typing
 from copy import deepcopy
-from typing import List, Optional, Union, Callable
+from typing import List, Optional, Union, Callable, OrderedDict
 
 import gym
 import numpy as np
 import torch as th
+import torch.nn
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
@@ -127,6 +129,15 @@ class EUPG(MOPolicy, MOAgent):
         copied.optimizer = optim.Adam(copied_net.parameters(), lr=self.learning_rate)
         copied.buffer = deepcopy(self.buffer)
         return copied
+
+    def get_policy_net(self) -> torch.nn.Module:
+        return self.net
+
+    def get_buffer(self):
+        return self.buffer
+
+    def set_buffer(self, buffer):
+        raise Exception("On-policy algorithms should not share buffer.")
 
     def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         if type(obs) is int:
