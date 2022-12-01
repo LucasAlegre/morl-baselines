@@ -99,12 +99,12 @@ class MORLD(MOAgent):
         :param device: torch device
         """
         self.env_name = env_name
-        env = mo_gym.make(env_name)
-        super().__init__(env, device)
-        env.close()
-        self.num_envs = num_envs
         self.gamma = gamma
         self.seed = seed
+        __env = make_env(self.env_name, self.seed, 0, experiment_name, self.gamma)()
+        super().__init__(__env, device)
+        __env.close()
+        self.num_envs = num_envs
 
         self.env = make_env(self.env_name, self.seed, 0, experiment_name, self.gamma)()
         self.eval_env = make_env(self.env_name, self.seed, 1, experiment_name, self.gamma)()
@@ -158,7 +158,7 @@ class MORLD(MOAgent):
         self.current_policy = 0  # For turn by turn selection
         self.policy_factory = policy_factory
         self.population = [
-            self.policy_factory(i, env, w, self.scalarization, gamma, self.writer) for i, w in enumerate(self.weights)
+            self.policy_factory(i, self.env, w, self.scalarization, gamma, self.writer) for i, w in enumerate(self.weights)
         ]
         self.archive = ParetoArchive()
 
@@ -218,7 +218,7 @@ class MORLD(MOAgent):
         for i, agent in enumerate(self.population):
             if self.evaluation_mode == "ser":
                 _, _, _, discounted_reward = agent.wrapped.policy_eval(
-                    self.eval_env, weights=agent.weights, writer=self.writer
+                    self.eval_env, weights=agent.weights, scalarization=self.scalarization, writer=self.writer
                 )
             elif self.evaluation_mode == "esr":
                 _, _, _, discounted_reward = agent.wrapped.policy_eval_esr(
@@ -248,26 +248,26 @@ class MORLD(MOAgent):
         if self.transfer:
             # Transfer weights from trained policy to closest neighbors
             neighbors = self.neighborhoods[last_trained.id]
+            last_trained_net = last_trained.wrapped.get_policy_net()
             for n in neighbors:
                 # Filtering, makes no sense to transfer back to already trained policies
                 # Relies on the assumption that we're making turn by turn
-                if n < self.current_policy:
+                if n > self.current_policy:
                     print(f"Transferring weights from {last_trained.id} to {n}")
                     neighbor_policy = self.population[n]
+                    neighbor_net = neighbor_policy.wrapped.get_policy_net()
+
                     # Polyak update with tau=1 -> copy
                     # Can do something in the middle with tau < 1., which will be soft copies, similar to neuroevolution.
-                    print(f"Before {neighbor_policy.wrapped.get_policy_net().state_dict()}")
                     polyak_update(
-                        params=last_trained.wrapped.get_policy_net().parameters(),
-                        target_params=neighbor_policy.wrapped.get_policy_net().parameters(),
+                        params=last_trained_net.parameters(),
+                        target_params=neighbor_net.parameters(),
                         tau=1.0,
                     )
-                    print(f"After {neighbor_policy.wrapped.get_policy_net().state_dict()}")
-                    # trained_weights = last_trained.wrapped.get_policy_net().state_dict()
-                    # neighbor_policy.wrapped.get_policy_net().load_state_dict(trained_weights)
-                    # neighbor_policy.wrapped.optimizer = optim.Adam(
-                    #     neighbor_policy.wrapped.get_policy_net().parameters(), lr=neighbor_policy.wrapped.learning_rate
-                    # )
+                    # Set optimizer to point to the right parameters
+                    neighbor_policy.wrapped.optimizer = optim.Adam(
+                        neighbor_net.parameters(), lr=neighbor_policy.wrapped.learning_rate
+                    )
 
     def __adapt_weights(self):
         # Not implemented for now. Many strategies exist e.g. MOEA/D-AWA.

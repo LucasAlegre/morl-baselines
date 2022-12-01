@@ -24,7 +24,7 @@ def policy_factory(
         weights=weight,
         gamma=gamma,
         experiment_name="MORL-D",
-        log=True,
+        log=False,
         parent_writer=parent_writer,
     )
     return Policy(id, weights=weight, wrapped=wrapped)
@@ -58,7 +58,7 @@ def main():
         ref_point=np.array([0.0, -500.0]),
         gamma=GAMMA,
         neighborhood_size=1,
-        shared_buffer=True,
+        shared_buffer=False,
         sharing_mechanism=["transfer"],
         front=KNOWN_FRONT,
     )

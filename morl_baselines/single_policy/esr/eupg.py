@@ -163,7 +163,7 @@ class EUPG(MOPolicy, MOAgent):
         ) = self.buffer.get_all_data(to_tensor=True, device=self.device)
         # Scalarized episodic reward, our target :-)
         episodic_return = th.sum(rewards, dim=0)
-        scalarized_return = self.scalarization(episodic_return.cpu().numpy(), self.weights)
+        scalarized_return = self.scalarization(self.weights, episodic_return.cpu().numpy())
         scalarized_return = th.scalar_tensor(scalarized_return)
 
         # For each sample in the batch, get the distribution over actions
