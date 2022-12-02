@@ -7,7 +7,7 @@ import numpy as np
 import torch as th
 import wandb
 from gym.wrappers import TimeLimit
-from mo_gym import MORecordEpisodeStatistics
+from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv
 from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import optim
@@ -28,14 +28,18 @@ class Policy:
         self.wrapped = wrapped
 
 
-def make_env(env_id, seed, idx, run_name, gamma):
+def make_env(env_id, seed, idx, capture_video, run_name, gamma):
     def thunk():
-        env = TimeLimit(DeepSeaTreasure(render_mode=None, dst_map=CONCAVE_MAP), max_episode_steps=500)
-        # env = mo_gym.make(env_id, render_mode=None)
+        # env = TimeLimit(DeepSeaTreasure(render_mode=None, dst_map=CONCAVE_MAP), max_episode_steps=500)
+        env = mo_gym.make(env_id, render_mode=None)
         env = MORecordEpisodeStatistics(env, gamma=gamma)
-        env.reset(seed=seed)
+        if capture_video:
+            if idx == 0:
+                env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
+        env.reset(seed=seed)
         return env
 
     return thunk
@@ -101,13 +105,18 @@ class MORLD(MOAgent):
         self.env_name = env_name
         self.gamma = gamma
         self.seed = seed
-        __env = make_env(self.env_name, self.seed, 0, experiment_name, self.gamma)()
+        __env = make_env(self.env_name, self.seed, 0, False, experiment_name, self.gamma)()
         super().__init__(__env, device)
         __env.close()
         self.num_envs = num_envs
 
-        self.env = make_env(self.env_name, self.seed, 0, experiment_name, self.gamma)()
-        self.eval_env = make_env(self.env_name, self.seed, 1, experiment_name, self.gamma)()
+        self.envs = MOSyncVectorEnv(
+            [
+                make_env(self.env_name, self.seed, i, capture_video=False, run_name=experiment_name, gamma=self.gamma)
+                for i in range(self.num_envs)
+            ]
+        )
+        self.eval_env = make_env(self.env_name, self.seed, 1, capture_video=True, run_name=experiment_name, gamma=self.gamma)()
 
         self.evaluation_mode = evaluation_mode
         self.ref_point = ref_point
@@ -116,7 +125,7 @@ class MORLD(MOAgent):
         # Scalarization and weights
         self.weight_init_method = weight_init_method
         if self.weight_init_method == "uniform":
-            self.weights = get_reference_directions("energy", self.reward_dim, self.pop_size)
+            self.weights = get_reference_directions("energy", self.reward_dim, self.pop_size).astype(np.float32)
         elif self.weight_init_method == "random":
             self.weights = random_weights(self.reward_dim, n=self.pop_size, dist="dirichlet")
         else:
@@ -153,12 +162,14 @@ class MORLD(MOAgent):
             wandb.tensorboard.patch(root_logdir="/tmp/" + self.experiment_name, pytorch=True)
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
             self.known_front = front
+        else:
+            self.writer = None
 
         # Policies' population
         self.current_policy = 0  # For turn by turn selection
         self.policy_factory = policy_factory
         self.population = [
-            self.policy_factory(i, self.env, w, self.scalarization, gamma, self.writer) for i, w in enumerate(self.weights)
+            self.policy_factory(i, self.envs, w, self.scalarization, gamma, self.writer) for i, w in enumerate(self.weights)
         ]
         self.archive = ParetoArchive()
 
@@ -284,7 +295,7 @@ class MORLD(MOAgent):
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
-        obs, _ = self.env.reset()
+        obs, _ = self.envs.reset()
         self.__eval_all_agents()
 
         while self.global_step < total_timesteps:
@@ -307,6 +318,6 @@ class MORLD(MOAgent):
             )
 
         print("done!")
-        self.env.close()
+        self.envs.close()
         self.eval_env.close()
         self.close_wandb()

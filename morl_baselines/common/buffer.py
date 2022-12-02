@@ -7,18 +7,27 @@ class ReplayBuffer:
         self,
         obs_shape,
         action_dim,
+        num_envs=1,
         rew_dim=1,
         max_size=100000,
         obs_dtype=np.float32,
         action_dtype=np.float32,
     ):
         self.max_size = max_size
+        self.num_envs = num_envs
         self.ptr, self.size = 0, 0
-        self.obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
-        self.next_obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
-        self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
-        self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
-        self.dones = np.zeros((max_size, 1), dtype=np.float32)
+        if self.num_envs > 1:
+            self.obs = np.zeros((max_size, self.num_envs) + obs_shape, dtype=obs_dtype)
+            self.next_obs = np.zeros((max_size, self.num_envs) + obs_shape, dtype=obs_dtype)
+            self.actions = np.zeros((max_size, self.num_envs, action_dim), dtype=action_dtype)
+            self.rewards = np.zeros((max_size, self.num_envs, rew_dim), dtype=np.float32)
+            self.dones = np.zeros((max_size, self.num_envs, 1), dtype=np.float32)
+        else:
+            self.obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
+            self.next_obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
+            self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
+            self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
+            self.dones = np.zeros((max_size, 1), dtype=np.float32)
 
     def add(self, obs, action, reward, next_obs, done):
         self.obs[self.ptr] = np.array(obs).copy()
