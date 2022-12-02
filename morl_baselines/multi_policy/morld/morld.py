@@ -6,9 +6,7 @@ import mo_gym
 import numpy as np
 import torch as th
 import wandb
-from gym.wrappers import TimeLimit
 from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv
-from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
@@ -18,7 +16,6 @@ from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.common.performance_indicators import hypervolume, sparsity, igd
 from morl_baselines.common.scalarization import weighted_sum, tchebicheff
 from morl_baselines.common.utils import random_weights, nearest_neighbors, polyak_update
-from morl_baselines.single_policy.ser.mo_ppo import make_env
 
 
 class Policy:
@@ -154,6 +151,7 @@ class MORLD(MOAgent):
 
         # Logging
         self.global_step = 0
+        self.iteration = 0
         self.project_name = project_name
         self.experiment_name = experiment_name
         self.log = log
@@ -219,6 +217,8 @@ class MORLD(MOAgent):
         Turn by turn in this case.
         """
         candidate = self.population[self.current_policy]
+        if self.current_policy + 1 > self.pop_size:
+            self.iteration += 1
         self.current_policy = (self.current_policy + 1) % self.pop_size
         return candidate
 
@@ -256,7 +256,7 @@ class MORLD(MOAgent):
         Shares information between neighbor policies
         :param last_trained: last trained policy
         """
-        if self.transfer:
+        if self.transfer and self.iteration == 0:
             # Transfer weights from trained policy to closest neighbors
             neighbors = self.neighborhoods[last_trained.id]
             last_trained_net = last_trained.wrapped.get_policy_net()

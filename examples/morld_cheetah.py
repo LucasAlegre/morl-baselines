@@ -50,7 +50,7 @@ def main():
         log=True,
         neighborhood_size=1,
         shared_buffer=True,
-        sharing_mechanism=[],
+        sharing_mechanism=["transfer"],
         front=known_front,
     )
 

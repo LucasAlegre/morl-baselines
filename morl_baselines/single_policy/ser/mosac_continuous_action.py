@@ -1,10 +1,7 @@
-# docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/sac/#sac_continuous_actionpy
-import argparse
-import os
 import random
 import time
-from distutils.util import strtobool
-from typing import Union, Tuple, Callable, Optional
+from copy import deepcopy
+from typing import Union, Tuple, Optional
 
 import gym
 import numpy as np
@@ -14,7 +11,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from mo_gym import MOSyncVectorEnv, MORecordEpisodeStatistics
 from torch.utils.tensorboard import SummaryWriter
-from copy import deepcopy
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOPolicy
