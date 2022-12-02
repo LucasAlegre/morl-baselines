@@ -209,7 +209,7 @@ class MORLD(MOAgent):
                     self.population[n].wrapped.set_buffer(shared_buffer)
         else:
             # Sharing with everyone
-            shared_buffer = self.population[0].wrapped
+            shared_buffer = self.population[0].wrapped.get_buffer()
             for p in self.population:
                 p.wrapped.set_buffer(shared_buffer)
 
@@ -302,7 +302,7 @@ class MORLD(MOAgent):
             policy = self.__select_candidate()
             policy.wrapped.train(self.exchange_every, eval_env=self.eval_env)
             self.global_step += self.exchange_every
-            print(self.global_step)
+            print(f"Switching... global_steps: {self.global_step}")
             self.__eval_all_agents()
 
             self.__share(policy)

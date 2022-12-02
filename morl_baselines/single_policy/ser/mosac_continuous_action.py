@@ -380,15 +380,16 @@ class MOSAC(MOPolicy):
             polyak_update(params=self.qf2.parameters(), target_params=self.qf2_target.parameters(), tau=self.tau)
 
         if self.global_step % 100 == 0:
-            self.writer.add_scalar("losses/qf1_values", qf1_a_values.mean().item(), self.global_step)
-            self.writer.add_scalar("losses/qf2_values", qf2_a_values.mean().item(), self.global_step)
-            self.writer.add_scalar("losses/qf1_loss", qf1_loss.item(), self.global_step)
-            self.writer.add_scalar("losses/qf2_loss", qf2_loss.item(), self.global_step)
-            self.writer.add_scalar("losses/qf_loss", qf_loss.item() / 2.0, self.global_step)
-            self.writer.add_scalar("losses/actor_loss", actor_loss.item(), self.global_step)
-            self.writer.add_scalar("losses/alpha", self.alpha, self.global_step)
+            log_str = f"_{self.id}" if self.id is not None else ""
+            self.writer.add_scalar(f"losses{log_str}/qf1_values", qf1_a_values.mean().item(), self.global_step)
+            self.writer.add_scalar(f"losses{log_str}/qf2_values", qf2_a_values.mean().item(), self.global_step)
+            self.writer.add_scalar(f"losses{log_str}/qf1_loss", qf1_loss.item(), self.global_step)
+            self.writer.add_scalar(f"losses{log_str}/qf2_loss", qf2_loss.item(), self.global_step)
+            self.writer.add_scalar(f"losses{log_str}/qf_loss", qf_loss.item() / 2.0, self.global_step)
+            self.writer.add_scalar(f"losses{log_str}/actor_loss", actor_loss.item(), self.global_step)
+            self.writer.add_scalar(f"losses{log_str}/alpha", self.alpha, self.global_step)
             if self.autotune:
-                self.writer.add_scalar("losses/alpha_loss", alpha_loss.item(), self.global_step)
+                self.writer.add_scalar(f"losses{log_str}/alpha_loss", alpha_loss.item(), self.global_step)
 
     def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None):
         start_time = time.time()
