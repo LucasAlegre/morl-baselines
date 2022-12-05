@@ -176,7 +176,6 @@ class MOSAC(MOPolicy):
         super().__init__(id, device)
         # Seeding
         self.seed = seed
-        self.log = log
         self.torch_deterministic = torch_deterministic
         random.seed(self.seed)
         np.random.seed(self.seed)
@@ -193,7 +192,7 @@ class MOSAC(MOPolicy):
 
         # Scalarization
         self.weights = weights
-        self.weights_tensor = th.from_numpy(self.weights).to(self.device).unsqueeze(1).repeat(1, self.num_envs).to(self.device)
+        self.weights_tensor = th.from_numpy(self.weights).unsqueeze(1).repeat(1, self.num_envs).to(self.device)
         self.scalarization = scalarization
 
         # SAC Parameters
@@ -213,8 +212,8 @@ class MOSAC(MOPolicy):
             obs_shape=self.obs_shape,
             action_shape=self.action_shape,
             reward_dim=self.reward_dim,
-            action_lower_bound=self.envs.action_space.low,
-            action_upper_bound=self.envs.action_space.high,
+            action_lower_bound=self.envs.single_action_space.low,
+            action_upper_bound=self.envs.single_action_space.high,
             net_arch=self.net_arch,
         ).to(self.device)
 
@@ -256,7 +255,9 @@ class MOSAC(MOPolicy):
         )
 
         # Logging
-        self.writer = parent_writer
+        self.log = log
+        if self.log:
+            self.writer = parent_writer
 
     def __deepcopy__(self, memo):
 

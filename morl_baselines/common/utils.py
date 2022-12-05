@@ -97,14 +97,14 @@ def nearest_neighbors(
     n,
     current_weight: np.ndarray,
     all_weights: List[np.ndarray],
-    sim_metric: Callable[[np.ndarray, np.ndarray], float] = np.dot,
+    dist_metric: Callable[[np.ndarray, np.ndarray], float] = np.dot,
 ):
     """
     Returns the n closest neighbors of current_weight in all_weights, according to similarity metric
     :param n: number of neighbors
     :param current_weight: weight vector where we want the nearest neighbors
     :param all_weights: all the possible weights, can contain current_weight as well
-    :param sim_metric: similarity metric
+    :param dist_metric: distance metric
     :return: the ids of the nearest neighbors in all_weights
     """
     assert n < len(all_weights)
@@ -115,15 +115,15 @@ def nearest_neighbors(
     while len(nearest_neighbors_ids) < n:
         closest_neighb_id = -1
         closest_neighb = np.zeros_like(current_weight)
-        closest_neigh_sim = -math.inf
+        closest_neigh_dist = math.inf
 
         for i, w in enumerate(all_weights):
             w_tuple = tuple(w)
             if w_tuple not in nearest_neighbors and current_weight_tuple != w_tuple:
-                if closest_neigh_sim < sim_metric(current_weight, w):
+                if closest_neigh_dist > dist_metric(current_weight, w):
                     closest_neighb = w
                     closest_neighb_id = i
-                    closest_neigh_sim = sim_metric(current_weight, w)
+                    closest_neigh_dist = dist_metric(current_weight, w)
         nearest_neighbors.append(tuple(closest_neighb))
         nearest_neighbors_ids.append(closest_neighb_id)
 

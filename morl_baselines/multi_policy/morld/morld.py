@@ -62,7 +62,9 @@ class MORLD(MOAgent):
         seed: int = 42,
         exchange_every: int = int(1e5),
         neighborhood_size: int = 2,  # n = "n closest neighbors", 0=none
-        sim_metric: Callable[[np.ndarray, np.ndarray], float] = np.dot,  # similarity metric between neighbors
+        dist_metric: Callable[[np.ndarray, np.ndarray], float] = lambda a, b: np.sum(
+            np.square(a - b)
+        ),  # distance metric between neighbors
         shared_buffer: bool = False,
         sharing_mechanism: List[str] = [],
         weight_init_method: str = "uniform",
@@ -89,7 +91,7 @@ class MORLD(MOAgent):
         :param seed: seed for RNG
         :param exchange_every: exchange trigger (timesteps based)
         :param neighborhood_size: size of the neighbordhood ( in [0, pop_size)
-        :param sim_metric: similarity metric between weight vectors to determine neighborhood
+        :param dist_metric: distance metric between weight vectors to determine neighborhood
         :param shared_buffer: whether buffer should be shared or not
         :param sharing_mechanism: list containing potential sharing mechanisms: "transfer" is only supported for now.
         :param weight_init_method: weight initialization method. "uniform" or "random"
@@ -113,7 +115,7 @@ class MORLD(MOAgent):
                 for i in range(self.num_envs)
             ]
         )
-        self.eval_env = make_env(self.env_name, self.seed, 1, capture_video=True, run_name=experiment_name, gamma=self.gamma)()
+        self.eval_env = make_env(self.env_name, self.seed, 0, capture_video=True, run_name=experiment_name, gamma=self.gamma)()
 
         self.evaluation_mode = evaluation_mode
         self.ref_point = ref_point
@@ -141,9 +143,11 @@ class MORLD(MOAgent):
         self.transfer = True if "transfer" in sharing_mechanism else False
         self.exchange_every = exchange_every
         self.shared_buffer = shared_buffer
-        self.sim_metric = sim_metric
+        self.dist_metric = dist_metric  # TODO generalize that?
         self.neighborhoods = [
-            nearest_neighbors(n=self.neighborhood_size, current_weight=w, all_weights=self.weights, sim_metric=self.sim_metric)
+            nearest_neighbors(
+                n=self.neighborhood_size, current_weight=w, all_weights=self.weights, dist_metric=self.dist_metric
+            )
             for w in self.weights
         ]
         print("Weights:", self.weights)
@@ -157,7 +161,6 @@ class MORLD(MOAgent):
         self.log = log
 
         if self.log:
-            wandb.tensorboard.patch(root_logdir="/tmp/" + self.experiment_name, pytorch=True)
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
             self.known_front = front
         else:
