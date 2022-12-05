@@ -24,7 +24,7 @@ if __name__ == "__main__":
     )
 
     num_episodes = 10000
-    pf = agent.train(num_episodes=10000, max_timesteps=1000, log_every=100, action_eval='hypervolume')
+    pf = agent.train(num_episodes=10000, log_every=100, action_eval='hypervolume')
     print(pf)
 
     # Execute a policy

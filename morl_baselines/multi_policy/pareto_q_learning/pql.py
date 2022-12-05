@@ -147,12 +147,11 @@ class PQL(MOAgent):
         non_dominated = get_non_dominated(candidates)
         return non_dominated
 
-    def train(self, num_episodes=3000, max_timesteps=1000, log_every=100, action_eval='hypervolume'):
+    def train(self, num_episodes=3000, log_every=100, action_eval='hypervolume'):
         """Learn the Pareto front.
 
         Args:
             num_episodes (int, optional): The number of episodes to train for.
-            max_timesteps (int, optional): The maximum number of time steps in a single episode. (Default value = 1000)
             log_every (int, optional): Log the results every number of episodes. (Default value = 100)
             action_eval (str, optional): The action evaluation function name. (Default value = 'hypervolume')
 
@@ -174,9 +173,8 @@ class PQL(MOAgent):
             state = int(np.ravel_multi_index(state, self.env_shape))
             terminated = False
             truncated = False
-            timestep = 0
 
-            while not (terminated or truncated) and timestep < max_timesteps:
+            while not (terminated or truncated):
                 action = self.select_action(state, score_func)
                 next_state, reward, terminated, truncated, _ = self.env.step(action)
                 next_state = int(np.ravel_multi_index(next_state, self.env_shape))
@@ -185,7 +183,6 @@ class PQL(MOAgent):
                 self.non_dominated[state][action] = self.calc_non_dominated(next_state)
                 self.avg_reward[state, action] += (reward - self.avg_reward[state, action]) / self.counts[state, action]
                 state = next_state
-                timestep += 1
 
             self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
 
