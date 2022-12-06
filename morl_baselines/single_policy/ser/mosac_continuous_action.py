@@ -203,6 +203,7 @@ class MOSAC(MOPolicy):
         self.learning_starts = learning_starts
         self.net_arch = net_arch
         self.policy_lr = policy_lr
+        self.learning_rate = policy_lr
         self.q_lr = q_lr
         self.policy_freq = policy_freq
         self.target_net_freq = target_net_freq

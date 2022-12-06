@@ -1,3 +1,4 @@
+import time
 import typing
 from copy import deepcopy
 from typing import List, Optional, Union, Callable, OrderedDict
@@ -65,6 +66,7 @@ class EUPG(MOPolicy, MOAgent):
         project_name: str = "MORL-Baselines",
         experiment_name: str = "EUPG",
         log: bool = True,
+        log_every: int = 1000,
         parent_writer: Optional[SummaryWriter] = None,
         device: Union[th.device, str] = "auto",
     ):
@@ -72,6 +74,12 @@ class EUPG(MOPolicy, MOAgent):
         MOPolicy.__init__(self, None, device)
 
         self.env = env
+        # EUPG is sometimes launched with vectorized environments (for example when used in outer loop settings)
+        # This allows to unwrap the environment since EUPG does not work in such settings
+        if isinstance(self.env, gym.vector.VectorEnv):
+            self.env = env.envs[0]
+        else:
+            self.env = env
         self.id = id
         # RL
         self.scalarization = scalarization
@@ -102,6 +110,7 @@ class EUPG(MOPolicy, MOAgent):
         self.project_name = project_name
         self.experiment_name = experiment_name
         self.log = log
+        self.log_every = log_every
         if parent_writer is not None:
             self.writer = parent_writer
         if log and parent_writer is None:
@@ -164,7 +173,7 @@ class EUPG(MOPolicy, MOAgent):
         # Scalarized episodic reward, our target :-)
         episodic_return = th.sum(rewards, dim=0)
         scalarized_return = self.scalarization(self.weights, episodic_return.cpu().numpy())
-        scalarized_return = th.scalar_tensor(scalarized_return)
+        scalarized_return = th.scalar_tensor(scalarized_return).to(self.device)
 
         # For each sample in the batch, get the distribution over actions
         current_distribution = self.net.distribution(obs, accrued_rewards)
@@ -191,6 +200,7 @@ class EUPG(MOPolicy, MOAgent):
         eval_env: Optional[gym.Env] = None,
         eval_freq: int = 1000,
     ):
+        start_time = time.time()
         # Init
         (
             obs,
@@ -222,7 +232,7 @@ class EUPG(MOPolicy, MOAgent):
                 self.num_episodes += 1
                 accrued_reward_tensor = th.zeros(self.reward_dim).float().to(self.device)
 
-                if self.log and "episode" in info.keys():
+                if self.log and self.num_episodes % self.log_every == 0 and "episode" in info.keys():
                     log_episode_info(
                         info=info["episode"],
                         scalarization=self.scalarization,
@@ -234,6 +244,10 @@ class EUPG(MOPolicy, MOAgent):
 
             else:
                 obs = next_obs
+
+            if self.global_step % 100 == 0:
+                print("SPS:", int(self.global_step / (time.time() - start_time)))
+                self.writer.add_scalar("charts/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
 
     def get_config(self) -> dict:
         return {

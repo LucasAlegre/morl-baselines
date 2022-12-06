@@ -24,7 +24,7 @@ def policy_factory(
         weights=weight,
         gamma=gamma,
         experiment_name="MORL-D",
-        log=False,
+        log=True,
         parent_writer=parent_writer,
     )
     return Policy(id, weights=weight, wrapped=wrapped)
@@ -57,13 +57,14 @@ def main():
         evaluation_mode="esr",
         ref_point=np.array([0.0, -500.0]),
         gamma=GAMMA,
+        num_envs=1,
         neighborhood_size=1,
         shared_buffer=False,
         sharing_mechanism=["transfer"],
         front=KNOWN_FRONT,
     )
 
-    algo.train(total_timesteps=int(1e6) + 1)
+    algo.train(total_timesteps=int(3e6) + 1)
 
 
 if __name__ == "__main__":

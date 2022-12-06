@@ -25,7 +25,7 @@ def policy_factory(
         scalarization=th.matmul,
         weights=weight,
         gamma=gamma,
-        log=False,
+        log=True,
         parent_writer=parent_writer,
     )
     return Policy(id, weights=weight, wrapped=wrapped)

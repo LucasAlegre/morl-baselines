@@ -6,7 +6,9 @@ import mo_gym
 import numpy as np
 import torch as th
 import wandb
+from gym.wrappers import TimeLimit
 from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv
+from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
@@ -27,8 +29,8 @@ class Policy:
 
 def make_env(env_id, seed, idx, capture_video, run_name, gamma):
     def thunk():
-        # env = TimeLimit(DeepSeaTreasure(render_mode=None, dst_map=CONCAVE_MAP), max_episode_steps=500)
-        env = mo_gym.make(env_id, render_mode=None)
+        env = TimeLimit(DeepSeaTreasure(render_mode=None, dst_map=CONCAVE_MAP), max_episode_steps=500)
+        # env = mo_gym.make(env_id, render_mode=None)
         env = MORecordEpisodeStatistics(env, gamma=gamma)
         if capture_video:
             if idx == 0:
@@ -104,9 +106,6 @@ class MORLD(MOAgent):
         self.env_name = env_name
         self.gamma = gamma
         self.seed = seed
-        __env = make_env(self.env_name, self.seed, 0, False, experiment_name, self.gamma)()
-        super().__init__(__env, device)
-        __env.close()
         self.num_envs = num_envs
 
         self.envs = MOSyncVectorEnv(
@@ -115,7 +114,10 @@ class MORLD(MOAgent):
                 for i in range(self.num_envs)
             ]
         )
-        self.eval_env = make_env(self.env_name, self.seed, 0, capture_video=True, run_name=experiment_name, gamma=self.gamma)()
+        super().__init__(self.envs, device)
+        self.eval_env = make_env(
+            self.env_name, self.seed, 0, capture_video=False, run_name=experiment_name, gamma=self.gamma
+        )()
 
         self.evaluation_mode = evaluation_mode
         self.ref_point = ref_point
@@ -266,7 +268,7 @@ class MORLD(MOAgent):
             for n in neighbors:
                 # Filtering, makes no sense to transfer back to already trained policies
                 # Relies on the assumption that we're making turn by turn
-                if n > self.current_policy:
+                if n > last_trained.id:
                     print(f"Transferring weights from {last_trained.id} to {n}")
                     neighbor_policy = self.population[n]
                     neighbor_net = neighbor_policy.wrapped.get_policy_net()
