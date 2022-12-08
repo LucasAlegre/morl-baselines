@@ -51,16 +51,18 @@ def main():
 
     algo = MORLD(
         env_name="deep-sea-treasure-v0",
-        exchange_every=int(1e5),
+        exchange_every=int(5e4),
         policy_factory=policy_factory,
         scalarization_method="tch",
         evaluation_mode="esr",
-        ref_point=np.array([0.0, -500.0]),
+        eval_reps=1,  # ESR setting should be evaluated on single episodes, otherwise it allows to construct stochastic mixtures
+        ref_point=np.array([0.0, -501.0]),
         gamma=GAMMA,
         num_envs=1,
         neighborhood_size=1,
         shared_buffer=False,
         sharing_mechanism=["transfer"],
+        weight_adaptation_method="PSA",
         front=KNOWN_FRONT,
     )
 
@@ -68,4 +70,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    for i in range(10):
+        main()

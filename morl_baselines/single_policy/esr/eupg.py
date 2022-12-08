@@ -66,7 +66,7 @@ class EUPG(MOPolicy, MOAgent):
         project_name: str = "MORL-Baselines",
         experiment_name: str = "EUPG",
         log: bool = True,
-        log_every: int = 1000,
+        log_every: int = 100,
         parent_writer: Optional[SummaryWriter] = None,
         device: Union[th.device, str] = "auto",
     ):
@@ -148,17 +148,24 @@ class EUPG(MOPolicy, MOAgent):
     def set_buffer(self, buffer):
         raise Exception("On-policy algorithms should not share buffer.")
 
+    def set_weights(self, weights: np.ndarray):
+        self.weights = weights
+
+    @th.no_grad()
     def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         if type(obs) is int:
             obs = th.as_tensor([obs]).to(self.device)
         else:
             obs = th.as_tensor(obs).to(self.device)
         accrued_reward = th.as_tensor(accrued_reward).float().to(self.device)
-        return self.choose_action(obs, accrued_reward)
+        probas = self.net(obs, accrued_reward)
+        greedy_act = th.argmax(probas)
+        return greedy_act.detach().item()
 
     @th.no_grad()
     def choose_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
-        action = self.net.distribution(obs, accrued_reward).sample().detach().item()
+        action = self.net.distribution(obs, accrued_reward)
+        action = action.sample().detach().item()
         return action
 
     def update(self):
@@ -178,7 +185,7 @@ class EUPG(MOPolicy, MOAgent):
         # For each sample in the batch, get the distribution over actions
         current_distribution = self.net.distribution(obs, accrued_rewards)
         # Policy gradient
-        log_probs = current_distribution.log_prob(actions)
+        log_probs = current_distribution.log_prob(actions.flatten())
         loss = -th.mean(log_probs * scalarized_return)
 
         self.optimizer.zero_grad()
@@ -245,7 +252,7 @@ class EUPG(MOPolicy, MOAgent):
             else:
                 obs = next_obs
 
-            if self.global_step % 100 == 0:
+            if self.global_step % 1000 == 0:
                 print("SPS:", int(self.global_step / (time.time() - start_time)))
                 self.writer.add_scalar("charts/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
 
