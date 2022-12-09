@@ -312,6 +312,10 @@ class MOSAC(MOPolicy):
     def get_policy_net(self) -> th.nn.Module:
         return self.actor
 
+    def set_weights(self, weights: np.ndarray):
+        self.weights = weights
+        self.weights_tensor = th.from_numpy(self.weights).unsqueeze(1).repeat(1, self.num_envs).to(self.device)
+
     def eval(self, obs: np.ndarray, w: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         """
         Returns the best action to perform for the given obs

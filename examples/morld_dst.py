@@ -23,9 +23,11 @@ def policy_factory(
         scalarization=scalarization,
         weights=weight,
         gamma=gamma,
+        learning_rate=1e-4,
         experiment_name="MORL-D",
         log=True,
         parent_writer=parent_writer,
+        net_arch=[32, 32],
     )
     return Policy(id, weights=weight, wrapped=wrapped)
 
@@ -61,7 +63,7 @@ def main():
         num_envs=1,
         neighborhood_size=1,
         shared_buffer=False,
-        sharing_mechanism=["transfer"],
+        sharing_mechanism=[],
         weight_adaptation_method="PSA",
         front=KNOWN_FRONT,
     )

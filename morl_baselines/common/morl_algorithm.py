@@ -146,6 +146,10 @@ class MOPolicy(ABC):
         """Sets the buffer to the passed buffer"""
         pass
 
+    def set_weights(self, weights: np.ndarray):
+        """Sets new weights"""
+        pass
+
     @abstractmethod
     def update(self):
         """Update algorithm's parameters"""

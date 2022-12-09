@@ -1,5 +1,6 @@
+import math
 import time
-from typing import Union, Callable, Optional, List
+from typing import Union, Callable, Optional, List, Tuple
 
 import gym
 import mo_gym
@@ -7,7 +8,7 @@ import numpy as np
 import torch as th
 import wandb
 from gym.wrappers import TimeLimit
-from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv
+from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv, MONormalizeReward
 from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import optim
@@ -29,13 +30,15 @@ class Policy:
 
 def make_env(env_id, seed, idx, capture_video, run_name, gamma):
     def thunk():
-        env = TimeLimit(DeepSeaTreasure(render_mode=None, dst_map=CONCAVE_MAP), max_episode_steps=500)
-        # env = mo_gym.make(env_id, render_mode=None)
+        env = mo_gym.make(env_id, render_mode=None, dst_map=CONCAVE_MAP)
         env = MORecordEpisodeStatistics(env, gamma=gamma)
         if capture_video:
             if idx == 0:
                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
 
+        # Rewards are normalized to make the scalarization easier
+        # for i in range(env.reward_space.shape[0]):
+        #     env = MONormalizeReward(env, idx=i)
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
         env.reset(seed=seed)
@@ -58,6 +61,7 @@ class MORLD(MOAgent):
         scalarization_method: str,  # "ws" or "tch"
         evaluation_mode: str,  # "esr" or "ser"
         ref_point: np.ndarray,
+        eval_reps: int = 10,
         gamma: float = 0.995,
         pop_size: int = 10,
         num_envs: int = 1,
@@ -70,6 +74,7 @@ class MORLD(MOAgent):
         shared_buffer: bool = False,
         sharing_mechanism: List[str] = [],
         weight_init_method: str = "uniform",
+        weight_adaptation_method: Optional[str] = None,  # "PSA" or None
         front: List[np.ndarray] = [],
         project_name: str = "MORL-Baselines",
         experiment_name: str = "MORL-D",
@@ -86,6 +91,7 @@ class MORLD(MOAgent):
             float: gamma
         :param scalarization_method: scalarization method to apply. "ws" or "tch".
         :param evaluation_mode: esr or ser (for evaluation env)
+        :param eval_reps: number of policy evaluation repetitions
         :param ref_point: reference point for the hypervolume metric
         :param gamma: gamma
         :param pop_size: size of population
@@ -97,6 +103,7 @@ class MORLD(MOAgent):
         :param shared_buffer: whether buffer should be shared or not
         :param sharing_mechanism: list containing potential sharing mechanisms: "transfer" is only supported for now.
         :param weight_init_method: weight initialization method. "uniform" or "random"
+        :param weight_adaptation_method: weight adaptation method. "PSA" or None.
         :param front: Known pareto front, if any.
         :param project_name: For wandb logging
         :param experiment_name: For wandb logging
@@ -120,11 +127,17 @@ class MORLD(MOAgent):
         )()
 
         self.evaluation_mode = evaluation_mode
+        self.eval_reps = eval_reps
         self.ref_point = ref_point
         self.pop_size = pop_size
 
         # Scalarization and weights
         self.weight_init_method = weight_init_method
+        self.weight_adaptation_method = weight_adaptation_method
+        if self.weight_adaptation_method == "PSA":
+            self.delta = 0.05
+        else:
+            self.delta = None
         if self.weight_init_method == "uniform":
             self.weights = get_reference_directions("energy", self.reward_dim, self.pop_size).astype(np.float32)
         elif self.weight_init_method == "random":
@@ -145,7 +158,7 @@ class MORLD(MOAgent):
         self.transfer = True if "transfer" in sharing_mechanism else False
         self.exchange_every = exchange_every
         self.shared_buffer = shared_buffer
-        self.dist_metric = dist_metric  # TODO generalize that?
+        self.dist_metric = dist_metric
         self.neighborhoods = [
             nearest_neighbors(
                 n=self.neighborhood_size, current_weight=w, all_weights=self.weights, dist_metric=self.dist_metric
@@ -193,6 +206,8 @@ class MORLD(MOAgent):
             "shared_buffer": self.shared_buffer,
             "transfer": self.transfer,
             "weight_init_method": self.weight_init_method,
+            "weight_adapt_method": self.weight_adaptation_method,
+            "delta_adapt": self.delta,
             "project_name": self.project_name,
             "experiment_name": self.experiment_name,
             "log": self.log,
@@ -222,26 +237,43 @@ class MORLD(MOAgent):
         Turn by turn in this case.
         """
         candidate = self.population[self.current_policy]
-        if self.current_policy + 1 > self.pop_size:
+        if self.current_policy + 1 == self.pop_size:
             self.iteration += 1
         self.current_policy = (self.current_policy + 1) % self.pop_size
         return candidate
 
-    def __eval_all_agents(self):
+    def __eval_policy(self, policy: Policy):
         """
-        Evaluates all agents and store their current performances on the buffer and pareto archive
+        Evaluates a policy
+        :param policy: to evaluate
+        :return: the discounted reward
+        """
+        if self.evaluation_mode == "ser":
+            acc = np.zeros(self.reward_dim)
+            for _ in range(self.eval_reps):
+                _, _, _, discounted_reward = policy.wrapped.policy_eval(
+                    self.eval_env, weights=policy.weights, scalarization=self.scalarization, writer=self.writer
+                )
+                acc += discounted_reward
+
+        elif self.evaluation_mode == "esr":
+            acc = np.zeros(self.reward_dim)
+            acc = np.zeros(self.reward_dim)
+            for _ in range(self.eval_reps):
+                _, _, _, discounted_reward = policy.wrapped.policy_eval_esr(
+                    self.eval_env, weights=policy.weights, scalarization=self.scalarization, writer=self.writer
+                )
+                acc += discounted_reward
+        else:
+            raise Exception("Evaluation mode must either be esr or ser.")
+        return acc / self.eval_reps
+
+    def __eval_all_policies(self):
+        """
+        Evaluates all policies and store their current performances on the buffer and pareto archive
         """
         for i, agent in enumerate(self.population):
-            if self.evaluation_mode == "ser":
-                _, _, _, discounted_reward = agent.wrapped.policy_eval(
-                    self.eval_env, weights=agent.weights, scalarization=self.scalarization, writer=self.writer
-                )
-            elif self.evaluation_mode == "esr":
-                _, _, _, discounted_reward = agent.wrapped.policy_eval_esr(
-                    self.eval_env, weights=agent.weights, scalarization=self.scalarization, writer=self.writer
-                )
-            else:
-                raise Exception("Evaluation mode must either be esr or ser.")
+            discounted_reward = self.__eval_policy(agent)
             # Storing current results
             self.archive.add(agent, discounted_reward)
 
@@ -286,8 +318,51 @@ class MORLD(MOAgent):
                     )
 
     def __adapt_weights(self):
-        # Not implemented for now. Many strategies exist e.g. MOEA/D-AWA.
-        pass
+        """
+        Weight adaptation mechanism. Many strategies exist e.g. MOEA/D-AWA.
+        """
+
+        def closest_non_dominated(eval_policy: np.ndarray) -> Tuple[Policy, np.ndarray]:
+            """
+            Returns the closest policy to eval_policy currently in the Pareto Archive
+            :param eval_policy: evaluation where we want to find the closest one
+            :return: closest individual and evaluation in the pareto archive
+            """
+            closest_distance = math.inf
+            closest_nd = None
+            closest_eval = None
+            for eval_candidate, candidate in zip(self.archive.evaluations, self.archive.individuals):
+                distance = np.sum(np.square(eval_policy - eval_candidate))
+                if closest_distance > distance > 0.0:
+                    closest_distance = distance
+                    closest_nd = candidate
+                    closest_eval = eval_candidate
+            return closest_nd, closest_eval
+
+        if self.weight_adaptation_method == "PSA":
+            print("Adapting weights using PSA's method")
+            # P. Czyzżak and A. Jaszkiewicz,
+            # “Pareto simulated annealing—a metaheuristic technique for multiple-objective combinatorial optimization,”
+            # Journal of Multi-Criteria Decision Analysis, vol. 7, no. 1, pp. 34–47, 1998,
+            # doi: 10.1002/(SICI)1099-1360(199801)7:1<34::AID-MCDA161>3.0.CO;2-6.
+            for p in self.population:
+                eval_policy = self.__eval_policy(p)
+                closest_nd, closest_eval = closest_non_dominated(eval_policy)
+
+                new_weights = p.weights
+                if closest_eval is not None:
+                    for i in range(len(eval_policy)):
+                        # Increases on the weights which are better than closest_eval, decreases on the others
+                        if eval_policy[i] >= closest_eval[i]:
+                            new_weights[i] = p.weights[i] * (1 + self.delta)
+                        else:
+                            new_weights[i] = p.weights[i] / (1 + self.delta)
+                # Renormalizes so that the weights sum to 1.
+                normalized = np.array(new_weights) / np.linalg.norm(np.array(new_weights), ord=1)
+                p.wrapped.set_weights(normalized)
+                p.weights = normalized
+            new_weights = [p.weights for p in self.population]
+            print(f"New weights {new_weights}")
 
     def __adapt_ref_point(self):
         # TCH ref point is automatically adapted in the TCH itself function for now.
@@ -301,18 +376,20 @@ class MORLD(MOAgent):
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
         obs, _ = self.envs.reset()
-        self.__eval_all_agents()
+        self.__eval_all_policies()
 
         while self.global_step < total_timesteps:
             policy = self.__select_candidate()
             policy.wrapped.train(self.exchange_every, eval_env=self.eval_env)
             self.global_step += self.exchange_every
             print(f"Switching... global_steps: {self.global_step}")
-            self.__eval_all_agents()
+            self.__eval_all_policies()
 
             self.__share(policy)
-            self.__adapt_weights()
-            self.__adapt_ref_point()
+            if self.current_policy % self.pop_size == 0:
+                # Adapts weights and ref point after a full iteration
+                self.__adapt_weights()
+                self.__adapt_ref_point()
 
             # Logging speed
             print("SPS:", int(self.global_step / (time.time() - start_time)))

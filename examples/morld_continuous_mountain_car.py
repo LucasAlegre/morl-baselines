@@ -27,6 +27,7 @@ def policy_factory(
         gamma=gamma,
         log=True,
         parent_writer=parent_writer,
+        net_arch=[16, 16],
     )
     return Policy(id, weights=weight, wrapped=wrapped)
 
@@ -38,14 +39,14 @@ def main():
     known_front = []
 
     algo = MORLD(
-        env_name="mo-halfcheetah-v4",
+        env_name="mo-MountainCarContinuous-v0",
         num_envs=1,
-        exchange_every=int(5e4),
-        pop_size=5,
+        exchange_every=int(15e3),
+        pop_size=10,
         policy_factory=policy_factory,
         scalarization_method="ws",
         evaluation_mode="ser",
-        ref_point=np.array([-100.0, -100.0]),
+        ref_point=np.array([-1000.0, -1000.0]),
         gamma=gamma,
         log=True,
         neighborhood_size=1,
