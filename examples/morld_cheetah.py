@@ -41,7 +41,7 @@ def main():
         env_name="mo-halfcheetah-v4",
         num_envs=1,
         exchange_every=int(5e4),
-        pop_size=5,
+        pop_size=6,
         policy_factory=policy_factory,
         scalarization_method="ws",
         evaluation_mode="ser",
@@ -49,12 +49,13 @@ def main():
         gamma=gamma,
         log=True,
         neighborhood_size=1,
-        shared_buffer=True,
-        sharing_mechanism=["transfer"],
+        shared_buffer=False,
+        sharing_mechanism=[],
+        experiment_name="MORL-D HalfCheetah",
         front=known_front,
     )
 
-    algo.train(total_timesteps=int(1e6) + 1)
+    algo.train(total_timesteps=int(3e6) + 1)
 
 
 if __name__ == "__main__":

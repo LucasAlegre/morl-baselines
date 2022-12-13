@@ -248,6 +248,7 @@ class MOSAC(MOPolicy):
             self.a_optimizer = optim.Adam([self.log_alpha], lr=self.q_lr)
         else:
             self.alpha = alpha
+        self.alpha_tensor = th.scalar_tensor(self.alpha).to(self.device)
 
         # Buffer
         self.envs.single_observation_space.dtype = np.float32
@@ -343,7 +344,7 @@ class MOSAC(MOPolicy):
             # Q values are scalarized before being compared (min of ensemble networks)
             qf1_next_target = self.scalarization(self.qf1_target(mb_next_obs, next_state_actions), self.weights_tensor)
             qf2_next_target = self.scalarization(self.qf2_target(mb_next_obs, next_state_actions), self.weights_tensor)
-            min_qf_next_target = th.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
+            min_qf_next_target = th.min(qf1_next_target, qf2_next_target) - self.alpha_tensor * next_state_log_pi
             scalarized_rewards = self.scalarization(mb_rewards, self.weights_tensor)
             next_q_value = scalarized_rewards.flatten() + (1 - mb_dones.flatten()) * self.gamma * min_qf_next_target.view(-1)
 
@@ -364,7 +365,7 @@ class MOSAC(MOPolicy):
                 qf1_pi = self.scalarization(self.qf1(mb_obs, pi), self.weights_tensor)
                 qf2_pi = self.scalarization(self.qf2(mb_obs, pi), self.weights_tensor)
                 min_qf_pi = th.min(qf1_pi, qf2_pi).view(-1)
-                actor_loss = ((self.alpha * log_pi) - min_qf_pi).mean()
+                actor_loss = ((self.alpha_tensor * log_pi) - min_qf_pi).mean()
 
                 self.actor_optimizer.zero_grad(set_to_none=True)
                 actor_loss.backward()
@@ -378,12 +379,15 @@ class MOSAC(MOPolicy):
                     self.a_optimizer.zero_grad(set_to_none=True)
                     alpha_loss.backward()
                     self.a_optimizer.step()
+                    self.alpha_tensor = self.log_alpha.exp()
                     self.alpha = self.log_alpha.exp().item()
 
         # update the target networks
         if self.global_step % self.target_net_freq == 0:
             polyak_update(params=self.qf1.parameters(), target_params=self.qf1_target.parameters(), tau=self.tau)
             polyak_update(params=self.qf2.parameters(), target_params=self.qf2_target.parameters(), tau=self.tau)
+            self.qf1_target.requires_grad_(False)
+            self.qf2_target.requires_grad_(False)
 
         if self.global_step % 100 == 0:
             log_str = f"_{self.id}" if self.id is not None else ""
