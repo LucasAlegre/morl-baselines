@@ -30,7 +30,8 @@ class Policy:
 
 def make_env(env_id, seed, idx, capture_video, run_name, gamma):
     def thunk():
-        env = mo_gym.make(env_id, render_mode=None, dst_map=CONCAVE_MAP)
+        env = mo_gym.make(env_id, render_mode=None)
+        # env = mo_gym.make(env_id, render_mode=None, dst_map=CONCAVE_MAP)
         env = MORecordEpisodeStatistics(env, gamma=gamma)
         if capture_video:
             if idx == 0:
@@ -197,6 +198,7 @@ class MORLD(MOAgent):
             "env_name": self.env_name,
             "scalarization_method": self.scalarization_method,
             "evaluation_mode": self.evaluation_mode,
+            "eval_reps": self.eval_reps,
             "ref_point": self.ref_point,
             "gamma": self.gamma,
             "pop_size": self.pop_size,

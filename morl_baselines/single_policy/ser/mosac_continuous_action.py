@@ -177,10 +177,11 @@ class MOSAC(MOPolicy):
         # Seeding
         self.seed = seed
         self.torch_deterministic = torch_deterministic
-        random.seed(self.seed)
-        np.random.seed(self.seed)
-        th.manual_seed(self.seed)
-        th.backends.cudnn.torch_deterministic = self.torch_deterministic
+        if seed is not None:
+            random.seed(self.seed)
+            np.random.seed(self.seed)
+            th.manual_seed(self.seed)
+            th.backends.cudnn.torch_deterministic = self.torch_deterministic
 
         # env setup
         self.envs = envs
