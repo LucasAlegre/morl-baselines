@@ -212,6 +212,7 @@ class MORLD(MOAgent):
             "delta_adapt": self.delta,
             "project_name": self.project_name,
             "experiment_name": self.experiment_name,
+            "seed": self.seed,
             "log": self.log,
             "device": self.device,
         }
@@ -392,14 +393,6 @@ class MORLD(MOAgent):
                 # Adapts weights and ref point after a full iteration
                 self.__adapt_weights()
                 self.__adapt_ref_point()
-
-            # Logging speed
-            print("SPS:", int(self.global_step / (time.time() - start_time)))
-            self.writer.add_scalar(
-                "charts/SPS",
-                int(self.global_step / (time.time() - start_time)),
-                self.global_step,
-            )
 
         print("done!")
         self.envs.close()

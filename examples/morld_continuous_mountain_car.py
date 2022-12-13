@@ -58,7 +58,7 @@ def main():
         front=known_front,
     )
 
-    algo.train(total_timesteps=int(5e4))
+    algo.train(total_timesteps=int(1e6))
 
 
 if __name__ == "__main__":

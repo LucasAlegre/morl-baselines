@@ -20,6 +20,7 @@ from morl_baselines.common.utils import log_episode_info, polyak_update
 
 # The implementation of this file is largely based on CleanRL's SAC implementation
 # https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88/cleanrl/sac_continuous_action.py
+th.jit.enable_onednn_fusion(True)
 
 
 def make_env(env_id, seed, idx, capture_video, run_name):
@@ -231,6 +232,8 @@ class MOSAC(MOPolicy):
         self.qf2_target = MOSoftQNetwork(
             obs_shape=self.obs_shape, action_shape=self.action_shape, reward_dim=self.reward_dim, net_arch=self.net_arch
         ).to(self.device)
+        self.qf1_target.requires_grad_(False)
+        self.qf2_target.requires_grad_(False)
         self.qf1_target.load_state_dict(self.qf1.state_dict())
         self.qf2_target.load_state_dict(self.qf2.state_dict())
         self.q_optimizer = optim.Adam(list(self.qf1.parameters()) + list(self.qf2.parameters()), lr=self.q_lr)
@@ -350,7 +353,7 @@ class MOSAC(MOPolicy):
         qf2_loss = F.mse_loss(qf2_a_values, next_q_value)
         qf_loss = qf1_loss + qf2_loss
 
-        self.q_optimizer.zero_grad()
+        self.q_optimizer.zero_grad(set_to_none=True)
         qf_loss.backward()
         self.q_optimizer.step()
 
@@ -363,7 +366,7 @@ class MOSAC(MOPolicy):
                 min_qf_pi = th.min(qf1_pi, qf2_pi).view(-1)
                 actor_loss = ((self.alpha * log_pi) - min_qf_pi).mean()
 
-                self.actor_optimizer.zero_grad()
+                self.actor_optimizer.zero_grad(set_to_none=True)
                 actor_loss.backward()
                 self.actor_optimizer.step()
 
@@ -372,7 +375,7 @@ class MOSAC(MOPolicy):
                         _, log_pi, _ = self.actor.get_action(mb_obs)
                     alpha_loss = (-self.log_alpha * (log_pi + self.target_entropy)).mean()
 
-                    self.a_optimizer.zero_grad()
+                    self.a_optimizer.zero_grad(set_to_none=True)
                     alpha_loss.backward()
                     self.a_optimizer.step()
                     self.alpha = self.log_alpha.exp().item()
