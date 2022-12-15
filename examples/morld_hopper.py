@@ -39,14 +39,14 @@ def main():
     known_front = []
 
     algo = MORLD(
-        env_name="mo-halfcheetah-v4",
+        env_name="mo-hopper-v4",
         num_envs=1,
         exchange_every=int(5e4),
         pop_size=6,
         policy_factory=policy_factory,
         scalarization_method="ws",
         evaluation_mode="ser",
-        ref_point=np.array([-100.0, -100.0]),
+        ref_point=np.array([-100.0, -100.0, -100.0]),
         gamma=gamma,
         log=True,
         neighborhood_size=1,
@@ -54,7 +54,7 @@ def main():
         sharing_mechanism=[],
         weight_adaptation_method=None,
         seed=None,
-        experiment_name="MORL-D HalfCheetah",
+        experiment_name="MORL-D Hopper",
         front=known_front,
     )
 
