@@ -20,7 +20,6 @@ from morl_baselines.common.utils import log_episode_info, polyak_update
 
 # The implementation of this file is largely based on CleanRL's SAC implementation
 # https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88/cleanrl/sac_continuous_action.py
-th.jit.enable_onednn_fusion(True)
 
 
 def make_env(env_id, seed, idx, capture_video, run_name):

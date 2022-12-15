@@ -141,6 +141,9 @@ class MORLD(MOAgent):
             self.delta = None
         if self.weight_init_method == "uniform":
             self.weights = get_reference_directions("energy", self.reward_dim, self.pop_size).astype(np.float32)
+            # Often, the objectives requiring a lot of exploration are the last ones. Reversing allows to first execute those
+            # And benefit from transfer learning for the subsequent candidates, requiring less exploration
+            self.weights = np.flip(self.weights, 1)
         elif self.weight_init_method == "random":
             self.weights = random_weights(self.reward_dim, n=self.pop_size, dist="dirichlet")
         else:

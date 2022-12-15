@@ -27,8 +27,9 @@ def policy_factory(
         gamma=gamma,
         log=True,
         parent_writer=parent_writer,
+        learning_starts=10_000,
         seed=None,
-        net_arch=[16, 16],
+        net_arch=[32, 32],
     )
     return Policy(id, weights=weight, wrapped=wrapped)
 
@@ -42,7 +43,7 @@ def main():
     algo = MORLD(
         env_name="mo-MountainCarContinuous-v0",
         num_envs=1,
-        exchange_every=int(5e4),
+        exchange_every=30_000,
         pop_size=6,
         policy_factory=policy_factory,
         scalarization_method="ws",
