@@ -28,7 +28,7 @@ class Policy:
         self.wrapped = wrapped
 
 
-def make_env(env_id, seed, idx, capture_video, run_name, gamma):
+def make_env(env_id, seed, idx, capture_video, run_name, gamma, norm=True):
     def thunk():
         env = mo_gym.make(env_id, render_mode=None)
         # env = mo_gym.make(env_id, render_mode=None, dst_map=CONCAVE_MAP)
@@ -38,8 +38,9 @@ def make_env(env_id, seed, idx, capture_video, run_name, gamma):
                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
 
         # Rewards are normalized to make the scalarization easier
-        # for i in range(env.reward_space.shape[0]):
-        #     env = MONormalizeReward(env, idx=i)
+        if norm:
+            for i in range(env.reward_space.shape[0]):
+                env = MONormalizeReward(env, idx=i)
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
         env.reset(seed=seed)
@@ -124,7 +125,7 @@ class MORLD(MOAgent):
         )
         super().__init__(self.envs, device)
         self.eval_env = make_env(
-            self.env_name, self.seed, 0, capture_video=False, run_name=experiment_name, gamma=self.gamma
+            self.env_name, self.seed, 0, capture_video=False, run_name=experiment_name, gamma=self.gamma, norm=False
         )()
 
         self.evaluation_mode = evaluation_mode
@@ -143,7 +144,7 @@ class MORLD(MOAgent):
             self.weights = get_reference_directions("energy", self.reward_dim, self.pop_size).astype(np.float32)
             # Often, the objectives requiring a lot of exploration are the last ones. Reversing allows to first execute those
             # And benefit from transfer learning for the subsequent candidates, requiring less exploration
-            self.weights = np.flip(self.weights, 1)
+            self.weights = np.flip(self.weights, 1).copy()
         elif self.weight_init_method == "random":
             self.weights = random_weights(self.reward_dim, n=self.pop_size, dist="dirichlet")
         else:
@@ -263,7 +264,6 @@ class MORLD(MOAgent):
                 acc += discounted_reward
 
         elif self.evaluation_mode == "esr":
-            acc = np.zeros(self.reward_dim)
             acc = np.zeros(self.reward_dim)
             for _ in range(self.eval_reps):
                 _, _, _, discounted_reward = policy.wrapped.policy_eval_esr(
