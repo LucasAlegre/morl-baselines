@@ -51,6 +51,7 @@ def main():
         log=True,
         neighborhood_size=1,
         shared_buffer=False,
+        update_passes=10,
         sharing_mechanism=[],
         weight_adaptation_method=None,
         seed=None,

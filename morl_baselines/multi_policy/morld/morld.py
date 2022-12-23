@@ -75,6 +75,7 @@ class MORLD(MOAgent):
         ),  # distance metric between neighbors
         shared_buffer: bool = False,
         sharing_mechanism: List[str] = [],
+        update_passes: int = 0,
         weight_init_method: str = "uniform",
         weight_adaptation_method: Optional[str] = None,  # "PSA" or None
         front: List[np.ndarray] = [],
@@ -104,6 +105,7 @@ class MORLD(MOAgent):
         :param dist_metric: distance metric between weight vectors to determine neighborhood
         :param shared_buffer: whether buffer should be shared or not
         :param sharing_mechanism: list containing potential sharing mechanisms: "transfer" is only supported for now.
+        :param update_passes: number of times to update all policies after sampling from one policy.
         :param weight_init_method: weight initialization method. "uniform" or "random"
         :param weight_adaptation_method: weight adaptation method. "PSA" or None.
         :param front: Known pareto front, if any.
@@ -161,6 +163,7 @@ class MORLD(MOAgent):
         # Sharing schemes
         self.neighborhood_size = neighborhood_size
         self.transfer = True if "transfer" in sharing_mechanism else False
+        self.update_passes = update_passes
         self.exchange_every = exchange_every
         self.shared_buffer = shared_buffer
         self.dist_metric = dist_metric
@@ -210,6 +213,7 @@ class MORLD(MOAgent):
             "exchange_every": self.exchange_every,
             "neighborhood_size": self.neighborhood_size,
             "shared_buffer": self.shared_buffer,
+            "update_passes": self.update_passes,
             "transfer": self.transfer,
             "weight_init_method": self.weight_init_method,
             "weight_adapt_method": self.weight_adaptation_method,
@@ -374,10 +378,18 @@ class MORLD(MOAgent):
         # TCH ref point is automatically adapted in the TCH itself function for now.
         pass
 
+    def __update_others(self, current: Policy):
+        """
+        Runs policy improvements on all policies in the population except current
+        """
+        print("Updating other policies...")
+        for i in range(self.update_passes):
+            for p in self.population:
+                if len(p.wrapped.get_buffer()) > 0 and p != current:
+                    p.wrapped.update()
+
     def train(self, total_timesteps: int, reset_num_timesteps: bool = False):
         # Init
-        start_time = time.time()
-
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
@@ -385,12 +397,19 @@ class MORLD(MOAgent):
         self.__eval_all_policies()
 
         while self.global_step < total_timesteps:
+            # selection
             policy = self.__select_candidate()
+            # policy improvement
             policy.wrapped.train(self.exchange_every, eval_env=self.eval_env)
+            self.__update_others(policy)
+
             self.global_step += self.exchange_every
             print(f"Switching... global_steps: {self.global_step}")
+
+            # Update archive
             self.__eval_all_policies()
 
+            # cooperation
             self.__share(policy)
             if self.current_policy % self.pop_size == 0:
                 # Adapts weights and ref point after a full iteration
