@@ -20,6 +20,8 @@ from morl_baselines.common.performance_indicators import hypervolume, sparsity, 
 from morl_baselines.common.scalarization import weighted_sum, tchebicheff
 from morl_baselines.common.utils import random_weights, nearest_neighbors, polyak_update
 
+np.set_printoptions(threshold=np.inf)
+
 
 class Policy:
     def __init__(self, id: int, weights: np.ndarray, wrapped: MOPolicy):
@@ -139,7 +141,7 @@ class MORLD(MOAgent):
         self.weight_init_method = weight_init_method
         self.weight_adaptation_method = weight_adaptation_method
         if self.weight_adaptation_method == "PSA":
-            self.delta = 0.05
+            self.delta = 0.1
         else:
             self.delta = None
         if self.weight_init_method == "uniform":
@@ -288,7 +290,9 @@ class MORLD(MOAgent):
             self.archive.add(agent, discounted_reward)
 
         print("Current pareto archive:")
-        print(self.archive.evaluations)
+        print(self.archive.evaluations[:50])
+        print(self.archive.evaluations[50:])
+
         hv = hypervolume(self.ref_point, self.archive.evaluations)
         sp = sparsity(self.archive.evaluations)
         self.writer.add_scalar("charts/hypervolume", hv, self.global_step)
