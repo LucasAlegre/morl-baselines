@@ -13,7 +13,6 @@ hypervolumes_vanilla = []
 hypervolumes_sb_psa = []
 name_list = []
 for run in runs:
-    # if run.config["env_name"] == "mo-halfcheetah-v4" and run.summary["global_step"] == 6050000:
     hypervolume_df = run.history(samples=1000000000000, keys=["charts/hypervolume"], x_axis="global_step").dropna()
     hypervolume_df = hypervolume_df.rename(columns={"charts/hypervolume": "Hypervolume", "global_step": "Timesteps"})
     if run.config["shared_buffer"]:
@@ -41,4 +40,4 @@ sns.set(style="darkgrid")
 sns.lineplot(
     data=concatenated, x="Timesteps", y="Hypervolume", hue="variant", palette=["red", "blue"], alpha=0.6, errorbar="ci"
 )
-plt.savefig("hypervolume_cheetah.png", dpi=400)
+plt.savefig("hypervolume_cheetah.png", dpi=600)

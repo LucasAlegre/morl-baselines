@@ -415,10 +415,9 @@ class MORLD(MOAgent):
 
             # cooperation
             self.__share(policy)
-            if self.current_policy % self.pop_size == 0:
-                # Adapts weights and ref point after a full iteration
-                self.__adapt_weights()
-                self.__adapt_ref_point()
+            # Adaptation
+            self.__adapt_weights()
+            self.__adapt_ref_point()
 
         print("done!")
         self.envs.close()
