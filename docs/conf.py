@@ -36,4 +36,9 @@ napoleon_custom_sections = [("Returns", "params_style")]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
+html_theme_options = {
+    "source_repository": "https://github.com/LucasAlegre/morl-baselines/",
+    "source_branch": "main",
+    "source_directory": "docs/",
+}
 html_static_path = ["_static"]
