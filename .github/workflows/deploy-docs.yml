@@ -8,8 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
-      - run: pipx run nox -s docs
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build
+        run: sphinx-build -b dirhtml -v docs _build
+
       - uses: actions/upload-pages-artifact@v1
         with:
           path: ./build/docs/
@@ -25,5 +34,8 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@v1
+        - uses: JamesIves/github-pages-deploy-action@v4
+          with:
+            folder: _build
+            target-folder: main
+            clean: false
