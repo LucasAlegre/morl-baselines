@@ -34,7 +34,6 @@ lastpage:
 :caption: Quickstart
 
 quickstart/overview
-quickstart/examples
 ```
 
 ```{toctree}
@@ -42,6 +41,14 @@ quickstart/examples
 :caption: MORL Algorithms
 
 algos/algorithms
+algos/pareto_q_learning
+```
+
+```{toctree}
+:hidden:
+:caption: Features
+
+features/pareto
 ```
 
 ```{toctree}
