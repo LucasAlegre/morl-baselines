@@ -119,7 +119,7 @@ def log_episode_info(
         scal_return = scalarization(episode_return, weights)
         disc_scal_return = scalarization(disc_episode_return, weights)
 
-    print(f"Episode infos:")
+    print("Episode infos:")
     print(f"Steps: {episode_ts}, Time: {episode_time}")
     print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")
     print(f"Scalarized Reward: {scal_return}, Discounted: {disc_scal_return}")

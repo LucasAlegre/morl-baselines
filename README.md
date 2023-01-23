@@ -4,15 +4,16 @@
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/LucasAlegre/mo-gym/blob/main/LICENSE)
 [![Discord](https://img.shields.io/discord/999693014618362036?label=discord)](https://discord.gg/ygmkfnBvKA)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 # MORL Baselines
 
-MORL Baselines is a library of Multi-Objective Reinforcement Learning (MORL) algorithms. 
+MORL Baselines is a library of Multi-Objective Reinforcement Learning (MORL) algorithms.
 This repository aims at containing reliable MORL algorithms implementations in PyTorch.
 
-MORL Baselines stricly follows [MO-Gym](https://github.com/LucasAlegre/mo-gym) API, which differs from the standard [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) API only in that the environment returns a numpy array as the reward.
+MORL Baselines strictly follows [MO-Gym](https://github.com/LucasAlegre/mo-gym) API, which differs from the standard [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) API only in that the environment returns a numpy array as the reward.
 
 For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we suggest reading [A practical guide to multi-objective reinforcement learning and planning](https://link.springer.com/article/10.1007/s10458-022-09552-y).
 

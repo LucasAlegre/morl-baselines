@@ -76,7 +76,7 @@ class PerformancePredictor:
             ) * w
 
         def __jacobian(params, x, y):
-            A, a, b, c = params[0], params[1], params[2], params[3]
+            A, a, b, _ = params[0], params[1], params[2], params[3]
             J = np.zeros([len(params), len(x)])
             # df_dA = (exp(a(x - b)) - 1) / (exp(a(x - b)) + 1)
             J[0] = ((np.exp(a * (x - b)) - 1) / (np.exp(a * (x - b)) + 1)) * w

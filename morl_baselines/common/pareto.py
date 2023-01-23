@@ -18,12 +18,12 @@ def get_non_dominated(candidates: set):
         n = candidates.shape[0]  # Check current size of the candidates.
         if i >= n:  # If we've eliminated everything up until this size we stop.
             break
-        nd = np.ones(candidates.shape[0], dtype=bool)  # Initialize a boolean mask for undominated points.
+        non_dominated = np.ones(candidates.shape[0], dtype=bool)  # Initialize a boolean mask for undominated points.
         # find all points not dominated by i
         # since points are sorted by coordinate sum
         # i cannot dominate any points in 1,...,i-1
-        nd[i + 1 :] = np.any(candidates[i + 1 :] > candidates[i], axis=1)
-        candidates = candidates[nd]  # Grab only the non-dominated vectors using the generated bitmask.
+        non_dominated[i + 1 :] = np.any(candidates[i + 1 :] > candidates[i], axis=1)
+        candidates = candidates[non_dominated]  # Grab only the non-dominated vectors using the generated bitmask.
 
     non_dominated = set()
     for candidate in candidates:
@@ -43,15 +43,15 @@ class ParetoArchive:
         """
         self.evaluations.append(evaluation)
         self.individuals.append(deepcopy(candidate))
-        # ND sorting
-        nd_candidates = get_non_dominated(set([tuple(e) for e in self.evaluations]))
+        # Non-dominated sorting
+        nd_candidates = get_non_dominated({tuple(e) for e in self.evaluations})
 
-        # Reconstruct the pareto archive (because ND sorting might change the order of candidates)
-        nd_evals = []
-        nd_individuals = []
+        # Reconstruct the pareto archive (because Non-Dominated sorting might change the order of candidates)
+        non_dominated_evals = []
+        non_dominated_individuals = []
         for e, i in zip(self.evaluations, self.individuals):
             if tuple(e) in nd_candidates:
-                nd_evals.append(e)
-                nd_individuals.append(i)
-        self.evaluations = nd_evals
-        self.individuals = nd_individuals
+                non_dominated_evals.append(e)
+                non_dominated_individuals.append(i)
+        self.evaluations = non_dominated_evals
+        self.individuals = non_dominated_individuals

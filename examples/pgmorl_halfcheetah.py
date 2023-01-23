@@ -4,6 +4,7 @@ import numpy as np
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.ser.mo_ppo import make_env
 
+
 if __name__ == "__main__":
     env_id = "mo-halfcheetah-v4"
     algo = PGMORL(
