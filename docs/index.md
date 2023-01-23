@@ -45,6 +45,7 @@ algos/algorithms
 ```
 
 ```{toctree}
+:hidden:
 :caption: Community
 community/community
 ```

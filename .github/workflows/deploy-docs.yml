@@ -6,7 +6,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  doc:
     name: Generate and publish website
     runs-on: ubuntu-latest
     steps:
@@ -25,20 +25,8 @@ jobs:
       - name: Remove .doctrees
         run: rm -r _build/.doctrees
 
-      - uses: actions/upload-pages-artifact@v1
+      - name: Upload to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: ./build/docs/
-
-  deploy:
-    needs: build
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v1
+          folder: _build
+          branch: gh-pages
