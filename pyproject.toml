@@ -36,6 +36,14 @@ dynamic = ["version"]
 [project.optional-dependencies]
 testing = ["pytest ==7.1.3", "mock ==4.0.3"]
 
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["morl_baselines", "morl_baselines.*"]
+
+[tool.setuptools.package-data]
+morl_baselines = []
 
 # Linting, testing, ... ########################################################
 [tool.black]
