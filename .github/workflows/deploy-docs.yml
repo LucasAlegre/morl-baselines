@@ -2,9 +2,12 @@ name: Documentation
 on:
   push:
     branches: [main]
+permissions:
+  contents: write
 
 jobs:
-  build:
+  doc:
+    name: Generate and publish website
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -19,23 +22,12 @@ jobs:
       - name: Build
         run: sphinx-build -b dirhtml -v docs _build
 
-      - uses: actions/upload-pages-artifact@v1
+      - name: Remove .doctrees
+        run: rm -r _build/.doctrees
+
+      - name: Upload to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: ./_build/docs/
-
-  deploy:
-    needs: build
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    steps:
-        - uses: JamesIves/github-pages-deploy-action@v4
-          with:
-            folder: _build
-            target-folder: main
-            clean: false
+          folder: _build
+          target-folder: main
+          clean: false
