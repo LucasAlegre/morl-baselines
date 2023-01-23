@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r docs/requirements.txt
 
+      - name: Install MORL-Baselines
+        run: pip install -e .
+
       - name: Build
         run: sphinx-build -b dirhtml -v docs _build
 
