@@ -133,3 +133,4 @@ wandb/
 
 # Pycharm
 .idea/
+.DS_Store
