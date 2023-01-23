@@ -56,3 +56,10 @@ features/pareto
 :caption: Community
 community/community
 ```
+
+```{toctree}
+:hidden:
+:caption: Development
+
+Github <https://github.com/LucasAlegre/MORL-baselines>
+```
