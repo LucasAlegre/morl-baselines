@@ -1,5 +1,4 @@
 from copy import deepcopy
-from itertools import combinations
 from typing import List, Optional
 
 import cdd
@@ -7,6 +6,7 @@ import cvxpy as cp
 import numpy as np
 
 from morl_baselines.common.performance_indicators import hypervolume
+
 
 np.set_printoptions(precision=4)
 
@@ -216,9 +216,12 @@ class OLS:
         corners = []
         for v in vertices:
             corners.append(v[:-1])
+
         # Do not include corner weights already in visited weights
-        filter_fn = lambda wc: (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights]))
-        corners = list(filter(filter_fn, corners))
+        def predicate(wc):
+            return (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights]))
+
+        corners = list(filter(predicate, corners))
         return corners
 
     def extrema_weights(self) -> List[np.ndarray]:

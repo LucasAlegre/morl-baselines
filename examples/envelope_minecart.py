@@ -1,5 +1,4 @@
 import mo_gym
-import numpy as np
 from mo_gym.utils import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
@@ -40,7 +39,6 @@ def main():
         experiment_name="Envelope - minecart-v0",
     )
 
-    w = np.array([0.9, 0.0, 0.1])
     agent.train(
         total_timesteps=100000,
         total_episodes=None,

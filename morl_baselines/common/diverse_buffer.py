@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+
 MAIN_TREE = 0
 
 
@@ -212,8 +213,8 @@ class DiverseMemory:
 
     Keyword Arguments:
         sec_capacity {int} -- Size of the secondary diverse replay buffer, if 0, the buffer functions as a normal prioritized Replay Buffer (default: {0})
-        trace_diversity {bool} -- Wether diversity should be enforced at trace-level (True) or at transition-level (False)
-        crowding_diversity {bool} -- Wether a crowding distance is applied to compute diversity
+        trace_diversity {bool} -- Whether diversity should be enforced at trace-level (True) or at transition-level (False)
+        crowding_diversity {bool} -- Whether a crowding distance is applied to compute diversity
         value_function {function} -- When applied to a trace, this function should return the trace's value to be used in the crowding distance computation
         e {float} -- epsilon to be added to errors (default: {0.01})
         a {int} -- Power to which the error will be raised, if a==0, functionality is reduced to a replay buffer without prioritization (default: {2})
@@ -589,10 +590,10 @@ class DiverseMemory:
         return self._getError(priority)
 
 
-def crowd_dist(datas):
+def crowd_dist(evals):
     """Given a list of vectors, this method computes the crowding distance of each vector, i.e. the sum of distances between neighbors for each dimension
     Arguments:
-        datas {list} -- list of vectors
+        evals {list} -- list of vectors
     Returns:
         list -- list of crowding distances
     """
@@ -603,9 +604,9 @@ def crowd_dist(datas):
         distance: float
         i: int
 
-    points = np.array([Point() for _ in datas])
-    dimensions = len(datas[0])
-    for i, d in enumerate(datas):
+    points = np.array([Point() for _ in evals])
+    dimensions = len(evals[0])
+    for i, d in enumerate(evals):
         points[i].data = d
         points[i].i = i
         points[i].distance = 0.0

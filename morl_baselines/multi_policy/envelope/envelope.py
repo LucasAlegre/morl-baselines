@@ -1,6 +1,5 @@
 import os
-import random
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
 
 import gym
 import numpy as np
@@ -8,16 +7,13 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from mo_gym.evaluation import eval_mo
 
-import wandb as wb
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import NatureCNN, mlp
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
     get_grad_norm,
-    huber,
     layer_init,
     linearly_decaying_value,
     log_episode_info,
@@ -171,7 +167,7 @@ class Envelope(MOPolicy, MOAgent):
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         saved_params = {}
-        saved_params[f"q_net_state_dict"] = self.q_net.state_dict()
+        saved_params["q_net_state_dict"] = self.q_net.state_dict()
 
         saved_params["q_net_optimizer_state_dict"] = self.q_optim.state_dict()
         if save_replay_buffer:

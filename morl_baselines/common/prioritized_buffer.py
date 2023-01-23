@@ -3,7 +3,7 @@ import torch as th
 
 
 # Code adapted from https://github.com/sfujim/LAP-PAL
-class SumTree(object):
+class SumTree:
     def __init__(self, max_size):
         self.nodes = []
         # Tree construction

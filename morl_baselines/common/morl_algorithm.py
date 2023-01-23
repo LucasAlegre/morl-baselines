@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Optional, Union
 
 import gym
-import mo_gym
 import numpy as np
 import torch as th
 from gym import spaces
@@ -154,7 +153,7 @@ class MOAgent(ABC):
         Extracts all the features of the environment: observation space, action space, ...
         """
         # Sometimes, the environment is not instantiated at the moment the MORL algorithms is being instantiated.
-        # So env can be None. It is the reponsibility of the implemented MORLAlgorithm to call this method in those cases
+        # So env can be None. It is the responsibility of the implemented MORLAlgorithm to call this method in those cases
         if env is not None:
             self.env = env
             if isinstance(self.env.observation_space, spaces.Discrete):

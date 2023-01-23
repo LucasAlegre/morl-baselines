@@ -6,12 +6,12 @@ import torch as th
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
-from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.accrued_reward_buffer import AccruedRewardReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import mlp
 from morl_baselines.common.utils import layer_init, log_episode_info
+
 
 # EUPG is an ESR algorithm based on Policy Gradient (REINFORCE like)
 # The idea is to condition the network on the accrued reward and to

@@ -1,8 +1,8 @@
 import numpy as np
 
-from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
+from morl_baselines.common.performance_indicators import hypervolume
 
 
 class PQL(MOAgent):
@@ -11,17 +11,17 @@ class PQL(MOAgent):
     """
 
     def __init__(
-            self,
-            env,
-            ref_point: np.ndarray,
-            gamma: float = 0.8,
-            initial_epsilon: float = 1.0,
-            epsilon_decay: float = 0.99,
-            final_epsilon: float = 0.1,
-            seed: int = None,
-            project_name: str = "MORL-baselines",
-            experiment_name: str = "Pareto Q-Learning",
-            log: bool = True,
+        self,
+        env,
+        ref_point: np.ndarray,
+        gamma: float = 0.8,
+        initial_epsilon: float = 1.0,
+        epsilon_decay: float = 0.99,
+        final_epsilon: float = 0.1,
+        seed: int = None,
+        project_name: str = "MORL-baselines",
+        experiment_name: str = "Pareto Q-Learning",
+        log: bool = True,
     ):
         super().__init__(env)
         # Learning parameters
@@ -43,8 +43,9 @@ class PQL(MOAgent):
         self.num_states = np.prod(self.env_shape)
         self.num_objectives = self.env.reward_space.shape[0]
         self.counts = np.zeros((self.num_states, self.num_actions))
-        self.non_dominated = [[{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_actions)] for _ in
-                              range(self.num_states)]
+        self.non_dominated = [
+            [{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_actions)] for _ in range(self.num_states)
+        ]
         self.avg_reward = np.zeros((self.num_states, self.num_actions, self.num_objectives))
 
         # Logging
@@ -67,7 +68,7 @@ class PQL(MOAgent):
             "initial_epsilon": self.initial_epsilon,
             "epsilon_decay": self.epsilon_decay,
             "final_epsilon": self.final_epsilon,
-            "seed": self.seed
+            "seed": self.seed,
         }
 
     def score_pareto_cardinality(self, state):
@@ -116,7 +117,7 @@ class PQL(MOAgent):
         """
         nd_array = np.array(list(self.non_dominated[state][action]))
         q_array = self.avg_reward[state, action] + self.gamma * nd_array
-        return set([tuple(vec) for vec in q_array])
+        return {tuple(vec) for vec in q_array}
 
     def select_action(self, state, score_func):
         """Select an action in the current state.
@@ -147,7 +148,7 @@ class PQL(MOAgent):
         non_dominated = get_non_dominated(candidates)
         return non_dominated
 
-    def train(self, num_episodes=3000, log_every=100, action_eval='hypervolume'):
+    def train(self, num_episodes=3000, log_every=100, action_eval="hypervolume"):
         """Learn the Pareto front.
 
         Args:
@@ -158,16 +159,16 @@ class PQL(MOAgent):
         Returns:
             Set: The final Pareto front.
         """
-        if action_eval == 'hypervolume':
+        if action_eval == "hypervolume":
             score_func = self.score_hypervolume
-        elif action_eval =='pareto_cardinality':
+        elif action_eval == "pareto_cardinality":
             score_func = self.score_pareto_cardinality
         else:
-            raise Exception('No other method implemented yet')
+            raise Exception("No other method implemented yet")
 
         for episode in range(num_episodes):
             if episode % log_every == 0:
-                print(f'Training episode {episode + 1}')
+                print(f"Training episode {episode + 1}")
 
             state, _ = self.env.reset()
             state = int(np.ravel_multi_index(state, self.env_shape))
@@ -189,7 +190,7 @@ class PQL(MOAgent):
             if self.log and episode % log_every == 0:
                 pf = self.get_local_pcs(state=0)
                 value = hypervolume(self.ref_point, list(pf))
-                print(f'Hypervolume in episode {episode}: {value}')
+                print(f"Hypervolume in episode {episode}: {value}")
                 self.writer.add_scalar("train/hypervolume", value, episode)
 
         return self.get_local_pcs(state=0)
@@ -212,8 +213,8 @@ class PQL(MOAgent):
 
             for action in range(self.num_actions):
                 im_rew = self.avg_reward[state, action]
-                nd = self.non_dominated[state][action]
-                for q in nd:
+                non_dominated_set = self.non_dominated[state][action]
+                for q in non_dominated_set:
                     q = np.array(q)
                     if np.all(self.gamma * q + im_rew == target):
                         state, reward, terminated, truncated, _ = self.env.step(action)

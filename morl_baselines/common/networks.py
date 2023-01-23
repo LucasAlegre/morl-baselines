@@ -1,8 +1,7 @@
-from typing import Dict, List, Tuple, Type, Union
+from typing import List, Type
 
 import numpy as np
 import torch as th
-import torch.nn.functional as F
 from torch import nn
 
 
@@ -47,7 +46,7 @@ class NatureCNN(nn.Module):
     """
 
     def __init__(self, observation_shape: np.ndarray, features_dim: int = 512):
-        super(NatureCNN, self).__init__()
+        super().__init__()
         self.features_dim = features_dim
         n_input_channels = 1 if len(observation_shape) == 2 else observation_shape[0]
         self.cnn = nn.Sequential(

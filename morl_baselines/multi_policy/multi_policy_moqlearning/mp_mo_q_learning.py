@@ -1,8 +1,6 @@
 import time
-from typing import Optional, Union
 
 import numpy as np
-from mo_gym import eval_mo
 
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.performance_indicators import hypervolume
