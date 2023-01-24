@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple, Union
 from typing_extensions import override
 
 import gym
-import mo_gym
+import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
 from scipy.optimize import least_squares
@@ -273,7 +273,7 @@ class PerformanceBuffer:
 class PGMORL(MOAgent):
     """Prediction Guided Multi-Objective Reinforcement Learning.
 
-    Paper: J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik,
+    Reference: J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik,
     “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,”
     in Proceedings of the 37th International Conference on Machine Learning,
     Nov. 2020, pp. 10607–10616. Available: https://proceedings.mlr.press/v119/xu20h.html

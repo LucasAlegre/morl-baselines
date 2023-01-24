@@ -41,7 +41,8 @@ quickstart/overview
 :caption: MORL Algorithms
 
 algos/algorithms
-algos/pareto_q_learning
+algos/multi_policy
+algos/single_policy
 ```
 
 ```{toctree}
@@ -49,6 +50,11 @@ algos/pareto_q_learning
 :caption: Features
 
 features/pareto
+features/performance_indicators
+features/scalarization
+features/buffers
+features/networks
+features/misc
 ```
 
 ```{toctree}

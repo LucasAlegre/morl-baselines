@@ -6,7 +6,7 @@ import gym
 import numpy as np
 import torch as th
 from gym import spaces
-from mo_gym import eval_mo, eval_mo_reward_conditioned
+from mo_gymnasium import eval_mo, eval_mo_reward_conditioned
 from torch.utils.tensorboard import SummaryWriter
 
 

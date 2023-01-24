@@ -60,9 +60,9 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 As much as possible, this repo tries to follow the single-file implementation rule for all algorithms. The repo's structure is as follows:
 
 * `examples/` contains a set of examples to use MORL Baselines with mo-gym environments.
-* `common/` contains the implementation recurring concepts: replay buffers, neural nets, etc.
+* `common/` contains the implementation recurring concepts: replay buffers, neural nets, etc. See the [documentation](https://lucasalegre.github.io/morl-baselines/) for more details.
 * `multi_policy/` contains the implementations of multi-policy algorithms.
-* `single_policy/` contains the implementations of single-policy algorithms.
+* `single_policy/` contains the implementations of single-policy algorithms (ESR and SER).
 
 <!-- end structure -->
 
