@@ -158,12 +158,29 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">MORL Algorithms</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../algos/algorithms/">MORL Algorithms</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../algos/pareto_q_learning/">Pareto Q-Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/algorithms/">Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../algos/multi_policy/">Multi-Policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/envelope/">Envelope Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/ols/">OLS</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../algos/single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../algos/single_policy/moq_learning/">MOQ-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../algos/single_policy/eupg/">EUPG</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../features/pareto/">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features/performance_indicators/">Performance indicators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features/scalarization/">Scalarization functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features/buffers/">Replay Buffers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features/networks/">Neural Networks helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features/misc/">Miscellaneous</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Community</span></p>
 <ul>
@@ -208,13 +225,75 @@
           
 <section class="genindex-section">
   <h1 id="index">Index</h1>
-  <div class="genindex-jumpbox"><a href="#A"><strong>A</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#P"><strong>P</strong></a></div>
+  <div class="genindex-jumpbox"><a href="#A"><strong>A</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a></div>
 </section>
 <section id="A" class="genindex-section">
   <h2>A</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../features/pareto/#morl_baselines.common.pareto.ParetoArchive.add">add() (morl_baselines.common.pareto.ParetoArchive method)</a>
+        <li><a href="../features/buffers/#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer">AccruedRewardReplayBuffer (class in morl_baselines.common.accrued_reward_buffer)</a>
+</li>
+        <li><a href="../features/buffers/#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.add">add() (morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer method)</a>
+
+        <ul>
+          <li><a href="../features/buffers/#morl_baselines.common.buffer.ReplayBuffer.add">(morl_baselines.common.buffer.ReplayBuffer method)</a>
+</li>
+          <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.add">(morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+          <li><a href="../features/pareto/#morl_baselines.common.pareto.ParetoArchive.add">(morl_baselines.common.pareto.ParetoArchive method)</a>
+</li>
+          <li><a href="../features/buffers/#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer.add">(morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.add_sample">add_sample() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.add_tree">add_tree() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="C" class="genindex-section">
+  <h2>C</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.cleanup">cleanup() (morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="D" class="genindex-section">
+  <h2>D</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory">DiverseMemory (class in morl_baselines.common.diverse_buffer)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.dupe">dupe() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="E" class="genindex-section">
+  <h2>E</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.extract_trace">extract_trace() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="F" class="genindex-section">
+  <h2>F</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/networks/#morl_baselines.common.networks.NatureCNN.forward">forward() (morl_baselines.common.networks.NatureCNN method)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -224,7 +303,37 @@
   <h2>G</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.get">get() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+        <li><a href="../features/buffers/#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.get_all_data">get_all_data() (morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer method)</a>
+
+        <ul>
+          <li><a href="../features/buffers/#morl_baselines.common.buffer.ReplayBuffer.get_all_data">(morl_baselines.common.buffer.ReplayBuffer method)</a>
+</li>
+          <li><a href="../features/buffers/#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer.get_all_data">(morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.get_data">get_data() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.get_error">get_error() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
         <li><a href="../features/pareto/#morl_baselines.common.pareto.get_non_dominated">get_non_dominated() (in module morl_baselines.common.pareto)</a>
+</li>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.get_sec_write">get_sec_write() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.get_trace_value">get_trace_value() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="H" class="genindex-section">
+  <h2>H</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/performance_indicators/#morl_baselines.common.performance_indicators.hypervolume">hypervolume() (in module morl_baselines.common.performance_indicators)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -234,11 +343,28 @@
   <h2>M</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.main_mem_is_full">main_mem_is_full() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+        <li><a href="../features/networks/#morl_baselines.common.networks.mlp">mlp() (in module morl_baselines.common.networks)</a>
+</li>
         <li>
     module
 
         <ul>
+          <li><a href="../features/networks/#module-morl_baselines.common.networks">morl_baselines.common.networks</a>
+</li>
           <li><a href="../features/pareto/#module-morl_baselines.common.pareto">morl_baselines.common.pareto</a>
+</li>
+          <li><a href="../features/performance_indicators/#module-morl_baselines.common.performance_indicators">morl_baselines.common.performance_indicators</a>
+</li>
+          <li><a href="../features/scalarization/#module-morl_baselines.common.scalarization">morl_baselines.common.scalarization</a>
+</li>
+        </ul></li>
+        <li>
+    morl_baselines.common.networks
+
+        <ul>
+          <li><a href="../features/networks/#module-morl_baselines.common.networks">module</a>
 </li>
         </ul></li>
     </ul></td>
@@ -250,6 +376,32 @@
           <li><a href="../features/pareto/#module-morl_baselines.common.pareto">module</a>
 </li>
         </ul></li>
+        <li>
+    morl_baselines.common.performance_indicators
+
+        <ul>
+          <li><a href="../features/performance_indicators/#module-morl_baselines.common.performance_indicators">module</a>
+</li>
+        </ul></li>
+        <li>
+    morl_baselines.common.scalarization
+
+        <ul>
+          <li><a href="../features/scalarization/#module-morl_baselines.common.scalarization">module</a>
+</li>
+        </ul></li>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.move_to_sec">move_to_sec() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="N" class="genindex-section">
+  <h2>N</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/networks/#morl_baselines.common.networks.NatureCNN">NatureCNN (class in morl_baselines.common.networks)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -259,6 +411,88 @@
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../features/pareto/#morl_baselines.common.pareto.ParetoArchive">ParetoArchive (class in morl_baselines.common.pareto)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer">PrioritizedReplayBuffer (class in morl_baselines.common.prioritized_buffer)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="R" class="genindex-section">
+  <h2>R</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.remove_trace">remove_trace() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.buffer.ReplayBuffer">ReplayBuffer (class in morl_baselines.common.buffer)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="S" class="genindex-section">
+  <h2>S</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.sample">sample() (morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer method)</a>
+
+        <ul>
+          <li><a href="../features/buffers/#morl_baselines.common.buffer.ReplayBuffer.sample">(morl_baselines.common.buffer.ReplayBuffer method)</a>
+</li>
+          <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.sample">(morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+          <li><a href="../features/buffers/#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer.sample">(morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.buffer.ReplayBuffer.sample_obs">sample_obs() (morl_baselines.common.buffer.ReplayBuffer method)</a>
+
+        <ul>
+          <li><a href="../features/buffers/#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer.sample_obs">(morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer method)</a>
+</li>
+        </ul></li>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.sec_distances">sec_distances() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+        <li><a href="../features/performance_indicators/#morl_baselines.common.performance_indicators.sparsity">sparsity() (in module morl_baselines.common.performance_indicators)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="T" class="genindex-section">
+  <h2>T</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/scalarization/#morl_baselines.common.scalarization.tchebicheff">tchebicheff() (in module morl_baselines.common.scalarization)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="U" class="genindex-section">
+  <h2>U</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.update">update() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/buffers/#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer.update_priorities">update_priorities() (morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="W" class="genindex-section">
+  <h2>W</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/scalarization/#morl_baselines.common.scalarization.weighted_sum">weighted_sum() (in module morl_baselines.common.scalarization)</a>
 </li>
     </ul></td>
   </tr></table>

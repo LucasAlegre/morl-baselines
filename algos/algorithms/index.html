@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Pareto Q-Learning" href="../pareto_q_learning/" /><link rel="prev" title="Overview" href="../../quickstart/overview/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Multi-Policy Algorithms" href="../multi_policy/" /><link rel="prev" title="Overview" href="../../quickstart/overview/" />
 
     <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>MORL Algorithms - MORL-Baselines 0.0.1 documentation</title>
+        <title>Overview - MORL-Baselines 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -160,12 +160,29 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">MORL Algorithms</span></p>
 <ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">MORL Algorithms</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../pareto_q_learning/">Pareto Q-Learning</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../multi_policy/">Multi-Policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/envelope/">Envelope Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/ols/">OLS</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../single_policy/moq_learning/">MOQ-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../single_policy/eupg/">EUPG</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../features/pareto/">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/performance_indicators/">Performance indicators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/scalarization/">Scalarization functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/buffers/">Replay Buffers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/networks/">Neural Networks helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/misc/">Miscellaneous</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Community</span></p>
 <ul>
@@ -216,8 +233,8 @@
           </label>
         </div>
         <article role="main">
-          <section id="morl-algorithms">
-<h1>MORL Algorithms<a class="headerlink" href="#morl-algorithms" title="Permalink to this heading">#</a></h1>
+          <section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h1>
 <p>MORL-Baselines contains multiple implementations of multi-objective reinforcement learning algorithms. The following table lists the algorithms that are currently implemented in MORL-Baselines.</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -290,12 +307,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../pareto_q_learning/">
+          <a class="next-page" href="../multi_policy/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Pareto Q-Learning</div>
+                <div class="title">Multi-Policy Algorithms</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>

@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Pareto utils" href="../../features/pareto/" /><link rel="prev" title="MORL Algorithms" href="../algorithms/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Envelope Q-Learning" href="envelope/" /><link rel="prev" title="Overview" href="../algorithms/" />
 
     <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>Pareto Q-Learning - MORL-Baselines 0.0.1 documentation</title>
+        <title>Multi-Policy Algorithms - MORL-Baselines 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -160,12 +160,29 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">MORL Algorithms</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../algorithms/">MORL Algorithms</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Pareto Q-Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algorithms/">Overview</a></li>
+<li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">Multi-Policy Algorithms</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="envelope/">Envelope Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pareto_q_learning/">Pareto Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mp_mo_q_learning/">MPMOQ Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ols/">OLS</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../single_policy/moq_learning/">MOQ-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../single_policy/eupg/">EUPG</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../features/pareto/">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/performance_indicators/">Performance indicators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/scalarization/">Scalarization functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/buffers/">Replay Buffers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/networks/">Neural Networks helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/misc/">Miscellaneous</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Community</span></p>
 <ul>
@@ -194,7 +211,7 @@
         </a>
         <div class="content-icon-container">
           <div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/algos/pareto_q_learning.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/algos/multi_policy.md" title="Edit this page">
     <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
@@ -216,8 +233,10 @@
           </label>
         </div>
         <article role="main">
-          <section id="pareto-q-learning">
-<h1>Pareto Q-Learning<a class="headerlink" href="#pareto-q-learning" title="Permalink to this heading">#</a></h1>
+          <section id="multi-policy-algorithms">
+<h1>Multi-Policy Algorithms<a class="headerlink" href="#multi-policy-algorithms" title="Permalink to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+</div>
 </section>
 
         </article>
@@ -225,12 +244,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../features/pareto/">
+          <a class="next-page" href="envelope/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Pareto utils</div>
+                <div class="title">Envelope Q-Learning</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -241,7 +260,7 @@
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">MORL Algorithms</div>
+                <div class="title">Overview</div>
                 
               </div>
             </a>

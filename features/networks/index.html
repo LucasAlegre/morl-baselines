@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Overview" href="../../algos/algorithms/" /><link rel="prev" title="MORL-Baselines: A collection of multi-objective reinforcement learning algorithms." href="../../" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Miscellaneous" href="../misc/" /><link rel="prev" title="Replay Buffers" href="../buffers/" />
 
     <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>Overview - MORL-Baselines 0.0.1 documentation</title>
+        <title>Neural Networks helpers - MORL-Baselines 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -155,8 +155,8 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Quickstart</span></p>
-<ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Overview</a></li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart/overview/">Overview</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">MORL Algorithms</span></p>
 <ul>
@@ -176,13 +176,13 @@
 </li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../features/pareto/">Pareto utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../features/performance_indicators/">Performance indicators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../features/scalarization/">Scalarization functions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../features/buffers/">Replay Buffers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../features/networks/">Neural Networks helpers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../features/misc/">Miscellaneous</a></li>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pareto/">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../performance_indicators/">Performance indicators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scalarization/">Scalarization functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Neural Networks helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/">Miscellaneous</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Community</span></p>
 <ul>
@@ -211,7 +211,7 @@
         </a>
         <div class="content-icon-container">
           <div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/quickstart/overview.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/features/networks.md" title="Edit this page">
     <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
@@ -227,21 +227,48 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <section id="overview">
-<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h1>
-<p>As much as possible, this repo tries to follow the single-file implementation rule for all algorithms. The repo’s structure is as follows:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">examples/</span></code> contains a set of examples to use MORL Baselines with mo-gym environments.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">common/</span></code> contains the implementation recurring concepts: replay buffers, neural nets, etc. See the <a class="reference external" href="https://lucasalegre.github.io/morl-baselines/">documentation</a> for more details.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">multi_policy/</span></code> contains the implementations of multi-policy algorithms.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">single_policy/</span></code> contains the implementations of single-policy algorithms (ESR and SER).</p></li>
+          <section id="module-morl_baselines.common.networks">
+<span id="neural-networks-helpers"></span><h1>Neural Networks helpers<a class="headerlink" href="#module-morl_baselines.common.networks" title="Permalink to this heading">#</a></h1>
+<p>Utilities for Neural Networks.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="morl_baselines.common.networks.NatureCNN">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">NatureCNN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.networks.NatureCNN" title="Permalink to this definition">#</a></dt>
+<dd><p>CNN from DQN nature paper: Mnih, Volodymyr, et al. “Human-level control through deep reinforcement learning.” Nature 518.7540 (2015): 529-533.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.common.networks.NatureCNN.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.NatureCNN.forward" title="Permalink to this definition">#</a></dt>
+<dd><p>Predicts the features from the observations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>observations</strong> – current observations</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.networks.mlp">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">mlp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">input_dim:</span> <span class="pre">int,</span> <span class="pre">output_dim:</span> <span class="pre">int,</span> <span class="pre">net_arch:</span> <span class="pre">~typing.List[int],</span> <span class="pre">activation_fn:</span> <span class="pre">~typing.Type[~torch.nn.modules.module.Module]</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'torch.nn.modules.activation.ReLU'&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequential</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.mlp" title="Permalink to this definition">#</a></dt>
+<dd><p>Create a multi layer perceptron (MLP), which is a collection of fully-connected layers each followed by an activation function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_dim</strong> – Dimension of the input vector</p></li>
+<li><p><strong>output_dim</strong> – Dimension of the output vector</p></li>
+<li><p><strong>net_arch</strong> – Architecture of the neural net. It represents the number of units per layer. The length of this list is the number of layers.</p></li>
+<li><p><strong>activation_fn</strong> – The activation function to use after each layer.</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
         </article>
@@ -249,23 +276,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../algos/algorithms/">
+          <a class="next-page" href="../misc/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Overview</div>
+                <div class="title">Miscellaneous</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../../">
+          <a class="prev-page" href="../buffers/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Home</div>
+                <div class="title">Replay Buffers</div>
                 
               </div>
             </a>
@@ -287,8 +314,31 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Neural Networks helpers</a><ul>
+<li><a class="reference internal" href="#morl_baselines.common.networks.NatureCNN"><code class="docutils literal notranslate"><span class="pre">NatureCNN</span></code></a><ul>
+<li><a class="reference internal" href="#morl_baselines.common.networks.NatureCNN.forward"><code class="docutils literal notranslate"><span class="pre">NatureCNN.forward()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#morl_baselines.common.networks.mlp"><code class="docutils literal notranslate"><span class="pre">mlp()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

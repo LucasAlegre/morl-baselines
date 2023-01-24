@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Community" href="../../community/community/" /><link rel="prev" title="Pareto Q-Learning" href="../../algos/pareto_q_learning/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Performance indicators" href="../performance_indicators/" /><link rel="prev" title="EUPG" href="../../algos/single_policy/eupg/" />
 
     <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
         <title>Pareto utils - MORL-Baselines 0.0.1 documentation</title>
@@ -160,12 +160,29 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">MORL Algorithms</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../algos/algorithms/">MORL Algorithms</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../algos/pareto_q_learning/">Pareto Q-Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../algos/algorithms/">Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../algos/multi_policy/">Multi-Policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/envelope/">Envelope Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/ols/">OLS</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../algos/single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/single_policy/moq_learning/">MOQ-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/single_policy/eupg/">EUPG</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul class="current">
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../performance_indicators/">Performance indicators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scalarization/">Scalarization functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/">Neural Networks helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/">Miscellaneous</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Community</span></p>
 <ul>
@@ -216,35 +233,45 @@
           </label>
         </div>
         <article role="main">
-          <section id="pareto-utils">
-<h1>Pareto utils<a class="headerlink" href="#pareto-utils" title="Permalink to this heading">#</a></h1>
-<section id="module-morl_baselines.common.pareto">
-<span id="pruning-pareto-dominated-solutions"></span><h2>Pruning Pareto-dominated solutions<a class="headerlink" href="#module-morl_baselines.common.pareto" title="Permalink to this heading">#</a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.pareto.get_non_dominated">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated" title="Permalink to this definition">#</a></dt>
-<dd><p>This function returns the non-dominated subset of elements.
-:param candidates: The input set of candidate vectors.
-:return: The non-dominated subset of this input set.
-Source: <a class="reference external" href="https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python">https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python</a>
-The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.</p>
-</dd></dl>
-
-</section>
-<section id="pareto-archive">
-<h2>Pareto Archive<a class="headerlink" href="#pareto-archive" title="Permalink to this heading">#</a></h2>
+          <section id="module-morl_baselines.common.pareto">
+<span id="pareto-utils"></span><h1>Pareto utils<a class="headerlink" href="#module-morl_baselines.common.pareto" title="Permalink to this heading">#</a></h1>
+<p>Pareto utilities.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.ParetoArchive">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">ParetoArchive</span></span><a class="headerlink" href="#morl_baselines.common.pareto.ParetoArchive" title="Permalink to this definition">#</a></dt>
-<dd><dl class="py method">
+<dd><p>Pareto archive.</p>
+<dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.ParetoArchive.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.ParetoArchive.add" title="Permalink to this definition">#</a></dt>
-<dd><p>Adds the candidate to the memory and removes Pareto inefficient points</p>
+<dd><p>Adds the candidate to the memory and removes Pareto inefficient points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>candidate</strong> – The candidate to add.</p></li>
+<li><p><strong>evaluation</strong> – The evaluation of the candidate.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
-</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.pareto.get_non_dominated">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated" title="Permalink to this definition">#</a></dt>
+<dd><p>This function returns the non-dominated subset of elements.</p>
+<p>Source: <a class="reference external" href="https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python">https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python</a>
+The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>candidates</strong> – The input set of candidate vectors.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>The non-dominated subset of this input set.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
         </article>
@@ -252,23 +279,23 @@ The code provided in all the stackoverflow answers is wrong. Important changes h
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../community/community/">
+          <a class="next-page" href="../performance_indicators/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Community</div>
+                <div class="title">Performance indicators</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../../algos/pareto_q_learning/">
+          <a class="prev-page" href="../../algos/single_policy/eupg/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Pareto Q-Learning</div>
+                <div class="title">EUPG</div>
                 
               </div>
             </a>
@@ -303,17 +330,11 @@ The code provided in all the stackoverflow answers is wrong. Important changes h
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Pareto utils</a><ul>
-<li><a class="reference internal" href="#module-morl_baselines.common.pareto">Pruning Pareto-dominated solutions</a><ul>
-<li><a class="reference internal" href="#morl_baselines.common.pareto.get_non_dominated"><code class="docutils literal notranslate"><span class="pre">get_non_dominated()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#pareto-archive">Pareto Archive</a><ul>
 <li><a class="reference internal" href="#morl_baselines.common.pareto.ParetoArchive"><code class="docutils literal notranslate"><span class="pre">ParetoArchive</span></code></a><ul>
 <li><a class="reference internal" href="#morl_baselines.common.pareto.ParetoArchive.add"><code class="docutils literal notranslate"><span class="pre">ParetoArchive.add()</span></code></a></li>
 </ul>
 </li>
-</ul>
-</li>
+<li><a class="reference internal" href="#morl_baselines.common.pareto.get_non_dominated"><code class="docutils literal notranslate"><span class="pre">get_non_dominated()</span></code></a></li>
 </ul>
 </li>
 </ul>
