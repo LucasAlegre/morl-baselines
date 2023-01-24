@@ -1,3 +1,4 @@
+"""MORL algorithm base classes."""
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
@@ -5,28 +6,35 @@ import gym
 import numpy as np
 import torch as th
 from gym import spaces
-from mo_gym import eval_mo, eval_mo_reward_conditioned
+from mo_gymnasium import eval_mo, eval_mo_reward_conditioned
 from torch.utils.tensorboard import SummaryWriter
 
 
 class MOPolicy(ABC):
-    """
-    An MORL policy, has an underlying learning structure which can be:
+    """An MORL policy.
+
+    It has an underlying learning structure which can be:
     - used to get a greedy action via eval()
     - updated using some experiences via update()
 
-    Note that the learning structure can embed multiple policies (for example using a Conditioned Network). In this case,
-    eval() requires a weight vector as input.
+    Note that the learning structure can embed multiple policies (for example using a Conditioned Network).
+    In this case, eval() requires a weight vector as input.
     """
 
     def __init__(self, id: Optional[int] = None, device: Union[th.device, str] = "auto") -> None:
+        """Initializes the policy.
+
+        Args:
+            id: The id of the policy
+            device: The device to use for the tensors
+        """
         self.id = id
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
         self.global_step = 0
 
     @abstractmethod
     def eval(self, obs: np.ndarray, w: Optional[np.ndarray]) -> Union[int, np.ndarray]:
-        """Gives the best action for the given observation
+        """Gives the best action for the given observation.
 
         Args:
             obs (np.array): Observation
@@ -44,9 +52,7 @@ class MOPolicy(ABC):
         discounted_vec_return,
         writer: SummaryWriter,
     ):
-        """
-        Writes the data to wandb summary
-        """
+        """Writes the data to wandb summary."""
         if self.id is None:
             idstr = ""
         else:
@@ -80,13 +86,16 @@ class MOPolicy(ABC):
         weights: Optional[np.ndarray] = None,
         writer: SummaryWriter = None,
     ):
-        """
-        Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
-        :param scalarization: scalarization function
-        :param eval_env: evaluation environment
-        :param weights: weights to use in the evaluation
-        :param writer: wandb writer
-        :return: a tuple containing the evaluations
+        """Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
+
+        Args:
+            eval_env: evaluation environment
+            scalarization: scalarization function
+            weights: weights to use in the evaluation
+            writer: wandb writer
+
+        Returns:
+             a tuple containing the evaluations
         """
         (
             scalarized_reward,
@@ -109,13 +118,17 @@ class MOPolicy(ABC):
         weights: Optional[np.ndarray] = None,
         writer: SummaryWriter = None,
     ):
-        """
-        Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
-        :param eval_env: evaluation environment
-        :param writer: wandb writer
-        :return: a tuple containing the evaluations
-        """
+        """Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
 
+        Args:
+            eval_env: evaluation environment
+            scalarization: scalarization function
+            weights: weights to use in the evaluation
+            writer: wandb writer
+
+        Returns:
+             a tuple containing the evaluations
+        """
         (
             scalarized_reward,
             scalarized_discounted_reward,
@@ -131,26 +144,31 @@ class MOPolicy(ABC):
         )
 
     @abstractmethod
-    def update(self):
-        """Update algorithm's parameters"""
+    def update(self) -> None:
+        """Update algorithm's parameters (e.g. using experiences from the buffer)."""
 
 
 class MOAgent(ABC):
-    """
-    An MORL Agent, can contain one or multiple MOPolicies.
-    Contains helpers to extract features from the environment, setup logging etc.
-    """
+    """An MORL Agent, can contain one or multiple MOPolicies. Contains helpers to extract features from the environment, setup logging etc."""
 
     def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto") -> None:
+        """Initializes the agent.
+
+        Args:
+            env: (gym.Env): The environment
+            device: (str): The device to use for training. Can be "auto", "cpu" or "cuda".
+        """
         self.extract_env_info(env)
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
 
         self.global_step = 0
         self.num_episodes = 0
 
-    def extract_env_info(self, env):
-        """
-        Extracts all the features of the environment: observation space, action space, ...
+    def extract_env_info(self, env: Optional[gym.Env]) -> None:
+        """Extracts all the features of the environment: observation space, action space, ...
+
+        Args:
+            env (gym.Env): The environment
         """
         # Sometimes, the environment is not instantiated at the moment the MORL algorithms is being instantiated.
         # So env can be None. It is the responsibility of the implemented MORLAlgorithm to call this method in those cases
@@ -174,13 +192,22 @@ class MOAgent(ABC):
 
     @abstractmethod
     def get_config(self) -> dict:
-        """Generates dictionary of the algorithm parameters configuration
+        """Generates dictionary of the algorithm parameters configuration.
 
         Returns:
             dict: Config
         """
 
-    def setup_wandb(self, project_name: str, experiment_name: str):
+    def setup_wandb(self, project_name: str, experiment_name: str) -> None:
+        """Initializes the wandb writer.
+
+        Args:
+            project_name: name of the wandb project. Usually MORL-Baselines.
+            experiment_name: name of the wandb experiment. Usually the algorithm name.
+
+        Returns:
+            None
+        """
         self.experiment_name = experiment_name
         import wandb
 
@@ -196,7 +223,8 @@ class MOAgent(ABC):
         # The default "step" of wandb is not the actual time step (gloabl_step) of the MDP
         wandb.define_metric("*", step_metric="global_step")
 
-    def close_wandb(self):
+    def close_wandb(self) -> None:
+        """Closes the wandb writer and finishes the run."""
         import wandb
 
         self.writer.close()

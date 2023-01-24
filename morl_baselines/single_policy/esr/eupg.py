@@ -1,4 +1,6 @@
+"""EUPG is an ESR algorithm based on Policy Gradient (REINFORCE like)."""
 from typing import List, Optional, Union
+from typing_extensions import override
 
 import gym
 import numpy as np
@@ -13,14 +15,18 @@ from morl_baselines.common.networks import mlp
 from morl_baselines.common.utils import layer_init, log_episode_info
 
 
-# EUPG is an ESR algorithm based on Policy Gradient (REINFORCE like)
-# The idea is to condition the network on the accrued reward and to
-# Scalarize the rewards based on the episodic return (accrued + future rewards)
-# Paper: D. Roijers, D. Steckelmacher, and A. Nowe, Multi-objective Reinforcement Learning for the Expected Utility of the Return. 2018.
-
-
 class PolicyNet(nn.Module):
+    """Policy network."""
+
     def __init__(self, obs_shape, action_dim, rew_dim, net_arch):
+        """Initialize the policy network.
+
+        Args:
+            obs_shape: Observation shape
+            action_dim: Action dimension
+            rew_dim: Reward dimension
+            net_arch: Number of units per layer
+        """
         super().__init__()
         self.obs_shape = obs_shape
         self.action_dim = action_dim
@@ -34,6 +40,15 @@ class PolicyNet(nn.Module):
         self.apply(layer_init)
 
     def forward(self, obs: th.Tensor, acc_reward: th.Tensor):
+        """Forward pass.
+
+        Args:
+            obs: Observation
+            acc_reward: accrued reward
+
+        Returns: Probability of each action
+
+        """
         input = th.cat((obs, acc_reward), dim=acc_reward.dim() - 1)
         pi = self.net(input)
         # Normalized sigmoid
@@ -42,12 +57,27 @@ class PolicyNet(nn.Module):
         return probas.view(-1, self.action_dim)  # Batch Size x |Actions|
 
     def distribution(self, obs: th.Tensor, acc_reward: th.Tensor):
+        """Categorical distribution based on the action probabilities.
+
+        Args:
+            obs: observation
+            acc_reward: accrued reward
+
+        Returns: action distribution.
+
+        """
         probas = self.forward(obs, acc_reward)
         distribution = Categorical(probas)
         return distribution
 
 
 class EUPG(MOPolicy, MOAgent):
+    """Expected Utility Policy Gradient Algorithm.
+
+    The idea is to condition the network on the accrued reward and to scalarize the rewards based on the episodic return (accrued + future rewards)
+    Paper: D. Roijers, D. Steckelmacher, and A. Nowe, Multi-objective Reinforcement Learning for the Expected Utility of the Return. 2018.
+    """
+
     def __init__(
         self,
         env: gym.Env,
@@ -61,6 +91,20 @@ class EUPG(MOPolicy, MOAgent):
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
+        """Initialize the EUPG algorithm.
+
+        Args:
+            env: Environment
+            scalarization: Scalarization function to use (can be non-linear)
+            buffer_size: Size of the replay buffer
+            net_arch: Number of units per layer
+            gamma: Discount factor
+            learning_rate: Learning rate (alpha)
+            project_name: Name of the project (for logging)
+            experiment_name: Name of the experiment (for logging)
+            log: Whether to log or not
+            device: Device to use for NN. Can be "cpu", "cuda" or "auto".
+        """
         MOAgent.__init__(self, env, device)
         MOPolicy.__init__(self, None, device)
 
@@ -96,19 +140,21 @@ class EUPG(MOPolicy, MOAgent):
         if log:
             self.setup_wandb(project_name, experiment_name)
 
+    @override
     def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         if type(obs) is int:
             obs = th.as_tensor([obs]).to(self.device)
         else:
             obs = th.as_tensor(obs).to(self.device)
         accrued_reward = th.as_tensor(accrued_reward).float().to(self.device)
-        return self.choose_action(obs, accrued_reward)
+        return self.__choose_action(obs, accrued_reward)
 
     @th.no_grad()
-    def choose_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
+    def __choose_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
         action = self.net.distribution(obs, accrued_reward).sample().detach().item()
         return action
 
+    @override
     def update(self):
         (
             obs,
@@ -146,6 +192,13 @@ class EUPG(MOPolicy, MOAgent):
         eval_env: Optional[gym.Env] = None,
         eval_freq: int = 1000,
     ):
+        """Train the agent.
+
+        Args:
+            total_timesteps: Number of timesteps to train for
+            eval_env: Environment to run policy evaluation on
+            eval_freq: Frequency of policy evaluation
+        """
         # Init
         (
             obs,
@@ -159,7 +212,7 @@ class EUPG(MOPolicy, MOAgent):
 
             with th.no_grad():
                 # For training, takes action randomly according to the policy
-                action = self.choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
+                action = self.__choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
@@ -189,6 +242,7 @@ class EUPG(MOPolicy, MOAgent):
             else:
                 obs = next_obs
 
+    @override
     def get_config(self) -> dict:
         return {
             # "env_id": self.env.unwrapped.spec.id,

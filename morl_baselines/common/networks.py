@@ -1,3 +1,5 @@
+"""Utilities for Neural Networks."""
+
 from typing import List, Type
 
 import numpy as np
@@ -11,18 +13,13 @@ def mlp(
     net_arch: List[int],
     activation_fn: Type[nn.Module] = nn.ReLU,
 ) -> nn.Sequential:
-    """
-    Create a multi layer perceptron (MLP), which is
-    a collection of fully-connected layers each followed by an activation function.
+    """Create a multi layer perceptron (MLP), which is a collection of fully-connected layers each followed by an activation function.
 
-    :param input_dim: Dimension of the input vector
-    :param output_dim:
-    :param net_arch: Architecture of the neural net
-        It represents the number of units per layer.
-        The length of this list is the number of layers.
-    :param activation_fn: The activation function
-        to use after each layer.
-    :return:
+    Args:
+        input_dim: Dimension of the input vector
+        output_dim: Dimension of the output vector
+        net_arch: Architecture of the neural net. It represents the number of units per layer. The length of this list is the number of layers.
+        activation_fn: The activation function to use after each layer.
     """
     assert len(net_arch) > 0
     modules = [nn.Linear(input_dim, net_arch[0]), activation_fn()]
@@ -39,13 +36,15 @@ def mlp(
 
 
 class NatureCNN(nn.Module):
-    """
-    CNN from DQN nature paper: Mnih, Volodymyr, et al. "Human-level control through deep reinforcement learning." Nature 518.7540 (2015): 529-533.
-    :param observation_shape:
-    :param features_dim: Number of features extracted. This corresponds to the number of unit for the last layer.
-    """
+    """CNN from DQN nature paper: Mnih, Volodymyr, et al. "Human-level control through deep reinforcement learning." Nature 518.7540 (2015): 529-533."""
 
     def __init__(self, observation_shape: np.ndarray, features_dim: int = 512):
+        """CNN from DQN Nature.
+
+        Args:
+            observation_shape: Shape of the observation.
+            features_dim: Number of features extracted. This corresponds to the number of unit for the last layer.
+        """
         super().__init__()
         self.features_dim = features_dim
         n_input_channels = 1 if len(observation_shape) == 2 else observation_shape[0]
@@ -65,6 +64,11 @@ class NatureCNN(nn.Module):
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
+        """Predicts the features from the observations.
+
+        Args:
+            observations: current observations
+        """
         if observations.dim() == 3:
             observations = observations.unsqueeze(0)
         return self.linear(self.cnn(observations / 255.0))

@@ -1,3 +1,4 @@
+"""Pareto utilities."""
 from copy import deepcopy
 from typing import List
 
@@ -5,12 +6,16 @@ import numpy as np
 
 
 def get_non_dominated(candidates: set):
-    """
-    This function returns the non-dominated subset of elements.
-    :param candidates: The input set of candidate vectors.
-    :return: The non-dominated subset of this input set.
+    """This function returns the non-dominated subset of elements.
+
     Source: https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
     The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.
+
+    Args:
+        candidates: The input set of candidate vectors.
+
+    Returns:
+        The non-dominated subset of this input set.
     """
     candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
     candidates = candidates[candidates.sum(1).argsort()[::-1]]  # Sort candidates by decreasing sum of coordinates.
@@ -33,13 +38,19 @@ def get_non_dominated(candidates: set):
 
 
 class ParetoArchive:
+    """Pareto archive."""
+
     def __init__(self):
+        """Initializes the Pareto archive."""
         self.individuals: list = []
         self.evaluations: List[np.ndarray] = []
 
     def add(self, candidate, evaluation: np.ndarray):
-        """
-        Adds the candidate to the memory and removes Pareto inefficient points
+        """Adds the candidate to the memory and removes Pareto inefficient points.
+
+        Args:
+            candidate: The candidate to add.
+            evaluation: The evaluation of the candidate.
         """
         self.evaluations.append(evaluation)
         self.individuals.append(deepcopy(candidate))

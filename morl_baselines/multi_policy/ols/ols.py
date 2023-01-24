@@ -1,3 +1,4 @@
+"""OLS implementation."""
 from copy import deepcopy
 from typing import List, Optional
 
@@ -12,13 +13,10 @@ np.set_printoptions(precision=4)
 
 
 class OLS:
-    """Optimistic Linear Support (Section 3.3 of http://roijers.info/pub/thesis.pdf)
-    Outer loop method to select next weight vector
+    """Optimistic Linear Support.
 
-    Args:
-        num_objectives (int): Number of objectives
-        epsilon (float, optional): Minimum improvement per iteration. Defaults to 0.0.
-        verbose (bool): Defaults to False.
+    Outer loop method to select next weight vector.
+    Paper: (Section 3.3 of http://roijers.info/pub/thesis.pdf).
     """
 
     def __init__(
@@ -27,6 +25,13 @@ class OLS:
         epsilon: float = 0.0,
         verbose: bool = False,
     ):
+        """Initialize OLS.
+
+        Args:
+            num_objectives (int): Number of objectives
+            epsilon (float, optional): Minimum improvement per iteration. Defaults to 0.0.
+            verbose (bool): Defaults to False.
+        """
         self.num_objectives = num_objectives
         self.epsilon = epsilon
         self.visited_weights = []  # List of already tested weight vectors
@@ -39,13 +44,31 @@ class OLS:
             self.queue.append((float("inf"), w))
 
     def next_weight(self) -> np.ndarray:
-        """ "Returns the next weight vector with highest priority."""
+        """Returns the next weight vector with highest priority.
+
+        Returns:
+            np.ndarray: Next weight vector
+        """
         return self.queue.pop(0)[1]
 
     def get_ccs_weights(self) -> List[np.ndarray]:
+        """Returns the weights in the CCS.
+
+        Returns:
+            List[np.ndarray]: List of weight vectors in the CCS
+
+        """
         return deepcopy(self.ccs_weights)
 
     def get_corner_weights(self, top_k: Optional[int] = None) -> List[np.ndarray]:
+        """Returns the corner weights of the current CCS.
+
+        Args:
+            top_k: If not None, returns the top_k corner weights.
+
+        Returns:
+            List[np.ndarray]: List of corner weights.
+        """
         weights = [w.copy() for (p, w) in self.queue]
         if top_k is not None:
             return weights[:top_k]
@@ -53,13 +76,16 @@ class OLS:
             return weights
 
     def ended(self) -> bool:
+        """Returns True if the queue is empty."""
         return len(self.queue) == 0
 
     def add_solution(self, value: np.ndarray, w: np.ndarray) -> List[int]:
         """Add new value vector optimal to weight w.
+
         Args:
             value (np.ndarray): New value vector
             w (np.ndarray): Weight vector
+
         Returns:
             List of indices of value vectors removed from the CCS for being dominated.
         """
@@ -98,21 +124,41 @@ class OLS:
 
         return removed_indx
 
-    def get_priority(self, w) -> float:
+    def get_priority(self, w: np.ndarray) -> float:
+        """Get the priority of a weight vector.
+
+        Args:
+            w: Weight vector
+
+        Returns:
+            Priority of the weight vector.
+        """
         max_optimistic_value = self.max_value_lp(w)
         max_value_ccs = self.max_scalarized_value(w)
         priority = max_optimistic_value - max_value_ccs  # / abs(max_optimistic_value)
         return priority
 
-    def max_scalarized_value(self, w: np.ndarray) -> float:
-        """Returns the maximum scalarized value for weight vector w."""
+    def max_scalarized_value(self, w: np.ndarray) -> Optional[float]:
+        """Returns the maximum scalarized value for weight vector w.
+
+        Args:
+            w: Weight vector
+
+        Returns:
+            Maximum scalarized value for weight vector w.
+        """
         if not self.ccs:
             return None
         return np.max([np.dot(v, w) for v in self.ccs])
 
     def remove_obsolete_weights(self, new_value: np.ndarray) -> List[np.ndarray]:
         """Remove from the queue the weight vectors for which the new value vector is better than previous values.
-        Returns a list of the removed weight vectors.
+
+        Args:
+            new_value: New value vector
+
+        Returns:
+            List of weight vectors removed from the queue.
         """
         if len(self.ccs) == 0:
             return []
@@ -128,7 +174,12 @@ class OLS:
 
     def remove_obsolete_values(self, value: np.ndarray) -> List[int]:
         """Removes the values vectors which are dominated by the new value for all visited weight vectors.
-        Returns the indices of the removed values.
+
+        Args:
+            value: New value vector
+
+        Returns:
+             the indices of the removed values.
         """
         removed_indx = []
         for i in reversed(range(len(self.ccs))):
@@ -147,7 +198,14 @@ class OLS:
         return removed_indx
 
     def max_value_lp(self, w_new: np.ndarray) -> float:
-        """Returns an upper-bound for the maximum value of the scalarized objective"""
+        """Returns an upper-bound for the maximum value of the scalarized objective.
+
+        Args:
+            w_new: New weight vector
+
+        Returns:
+            Upper-bound for the maximum value of the scalarized objective.
+        """
         # No upper bound if no values in CCS
         if len(self.ccs) == 0:
             return float("inf")
@@ -173,8 +231,12 @@ class OLS:
 
     def compute_corner_weights(self) -> List[np.ndarray]:
         """Returns the corner weights for the current set of values.
-        See http://roijers.info/pub/thesis.pdf Definition 19
+
+        See http://roijers.info/pub/thesis.pdf Definition 19.
         Obs: there is a typo in the definition of the corner weights in the thesis, the >= sign should be <=.
+
+        Returns:
+            List of corner weights.
         """
         A = np.vstack(self.ccs)
         A = np.round_(A, decimals=4)  # Round to avoid numerical issues
@@ -225,7 +287,11 @@ class OLS:
         return corners
 
     def extrema_weights(self) -> List[np.ndarray]:
-        """Returns the weight vectors which have one component equal to 1 and the rest equal to 0"""
+        """Returns the weight vectors which have one component equal to 1 and the rest equal to 0.
+
+        Returns:
+            List of weight vectors.
+        """
         extrema_weights = []
         for i in range(self.num_objectives):
             w = np.zeros(self.num_objectives)
@@ -234,6 +300,14 @@ class OLS:
         return extrema_weights
 
     def is_dominated(self, value: np.ndarray) -> bool:
+        """Checks if the value is dominated by any of the values in the CCS.
+
+        Args:
+            value: Value vector
+
+        Returns:
+            True if the value is dominated by any of the values in the CCS, False otherwise.
+        """
         if len(self.ccs) == 0:
             return False
         for w in self.visited_weights:
@@ -244,7 +318,7 @@ class OLS:
 
 if __name__ == "__main__":
 
-    def solve(w):
+    def _solve(w):
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
     num_objectives = 3
@@ -252,7 +326,7 @@ if __name__ == "__main__":
     while not ols.ended():
         w = ols.next_weight()
         print("w:", w)
-        value = solve(w)
+        value = _solve(w)
         ols.add_solution(value, w)
 
         print("hv:", hypervolume(np.zeros(num_objectives), ols.ccs))

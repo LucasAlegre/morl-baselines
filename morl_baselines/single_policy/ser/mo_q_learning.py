@@ -1,5 +1,7 @@
+"""Scalarized Q-learning for single policy multi-objective reinforcement learning."""
 import time
 from typing import Optional
+from typing_extensions import override
 
 import gym
 import numpy as np
@@ -11,10 +13,10 @@ from morl_baselines.common.utils import linearly_decaying_value, log_episode_inf
 
 
 class MOQLearning(MOPolicy, MOAgent):
-    """
-    Scalarized Q learning:
+    """Scalarized Q learning for single policy multi-objective reinforcement learning.
+
     Maintains one Q-table per objective, rely on a scalarization function to choose the moves.
-    K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.
+    Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.
     """
 
     def __init__(
@@ -34,7 +36,24 @@ class MOQLearning(MOPolicy, MOAgent):
         log: bool = True,
         parent_writer: Optional[SummaryWriter] = None,
     ):
+        """Initializes the MOQ-learning algorithm.
 
+        Args:
+            env: The environment to train on
+            id: The id of the policy
+            weights: The weights to use for the scalarization function
+            scalarization: The scalarization function to use
+            learning_rate: The learning rate
+            gamma: The discount factor
+            initial_epsilon: The initial epsilon value
+            final_epsilon: The final epsilon value
+            epsilon_decay_steps: The number of steps to decay epsilon over
+            learning_starts: The number of steps to wait before starting to learn
+            project_name: The name of the project used for logging
+            experiment_name: The name of the experiment used for logging
+            log: Whether to log or not
+            parent_writer: The writer to use for logging. If None, a new writer is created.
+        """
         MOAgent.__init__(self, env)
         MOPolicy.__init__(self, id)
         self.learning_rate = learning_rate
@@ -69,6 +88,7 @@ class MOQLearning(MOPolicy, MOAgent):
         else:
             return self.eval(obs)
 
+    @override
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
         """Greedily chooses best action using the scalarization method"""
         t_obs = tuple(obs)
@@ -79,6 +99,7 @@ class MOQLearning(MOPolicy, MOAgent):
         )
         return int(np.argmax(scalarized))
 
+    @override
     def update(self):
         """
         Updates the Q table
@@ -112,6 +133,7 @@ class MOQLearning(MOPolicy, MOAgent):
             )
             self.writer.add_scalar(f"losses{self.idstr}/mean_td_error", np.mean(td_error), self.global_step)
 
+    @override
     def get_config(self) -> dict:
         return {
             "alpha": self.learning_rate,
@@ -131,12 +153,14 @@ class MOQLearning(MOPolicy, MOAgent):
         eval_env: gym.Env = None,
         eval_freq: int = 1000,
     ):
-        """
-        Learning for the agent
-        :param total_timesteps: max number of timesteps to learn
-        :param reset_num_timesteps: whether to reset timesteps or not when recalling learn
-        :param eval_env: other environment to launch greedy evaluations
-        :param eval_freq: number of timesteps between each policy evaluation
+        """Learning for the agent.
+
+        Args:
+            start_time: time when the training started
+            total_timesteps: max number of timesteps to learn
+            reset_num_timesteps: whether to reset timesteps or not when recalling learn
+            eval_env: other environment to launch greedy evaluations
+            eval_freq: number of timesteps between each policy evaluation
         """
         num_episodes = 0
         self.obs, _ = self.env.reset()
