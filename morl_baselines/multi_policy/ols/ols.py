@@ -124,7 +124,7 @@ class OLS:
 
         return removed_indx
 
-    def get_priority(self, w) -> float:
+    def get_priority(self, w: np.ndarray) -> float:
         """Get the priority of a weight vector.
 
         Args:

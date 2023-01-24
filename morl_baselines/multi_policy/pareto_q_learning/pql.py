@@ -1,4 +1,5 @@
 """Pareto Q-Learning."""
+from typing import Callable, Optional
 import numpy as np
 
 from morl_baselines.common.morl_algorithm import MOAgent
@@ -88,7 +89,7 @@ class PQL(MOAgent):
             "seed": self.seed,
         }
 
-    def score_pareto_cardinality(self, state):
+    def score_pareto_cardinality(self, state: int):
         """Compute the action scores based upon the Pareto cardinality metric.
 
         Args:
@@ -109,7 +110,7 @@ class PQL(MOAgent):
 
         return scores
 
-    def score_hypervolume(self, state):
+    def score_hypervolume(self, state: int):
         """Compute the action scores based upon the hypervolume metric.
 
         Args:
@@ -122,7 +123,7 @@ class PQL(MOAgent):
         action_scores = [hypervolume(self.ref_point, list(q_set)) for q_set in q_sets]
         return action_scores
 
-    def get_q_set(self, state, action):
+    def get_q_set(self, state: int, action: int):
         """Compute the Q-set for a given state-action pair.
 
         Args:
@@ -136,7 +137,7 @@ class PQL(MOAgent):
         q_array = self.avg_reward[state, action] + self.gamma * nd_array
         return {tuple(vec) for vec in q_array}
 
-    def select_action(self, state, score_func):
+    def select_action(self, state: int, score_func: Callable):
         """Select an action in the current state.
 
         Args:
@@ -152,7 +153,7 @@ class PQL(MOAgent):
             action_scores = score_func(state)
             return self.rng.choice(np.argwhere(action_scores == np.max(action_scores)).flatten())
 
-    def calc_non_dominated(self, state):
+    def calc_non_dominated(self, state: int):
         """Get the non-dominated vectors in a given state.
 
         Args:
@@ -165,7 +166,7 @@ class PQL(MOAgent):
         non_dominated = get_non_dominated(candidates)
         return non_dominated
 
-    def train(self, num_episodes=3000, log_every=100, action_eval="hypervolume"):
+    def train(self, num_episodes: Optional[int] = 3000, log_every: Optionl[int] = 100, action_eval: Optional[str] = "hypervolume"):
         """Learn the Pareto front.
 
         Args:
@@ -245,11 +246,11 @@ class PQL(MOAgent):
 
         return total_rew
 
-    def get_local_pcs(self, state=0):
+    def get_local_pcs(self, state: int = 0):
         """Collect the local PCS in a given state.
 
         Args:
-            state (int, optional): The state to get a local PCS for. (Default value = 0)
+            state (int): The state to get a local PCS for. (Default value = 0)
 
         Returns:
             Set: A set of Pareto optimal vectors.

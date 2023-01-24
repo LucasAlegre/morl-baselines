@@ -212,7 +212,7 @@ class Envelope(MOPolicy, MOAgent):
             "learning_starts": self.learning_starts,
         }
 
-    def save(self, save_replay_buffer=True, save_dir="weights/", filename=None):
+    def save(self, save_replay_buffer: bool = True, save_dir: str = "weights/", filename: Optional[str] = None):
         """Save the model and the replay buffer if specified.
 
         Args:
@@ -231,7 +231,7 @@ class Envelope(MOPolicy, MOAgent):
         filename = self.experiment_name if filename is None else filename
         th.save(saved_params, save_dir + "/" + filename + ".tar")
 
-    def load(self, path, load_replay_buffer=True):
+    def load(self, path: str, load_replay_buffer: bool = True):
         """Load the model and the replay buffer if specified.
 
         Args:
