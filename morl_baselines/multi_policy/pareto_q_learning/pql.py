@@ -1,5 +1,6 @@
 """Pareto Q-Learning."""
 from typing import Callable, Optional
+
 import numpy as np
 
 from morl_baselines.common.morl_algorithm import MOAgent
@@ -166,7 +167,9 @@ class PQL(MOAgent):
         non_dominated = get_non_dominated(candidates)
         return non_dominated
 
-    def train(self, num_episodes: Optional[int] = 3000, log_every: Optionl[int] = 100, action_eval: Optional[str] = "hypervolume"):
+    def train(
+        self, num_episodes: Optional[int] = 3000, log_every: Optional[int] = 100, action_eval: Optional[str] = "hypervolume"
+    ):
         """Learn the Pareto front.
 
         Args:
