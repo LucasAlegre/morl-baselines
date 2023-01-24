@@ -47,13 +47,14 @@ repos:
     rev: 22.10.0
     hooks:
       - id: black
-#  - repo: https://github.com/pycqa/pydocstyle
-#    rev: 6.1.1
-#    hooks:
-#      - id: pydocstyle
-#        exclude: ^(morl_baselines/envs/)|(tests/)|(docs/)|(setup.py)
-#        args:
-#          - --source
-#          - --explain
-#          - --convention=google
-#        additional_dependencies: ["toml"]
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.1.1
+    hooks:
+      - id: pydocstyle
+        exclude: ^(tests/)|(docs/)|(setup.py)|(examples/)
+        args:
+          - --source
+          - --explain
+          - --ignore-decorators=override
+          - --convention=google
+        additional_dependencies: ["toml"]

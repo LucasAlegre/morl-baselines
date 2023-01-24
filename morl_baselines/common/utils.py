@@ -1,3 +1,4 @@
+"""General utils for the MORL baselines."""
 from typing import Iterable, Optional
 
 import numpy as np
@@ -8,6 +9,14 @@ from torch.utils.tensorboard import SummaryWriter
 
 @th.no_grad()
 def layer_init(layer, method="orthogonal", weight_gain: float = 1, bias_const: float = 0) -> None:
+    """Initialize a layer with the given method.
+
+    Args:
+        layer: The layer to initialize.
+        method: The initialization method to use.
+        weight_gain: The gain for the weights.
+        bias_const: The constant for the bias.
+    """
     if isinstance(layer, (nn.Linear, nn.Conv2d)):
         if method == "xavier":
             th.nn.init.xavier_uniform_(layer.weight, gain=weight_gain)
@@ -22,6 +31,14 @@ def polyak_update(
     target_params: Iterable[th.nn.Parameter],
     tau: float,
 ) -> None:
+    """Polyak averaging for target network parameters.
+
+    Args:
+        params: The parameters to update.
+        target_params: The target parameters.
+        tau: The polyak averaging coefficient (usually small).
+
+    """
     for param, target_param in zip(params, target_params):
         if tau == 1:
             target_param.data.copy_(param.data)
@@ -31,7 +48,14 @@ def polyak_update(
 
 
 def get_grad_norm(params: Iterable[th.nn.Parameter]) -> th.Tensor:
-    """This is how the grad norm is computed inside torch.nn.clip_grad_norm_()"""
+    """This is how the grad norm is computed inside torch.nn.clip_grad_norm_().
+
+    Args:
+        params: The parameters to compute the grad norm for.
+
+    Returns:
+        The grad norm.
+    """
     parameters = [p for p in params if p.grad is not None]
     if len(parameters) == 0:
         return th.tensor(0.0)
@@ -41,23 +65,35 @@ def get_grad_norm(params: Iterable[th.nn.Parameter]) -> th.Tensor:
 
 
 def huber(x, min_priority=0.01):
+    """Huber loss function.
+
+    Args:
+        x: The input tensor.
+        min_priority: The minimum priority.
+
+    Returns:
+        The huber loss.
+    """
     return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
 
 
 def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, final_value):
     """Returns the current value for a linearly decaying parameter.
+
     This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
     al., 2015). The schedule is as follows:
     Begin at 1. until warmup_steps steps have been taken; then
     Linearly decay epsilon from 1. to epsilon in decay_period steps; and then
     Use epsilon from there on.
+
     Args:
-    decay_period: float, the period over which the value is decayed.
-    step: int, the number of training steps completed so far.
-    warmup_steps: int, the number of steps taken before the value is decayed.
-    final value: float, the final value to which to decay the value parameter.
+        decay_period: float, the period over which the value is decayed.
+        step: int, the number of training steps completed so far.
+        warmup_steps: int, the number of steps taken before the value is decayed.
+        final value: float, the final value to which to decay the value parameter.
+
     Returns:
-    A float, the current value computed according to the schedule.
+        A float, the current value computed according to the schedule.
     """
     steps_left = decay_period + warmup_steps - step
     bonus = (initial_value - final_value) * steps_left / decay_period
@@ -67,7 +103,8 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
 
 
 def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
-    """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1
+    """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1.
+
     Args:
         dim: size of the weight vector
         seed: random seed
@@ -100,13 +137,15 @@ def log_episode_info(
     id: Optional[int] = None,
     writer: Optional[SummaryWriter] = None,
 ):
-    """
-    Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper)
-    :param info: info dictionary containing the episode statistics
-    :param scalarization: scalarization function
-    :param weights: weights to be used in the scalarization
-    :param id: agent's id
-    :param writer: wandb writer
+    """Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).
+
+    Args:
+        info: info dictionary containing the episode statistics
+        scalarization: scalarization function
+        weights: weights to be used in the scalarization
+        global_timestep: global timestep
+        id: agent's id
+        writer: wandb writer
     """
     episode_ts = info["l"]
     episode_time = info["t"]

@@ -1,5 +1,7 @@
+"""Envelope Q-Learning implementation."""
 import os
 from typing import List, Optional, Union
+from typing_extensions import override
 
 import gym
 import numpy as np
@@ -23,7 +25,17 @@ from morl_baselines.common.utils import (
 
 
 class QNet(nn.Module):
+    """Multi-objective Q-Network conditioned on the weight vector."""
+
     def __init__(self, obs_shape, action_dim, rew_dim, net_arch):
+        """Initialize the Q network.
+
+        Args:
+            obs_shape: shape of the observation
+            action_dim: number of actions
+            rew_dim: number of objectives
+            net_arch: network architecture (number of units per layer)
+        """
         super().__init__()
         self.obs_shape = obs_shape
         self.action_dim = action_dim
@@ -34,10 +46,20 @@ class QNet(nn.Module):
         elif len(obs_shape) > 1:  # Image observation
             self.feature_extractor = NatureCNN(self.obs_shape, features_dim=512)
             input_dim = self.feature_extractor.features_dim + rew_dim
+        # |S| + |R| -> ... -> |A| * |R|
         self.net = mlp(input_dim, action_dim * rew_dim, net_arch)
         self.apply(layer_init)
 
     def forward(self, obs, w):
+        """Predict Q values for all actions.
+
+        Args:
+            obs: current observation
+            w: weight vector
+
+        Returns: the Q values for all actions
+
+        """
         if self.feature_extractor is not None:
             features = self.feature_extractor(obs / 255.0)
             input = th.cat((features, w), dim=w.dim() - 1)
@@ -48,13 +70,11 @@ class QNet(nn.Module):
 
 
 class Envelope(MOPolicy, MOAgent):
-    """
-    R. Yang, X. Sun, and K. Narasimhan, “A Generalized Algorithm for Multi-Objective Reinforcement Learning and Policy Adaptation,”
-    arXiv:1908.08342 [cs], Nov. 2019, Accessed: Sep. 06, 2021. [Online]. Available: http://arxiv.org/abs/1908.08342
+    """Envelope Q-Leaning Algorithm.
 
-    Envelope uses a conditoned network to embed multiple policies (taking the weight as input).
-
+    Envelope uses a conditioned network to embed multiple policies (taking the weight as input).
     The main change of this algorithm compare to a scalarized CN DQN is the target update.
+    Paper: R. Yang, X. Sun, and K. Narasimhan, “A Generalized Algorithm for Multi-Objective Reinforcement Learning and Policy Adaptation,” arXiv:1908.08342 [cs], Nov. 2019, Accessed: Sep. 06, 2021. [Online]. Available: http://arxiv.org/abs/1908.08342.
     """
 
     def __init__(
@@ -80,12 +100,40 @@ class Envelope(MOPolicy, MOAgent):
         initial_homotopy_lambda: float = 0.0,
         final_homotopy_lambda: float = 1.0,
         homotopy_decay_steps: int = None,
-        project_name: str = "Envelope",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "Envelope",
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
+        """Envelope Q-learning algorithm.
 
+        Args:
+            env: The environment to learn from.
+            learning_rate: The learning rate (alpha).
+            initial_epsilon: The initial epsilon value for epsilon-greedy exploration.
+            final_epsilon: The final epsilon value for epsilon-greedy exploration.
+            epsilon_decay_steps: The number of steps to decay epsilon over.
+            tau: The soft update coefficient (keep in [0, 1]).
+            target_net_update_freq: The frequency with which the target network is updated.
+            buffer_size: The size of the replay buffer.
+            net_arch: The size of the hidden layers of the value net.
+            batch_size: The size of the batch to sample from the replay buffer.
+            learning_starts: The number of steps before learning starts i.e. the agent will be random until learning starts.
+            gradient_updates: The number of gradient updates per step.
+            gamma: The discount factor (gamma).
+            max_grad_norm: The maximum norm for the gradient clipping. If None, no gradient clipping is applied.
+            envelope: Whether to use the envelope method.
+            num_sample_w: The number of weight vectors to sample for the envelope target.
+            per: Whether to use prioritized experience replay.
+            per_alpha: The alpha parameter for prioritized experience replay.
+            initial_homotopy_lambda: The initial value of the homotopy parameter for homotopy optimization.
+            final_homotopy_lambda: The final value of the homotopy parameter.
+            homotopy_decay_steps: The number of steps to decay the homotopy parameter over.
+            project_name: The name of the project, for wandb logging.
+            experiment_name: The name of the experiment, for wandb logging.
+            log: Whether to log to wandb.
+            device: The device to use for training.
+        """
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
@@ -140,6 +188,7 @@ class Envelope(MOPolicy, MOAgent):
         if log:
             self.setup_wandb(project_name, experiment_name)
 
+    @override
     def get_config(self):
         return {
             "env_id": self.env.unwrapped.spec.id,
@@ -164,6 +213,13 @@ class Envelope(MOPolicy, MOAgent):
         }
 
     def save(self, save_replay_buffer=True, save_dir="weights/", filename=None):
+        """Save the model and the replay buffer if specified.
+
+        Args:
+            save_replay_buffer: Whether to save the replay buffer too.
+            save_dir: Directory to save the model.
+            filename: filename to save the model.
+        """
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         saved_params = {}
@@ -176,6 +232,12 @@ class Envelope(MOPolicy, MOAgent):
         th.save(saved_params, save_dir + "/" + filename + ".tar")
 
     def load(self, path, load_replay_buffer=True):
+        """Load the model and the replay buffer if specified.
+
+        Args:
+            path: Path to the model.
+            load_replay_buffer: Whether to load the replay buffer too.
+        """
         params = th.load(path)
         self.q_net.load_state_dict(params["q_net_state_dict"])
         self.target_q_net.load_state_dict(params["q_net_state_dict"])
@@ -183,9 +245,10 @@ class Envelope(MOPolicy, MOAgent):
         if load_replay_buffer and "replay_buffer" in params:
             self.replay_buffer = params["replay_buffer"]
 
-    def sample_batch_experiences(self):
+    def __sample_batch_experiences(self):
         return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
 
+    @override
     def update(self):
         critic_losses = []
         for g in range(self.gradient_updates):
@@ -197,7 +260,7 @@ class Envelope(MOPolicy, MOAgent):
                     b_next_obs,
                     b_dones,
                     b_inds,
-                ) = self.sample_batch_experiences()
+                ) = self.__sample_batch_experiences()
             else:
                 (
                     b_obs,
@@ -205,7 +268,7 @@ class Envelope(MOPolicy, MOAgent):
                     b_rewards,
                     b_next_obs,
                     b_dones,
-                ) = self.sample_batch_experiences()
+                ) = self.__sample_batch_experiences()
 
             sampled_w = (
                 th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w)).float().to(self.device)
@@ -287,12 +350,21 @@ class Envelope(MOPolicy, MOAgent):
             self.writer.add_scalar("metrics/epsilon", self.epsilon, self.global_step)
             self.writer.add_scalar("metrics/homotopy_lambda", self.homotopy_lambda, self.global_step)
 
+    @override
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         obs = th.as_tensor(obs).float().to(self.device)
         w = th.as_tensor(w).float().to(self.device)
         return self.max_action(obs, w)
 
     def act(self, obs: th.Tensor, w: th.Tensor) -> int:
+        """Epsilon-greedily select an action given an observation and weight.
+
+        Args:
+            obs: observation
+            w: weight vector
+
+        Returns: an integer representing the action to take.
+        """
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
@@ -300,6 +372,14 @@ class Envelope(MOPolicy, MOAgent):
 
     @th.no_grad()
     def max_action(self, obs: th.Tensor, w: th.Tensor) -> int:
+        """Select the action with the highest Q-value given an observation and weight.
+
+        Args:
+            obs: observation
+            w: weight vector
+
+        Returns: the action with the highest Q-value.
+        """
         q_values = self.q_net(obs, w)
         scalarized_q_values = th.einsum("r,bar->ba", w, q_values)
         max_act = th.argmax(scalarized_q_values, dim=1)
@@ -307,6 +387,15 @@ class Envelope(MOPolicy, MOAgent):
 
     @th.no_grad()
     def envelope_target(self, obs: th.Tensor, w: th.Tensor, sampled_w: th.Tensor) -> th.Tensor:
+        """Computes the envelope target for the given observation and weight.
+
+        Args:
+            obs: current observation.
+            w: current weight vector.
+            sampled_w: set of sampled weight vectors (>1!).
+
+        Returns: the envelope target.
+        """
         # Repeat the weights for each sample
         W = sampled_w.unsqueeze(0).repeat(obs.size(0), 1, 1)
         # Repeat the observations for each sampled weight
@@ -337,6 +426,14 @@ class Envelope(MOPolicy, MOAgent):
 
     @th.no_grad()
     def ddqn_target(self, obs: th.Tensor, w: th.Tensor) -> th.Tensor:
+        """Double DQN target for the given observation and weight.
+
+        Args:
+            obs: observation
+            w: weight vector.
+
+        Returns: the DQN target.
+        """
         # Max action for each state
         q_values = self.q_net(obs, w)
         scalarized_q_values = th.einsum("br,bar->ba", w, q_values)
@@ -353,15 +450,24 @@ class Envelope(MOPolicy, MOAgent):
     def train(
         self,
         total_timesteps: int,
-        weight: Optional[
-            np.ndarray
-        ] = None,  # Weight vector. If None, it is randomly sampled every episode (as done in the paper).
+        weight: Optional[np.ndarray] = None,
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
         eval_freq: int = 1000,
         reset_learning_starts: bool = False,
     ):
+        """Train the agent.
+
+        Args:
+            total_timesteps: total number of timesteps to train for.
+            weight: weight vector. If None, it is randomly sampled every episode (as done in the paper).
+            total_episodes: total number of episodes to train for. If None, it is ignored.
+            reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
+            eval_env: environment to use for evaluation. If None, it is ignored.
+            eval_freq: policy evaluation frequency.
+            reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
+        """
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
         if reset_learning_starts:  # Resets epsilon-greedy exploration

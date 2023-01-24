@@ -1,3 +1,4 @@
+"""Pareto Q-Learning."""
 import numpy as np
 
 from morl_baselines.common.morl_algorithm import MOAgent
@@ -6,8 +7,10 @@ from morl_baselines.common.performance_indicators import hypervolume
 
 
 class PQL(MOAgent):
-    """
-    Pareto Q-learning
+    """Pareto Q-learning.
+
+    Tabular method relying on pareto pruning.
+    Paper: K. Van Moffaert and A. Nowé, “Multi-objective reinforcement learning using sets of pareto dominating policies,” The Journal of Machine Learning Research, vol. 15, no. 1, pp. 3483–3512, 2014.
     """
 
     def __init__(
@@ -23,6 +26,20 @@ class PQL(MOAgent):
         experiment_name: str = "Pareto Q-Learning",
         log: bool = True,
     ):
+        """Initialize the Pareto Q-learning algorithm.
+
+        Args:
+            env: The environment.
+            ref_point: The reference point for the hypervolume metric.
+            gamma: The discount factor.
+            initial_epsilon: The initial epsilon value.
+            epsilon_decay: The epsilon decay rate.
+            final_epsilon: The final epsilon value.
+            seed: The random seed.
+            project_name: The name of the project used for logging.
+            experiment_name: The name of the experiment used for logging.
+            log: Whether to log or not.
+        """
         super().__init__(env)
         # Learning parameters
         self.gamma = gamma
@@ -199,7 +216,7 @@ class PQL(MOAgent):
         """Track a policy from its return vector.
 
         Args:
-            vec (array_like):
+            vec (array_like): The return vector to track.
         """
         target = np.array(vec)
         state, _ = self.env.reset()
