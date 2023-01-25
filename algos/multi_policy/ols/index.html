@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -227,7 +227,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -235,6 +235,181 @@
         <article role="main">
           <section id="ols">
 <h1>OLS<a class="headerlink" href="#ols" title="Permalink to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.ols.ols.</span></span><span class="sig-name descname"><span class="pre">OLS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_objectives</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS" title="Permalink to this definition">#</a></dt>
+<dd><p>Optimistic Linear Support.</p>
+<p>Outer loop method to select next weight vector.
+Paper: (Section 3.3 of <a class="reference external" href="http://roijers.info/pub/thesis.pdf">http://roijers.info/pub/thesis.pdf</a>).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.add_solution">
+<span class="sig-name descname"><span class="pre">add_solution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.add_solution" title="Permalink to this definition">#</a></dt>
+<dd><p>Add new value vector optimal to weight w.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>np.ndarray</em>) – New value vector</p></li>
+<li><p><strong>w</strong> (<em>np.ndarray</em>) – Weight vector</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>List of indices of value vectors removed from the CCS for being dominated.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.compute_corner_weights">
+<span class="sig-name descname"><span class="pre">compute_corner_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.compute_corner_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the corner weights for the current set of values.</p>
+<p>See <a class="reference external" href="http://roijers.info/pub/thesis.pdf">http://roijers.info/pub/thesis.pdf</a> Definition 19.
+Obs: there is a typo in the definition of the corner weights in the thesis, the &gt;= sign should be &lt;=.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>List of corner weights.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.ended">
+<span class="sig-name descname"><span class="pre">ended</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.ended" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns True if the queue is empty.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.extrema_weights">
+<span class="sig-name descname"><span class="pre">extrema_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.extrema_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the weight vectors which have one component equal to 1 and the rest equal to 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>List of weight vectors.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.get_ccs_weights">
+<span class="sig-name descname"><span class="pre">get_ccs_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.get_ccs_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the weights in the CCS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>List[np.ndarray]</strong> – List of weight vectors in the CCS</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.get_corner_weights">
+<span class="sig-name descname"><span class="pre">get_corner_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.get_corner_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the corner weights of the current CCS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>top_k</strong> – If not None, returns the top_k corner weights.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>List[np.ndarray]</strong> – List of corner weights.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.get_priority">
+<span class="sig-name descname"><span class="pre">get_priority</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.get_priority" title="Permalink to this definition">#</a></dt>
+<dd><p>Get the priority of a weight vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>w</strong> – Weight vector</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Priority of the weight vector.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.is_dominated">
+<span class="sig-name descname"><span class="pre">is_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.is_dominated" title="Permalink to this definition">#</a></dt>
+<dd><p>Checks if the value is dominated by any of the values in the CCS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> – Value vector</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>True if the value is dominated by any of the values in the CCS, False otherwise.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.max_scalarized_value">
+<span class="sig-name descname"><span class="pre">max_scalarized_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.max_scalarized_value" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the maximum scalarized value for weight vector w.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>w</strong> – Weight vector</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Maximum scalarized value for weight vector w.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.max_value_lp">
+<span class="sig-name descname"><span class="pre">max_value_lp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">w_new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.max_value_lp" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns an upper-bound for the maximum value of the scalarized objective.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>w_new</strong> – New weight vector</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Upper-bound for the maximum value of the scalarized objective.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.next_weight">
+<span class="sig-name descname"><span class="pre">next_weight</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.next_weight" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the next weight vector with highest priority.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>np.ndarray</strong> – Next weight vector</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.remove_obsolete_values">
+<span class="sig-name descname"><span class="pre">remove_obsolete_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.remove_obsolete_values" title="Permalink to this definition">#</a></dt>
+<dd><p>Removes the values vectors which are dominated by the new value for all visited weight vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> – New value vector</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>the indices of the removed values.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.ols.ols.OLS.remove_obsolete_weights">
+<span class="sig-name descname"><span class="pre">remove_obsolete_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.ols.ols.OLS.remove_obsolete_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Remove from the queue the weight vectors for which the new value vector is better than previous values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_value</strong> – New value vector</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>List of weight vectors removed from the queue.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
         </article>
@@ -280,8 +455,42 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">OLS</a><ul>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS"><code class="docutils literal notranslate"><span class="pre">OLS</span></code></a><ul>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.add_solution"><code class="docutils literal notranslate"><span class="pre">OLS.add_solution()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.compute_corner_weights"><code class="docutils literal notranslate"><span class="pre">OLS.compute_corner_weights()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.ended"><code class="docutils literal notranslate"><span class="pre">OLS.ended()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.extrema_weights"><code class="docutils literal notranslate"><span class="pre">OLS.extrema_weights()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.get_ccs_weights"><code class="docutils literal notranslate"><span class="pre">OLS.get_ccs_weights()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.get_corner_weights"><code class="docutils literal notranslate"><span class="pre">OLS.get_corner_weights()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.get_priority"><code class="docutils literal notranslate"><span class="pre">OLS.get_priority()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.is_dominated"><code class="docutils literal notranslate"><span class="pre">OLS.is_dominated()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.max_scalarized_value"><code class="docutils literal notranslate"><span class="pre">OLS.max_scalarized_value()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.max_value_lp"><code class="docutils literal notranslate"><span class="pre">OLS.max_value_lp()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.next_weight"><code class="docutils literal notranslate"><span class="pre">OLS.next_weight()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.remove_obsolete_values"><code class="docutils literal notranslate"><span class="pre">OLS.remove_obsolete_values()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.ols.ols.OLS.remove_obsolete_weights"><code class="docutils literal notranslate"><span class="pre">OLS.remove_obsolete_weights()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
