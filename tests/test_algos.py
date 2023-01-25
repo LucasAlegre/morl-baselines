@@ -107,7 +107,6 @@ def test_mp_moql():
     assert len(discounted_front) > 0
 
 
-# TODO Lucas: This test is not working due to cddlib
 def test_ols():
     env = mo_gym.make("deep-sea-treasure-v0")
 
@@ -153,7 +152,9 @@ def test_envelope():
         eval_freq=100,
     )
 
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(agent, env=eval_env, w=np.array([0.5, 0.4, 0.1]))
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
+        agent, env=eval_env, w=np.array([0.5, 0.4, 0.1])
+    )
     assert scalar_return != 0
     assert scalarized_disc_return != 0
     assert len(vec_ret) == 3
