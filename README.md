@@ -31,10 +31,10 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 * Performances are automatically reported in [Weights and Biases](https://wandb.ai/) dashboards.
 * Linting and formatting are enforced by pre-commit hooks.
 * Code is well documented.
+* All algorithms are automatically tested.
 * Utility functions are provided e.g. pareto pruning, experience buffers, etc.
-* 🔜 Hyper-parameter optimization available.
-* 🔜 All algorithms are automatically tested.
 * 🔜 Performances have been tested against the ones reported in the original papers.
+* 🔜 Hyper-parameter optimization available.
 
 <!-- end features -->
 
