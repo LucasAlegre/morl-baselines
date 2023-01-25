@@ -47,7 +47,7 @@ class MPMOQLearning(MOAgent):
             final_epsilon: The final epsilon value.
             epsilon_decay_steps: The number of steps for epsilon decay.
             learning_starts: The number of steps before learning starts.
-            num_timesteps: The number of timesteps to train for.
+            num_timesteps: The number of timesteps for each agent to train for.
             eval_freq: The frequency of evaluation.
             project_name: The name of the project for logging.
             experiment_name: The name of the experiment for logging.
@@ -76,6 +76,8 @@ class MPMOQLearning(MOAgent):
         print(f"Generated weights: {self.weights}")
         if self.log:
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
+        else:
+            self.writer = None
 
         self.agents = [
             MOQLearning(
@@ -125,8 +127,9 @@ class MPMOQLearning(MOAgent):
             _, _, vec, discounted_vec = a.policy_eval(eval_env=self.env, weights=a.weights, writer=self.writer)
             discounted_rewards.append(discounted_vec)
             rewards.append(vec)
-        print(f"Evaluation of all agents: {rewards}")
-        print(f"discounted: {discounted_rewards}")
+        if self.log:
+            print(f"Evaluation of all agents: {rewards}")
+            print(f"discounted: {discounted_rewards}")
         return rewards, discounted_rewards
 
     def train(self):
@@ -144,6 +147,8 @@ class MPMOQLearning(MOAgent):
             self.global_step += len(self.agents) * self.eval_freq
             rewards, disc_rewards = self.eval_all_agents()
             hv = hypervolume(self.ref_point, rewards)
-            self.writer.add_scalar("metrics/hypervolume", hv, self.global_step)
+            if self.log:
+                self.writer.add_scalar("metrics/hypervolume", hv, self.global_step)
 
-        self.writer.close()
+        if self.writer is not None:
+            self.writer.close()
