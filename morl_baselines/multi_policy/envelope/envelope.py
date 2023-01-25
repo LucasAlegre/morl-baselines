@@ -321,7 +321,7 @@ class Envelope(MOPolicy, MOAgent):
                 td_err = (q_value[: len(b_inds)] - target_q[: len(b_inds)]).detach()
                 priority = th.einsum("sr,sr->s", td_err, w[: len(b_inds)]).abs()
                 priority = priority.cpu().numpy().flatten()
-                priority = (priority + self.replay_buffer.eps) ** self.per_alpha
+                priority = (priority + self.replay_buffer.min_priority) ** self.per_alpha
                 self.replay_buffer.update_priorities(b_inds, priority)
 
         if self.tau != 1 or self.global_step % self.target_net_update_freq == 0:

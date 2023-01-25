@@ -422,7 +422,8 @@ class PGMORL(MOAgent):
         self.num_envs = num_envs
         if env is None:
             self.env = mo_gym.MOSyncVectorEnv(
-                [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
+                # Video recording is disabled since broken for now
+                [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(1, self.num_envs + 1)]
             )
         else:
             raise ValueError("Environments should be vectorized for PPO. You should provide an environment id instead.")
@@ -431,6 +432,8 @@ class PGMORL(MOAgent):
         self.log = log
         if self.log:
             self.setup_wandb(project_name, experiment_name)
+        else:
+            self.writer = None
 
         self.networks = [
             MOPPONet(
@@ -444,7 +447,6 @@ class PGMORL(MOAgent):
 
         weights = generate_weights(self.delta_weight)
         print(f"Warmup phase - sampled weights: {weights}")
-        self.pop_size = len(weights)
 
         self.agents = [
             MOPPO(
@@ -516,12 +518,13 @@ class PGMORL(MOAgent):
                 )
             evaluations_before_train[i] = discounted_reward
 
-        print("Current pareto archive:")
-        print(self.archive.evaluations)
-        hv = hypervolume(self.ref_point, self.archive.evaluations)
-        sp = sparsity(self.archive.evaluations)
-        self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
-        self.writer.add_scalar("charts/sparsity", sp, self.iteration)
+        if self.log:
+            print("Current pareto archive:")
+            print(self.archive.evaluations)
+            hv = hypervolume(self.ref_point, self.archive.evaluations)
+            sp = sparsity(self.archive.evaluations)
+            self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
+            self.writer.add_scalar("charts/sparsity", sp, self.iteration)
 
     def __task_weight_selection(self):
         """Chooses agents and weights to train at the next iteration based on the current population and prediction model."""
@@ -602,8 +605,9 @@ class PGMORL(MOAgent):
 
         # Warmup
         for i in range(1, self.warmup_iterations + 1):
-            self.writer.add_scalar("charts/warmup_iterations", i)
             print(f"Warmup iteration #{self.iteration}")
+            if self.log:
+                self.writer.add_scalar("charts/warmup_iterations", i)
             self.__train_all_agents()
             self.iteration += 1
         self.__eval_all_agents(current_evaluations)
@@ -615,15 +619,17 @@ class PGMORL(MOAgent):
             # Every evolutionary iterations, change the task - weight assignments
             self.__task_weight_selection()
             print(f"Evolutionary generation #{evolutionary_generation}")
-            self.writer.add_scalar("charts/evolutionary_generation", evolutionary_generation)
+            if self.log:
+                self.writer.add_scalar("charts/evolutionary_generation", evolutionary_generation)
 
             for _ in range(self.evolutionary_iterations):
                 # Run training of every agent for evolutionary iterations.
-                print(f"Evolutionary iteration #{self.iteration - self.warmup_iterations}")
-                self.writer.add_scalar(
-                    "charts/evolutionary_iterations",
-                    self.iteration - self.warmup_iterations,
-                )
+                if self.log:
+                    print(f"Evolutionary iteration #{self.iteration - self.warmup_iterations}")
+                    self.writer.add_scalar(
+                        "charts/evolutionary_iterations",
+                        self.iteration - self.warmup_iterations,
+                    )
                 self.__train_all_agents()
                 self.iteration += 1
             self.__eval_all_agents(current_evaluations)
@@ -631,4 +637,5 @@ class PGMORL(MOAgent):
 
         print("Done training!")
         self.env.close()
-        self.close_wandb()
+        if self.log:
+            self.close_wandb()

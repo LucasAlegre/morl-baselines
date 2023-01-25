@@ -72,19 +72,12 @@ class MOPolicy(ABC):
                 self.global_step,
             )
 
-        return (
-            scalarized_return,
-            scalarized_discounted_return,
-            vec_return,
-            discounted_vec_return,
-        )
-
     def policy_eval(
         self,
         eval_env,
         scalarization=np.dot,
         weights: Optional[np.ndarray] = None,
-        writer: SummaryWriter = None,
+        writer: Optional[SummaryWriter] = None,
     ):
         """Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
 
@@ -103,20 +96,24 @@ class MOPolicy(ABC):
             vec_reward,
             discounted_vec_reward,
         ) = eval_mo(self, eval_env, scalarization=scalarization, w=weights)
-        return self.__report(
-            scalarized_reward,
-            scalarized_discounted_reward,
-            vec_reward,
-            discounted_vec_reward,
-            writer,
-        )
+
+        if writer is not None:
+            self.__report(
+                scalarized_reward,
+                scalarized_discounted_reward,
+                vec_reward,
+                discounted_vec_reward,
+                writer,
+            )
+
+        return scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward
 
     def policy_eval_esr(
         self,
         eval_env,
         scalarization,
         weights: Optional[np.ndarray] = None,
-        writer: SummaryWriter = None,
+        writer: Optional[SummaryWriter] = None,
     ):
         """Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
 
@@ -135,13 +132,17 @@ class MOPolicy(ABC):
             vec_reward,
             discounted_vec_reward,
         ) = eval_mo_reward_conditioned(self, eval_env, scalarization, weights)
-        return self.__report(
-            scalarized_reward,
-            scalarized_discounted_reward,
-            vec_reward,
-            discounted_vec_reward,
-            writer,
-        )
+
+        if writer is not None:
+            self.__report(
+                scalarized_reward,
+                scalarized_discounted_reward,
+                vec_reward,
+                discounted_vec_reward,
+                writer,
+            )
+
+        return scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward
 
     @abstractmethod
     def update(self) -> None:

@@ -243,7 +243,7 @@ class MOPPO(MOPolicy):
         networks: MOPPONet,
         weights: np.ndarray,
         envs: gym.vector.SyncVectorEnv,
-        writer: SummaryWriter,
+        writer: Optional[SummaryWriter],
         steps_per_iteration: int = 2048,
         num_minibatches: int = 32,
         update_epochs: int = 10,
@@ -549,18 +549,19 @@ class MOPPO(MOPolicy):
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
         # record rewards for plotting purposes
-        self.writer.add_scalar(
-            f"charts_{self.id}/learning_rate",
-            self.optimizer.param_groups[0]["lr"],
-            self.global_step,
-        )
-        self.writer.add_scalar(f"losses_{self.id}/value_loss", v_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/policy_loss", pg_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/entropy", entropy_loss.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/old_approx_kl", old_approx_kl.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/approx_kl", approx_kl.item(), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/clipfrac", np.mean(clipfracs), self.global_step)
-        self.writer.add_scalar(f"losses_{self.id}/explained_variance", explained_var, self.global_step)
+        if self.writer is not None:
+            self.writer.add_scalar(
+                f"charts_{self.id}/learning_rate",
+                self.optimizer.param_groups[0]["lr"],
+                self.global_step,
+            )
+            self.writer.add_scalar(f"losses_{self.id}/value_loss", v_loss.item(), self.global_step)
+            self.writer.add_scalar(f"losses_{self.id}/policy_loss", pg_loss.item(), self.global_step)
+            self.writer.add_scalar(f"losses_{self.id}/entropy", entropy_loss.item(), self.global_step)
+            self.writer.add_scalar(f"losses_{self.id}/old_approx_kl", old_approx_kl.item(), self.global_step)
+            self.writer.add_scalar(f"losses_{self.id}/approx_kl", approx_kl.item(), self.global_step)
+            self.writer.add_scalar(f"losses_{self.id}/clipfrac", np.mean(clipfracs), self.global_step)
+            self.writer.add_scalar(f"losses_{self.id}/explained_variance", explained_var, self.global_step)
 
     def train(self, start_time, current_iteration: int, max_iterations: int):
         """A training iteration: trains MOPPO for self.steps_per_iteration * self.num_envs.
@@ -591,8 +592,9 @@ class MOPPO(MOPolicy):
 
         # Logging
         print("SPS:", int(self.global_step / (time.time() - start_time)))
-        self.writer.add_scalar(
-            "charts/SPS",
-            int(self.global_step / (time.time() - start_time)),
-            self.global_step,
-        )
+        if self.writer is not None:
+            self.writer.add_scalar(
+                "charts/SPS",
+                int(self.global_step / (time.time() - start_time)),
+                self.global_step,
+            )

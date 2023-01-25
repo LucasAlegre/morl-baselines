@@ -2,6 +2,7 @@
 
 
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+![tests](https://github.com/LucasAlegre/morl-baselines/workflows/Python%20tests/badge.svg)
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/LucasAlegre/morl-baselines/blob/main/LICENSE)
 [![Discord](https://img.shields.io/discord/999693014618362036?label=discord)](https://discord.gg/ygmkfnBvKA)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
@@ -30,10 +31,10 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 * Performances are automatically reported in [Weights and Biases](https://wandb.ai/) dashboards.
 * Linting and formatting are enforced by pre-commit hooks.
 * Code is well documented.
+* All algorithms are automatically tested.
 * Utility functions are provided e.g. pareto pruning, experience buffers, etc.
-* 🔜 Hyper-parameter optimization available.
-* 🔜 All algorithms are automatically tested.
 * 🔜 Performances have been tested against the ones reported in the original papers.
+* 🔜 Hyper-parameter optimization available.
 
 <!-- end features -->
 
