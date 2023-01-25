@@ -10,6 +10,7 @@ from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
+from morl_baselines.multi_policy.ols.ols import OLS
 from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.esr.eupg import EUPG
@@ -107,32 +108,32 @@ def test_mp_moql():
 
 
 # TODO Lucas: This test is not working due to cddlib
-# def test_ols():
-#     env = mo_gym.make("deep-sea-treasure-v0")
-#
-#     ols = OLS(num_objectives=2, epsilon=0.1, verbose=False)
-#     policies = []
-#     while not ols.ended():
-#         w = ols.next_weight()
-#
-#         new_policy = MOQLearning(
-#             env,
-#             weights=w,
-#             learning_rate=0.3,
-#             gamma=0.9,
-#             initial_epsilon=1,
-#             final_epsilon=0.01,
-#             epsilon_decay_steps=int(1e5),
-#         )
-#         new_policy.train(0, total_timesteps=int(1e4))
-#
-#         _, _, vec, discounted_vec = new_policy.policy_eval(eval_env=env, weights=w, writer=new_policy.writer)
-#         policies.append(new_policy)
-#
-#         removed_inds = ols.add_solution(discounted_vec, w)
-#
-#         for ind in removed_inds:
-#             policies.pop(ind)  # remove policies that are no longer needed
+def test_ols():
+    env = mo_gym.make("deep-sea-treasure-v0")
+
+    ols = OLS(num_objectives=2, epsilon=0.1, verbose=False)
+    policies = []
+    while not ols.ended():
+        w = ols.next_weight()
+
+        new_policy = MOQLearning(
+            env,
+            weights=w,
+            learning_rate=0.3,
+            gamma=0.9,
+            initial_epsilon=1,
+            final_epsilon=0.01,
+            epsilon_decay_steps=int(1e5),
+        )
+        new_policy.train(0, total_timesteps=int(1e4))
+
+        _, _, vec, discounted_vec = new_policy.policy_eval(eval_env=env, weights=w, writer=new_policy.writer)
+        policies.append(new_policy)
+
+        removed_inds = ols.add_solution(discounted_vec, w)
+
+        for ind in removed_inds:
+            policies.pop(ind)  # remove policies that are no longer needed
 
 
 # TODO Lucas: This test is not working
