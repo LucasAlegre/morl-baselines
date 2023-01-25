@@ -137,7 +137,6 @@ def test_ols():
             policies.pop(ind)  # remove policies that are no longer needed
 
 
-# TODO Lucas: This test is not working
 def test_envelope():
 
     env = mo_gym.make("minecart-v0")
@@ -154,11 +153,11 @@ def test_envelope():
         eval_freq=100,
     )
 
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(agent, env=eval_env, w=np.array([0.5, 0.5]))
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(agent, env=eval_env, w=np.array([0.5, 0.4, 0.1]))
     assert scalar_return != 0
     assert scalarized_disc_return != 0
-    assert len(vec_ret) == 2
-    assert len(vec_disc_ret) == 2
+    assert len(vec_ret) == 3
+    assert len(vec_disc_ret) == 3
 
 
 # This test is a bit long to execute, idk what to do with it.
