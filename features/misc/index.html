@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -227,14 +227,135 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <section id="miscellaneous">
-<h1>Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permalink to this heading">#</a></h1>
+          <section id="module-morl_baselines.common.utils">
+<span id="miscellaneous"></span><h1>Miscellaneous<a class="headerlink" href="#module-morl_baselines.common.utils" title="Permalink to this heading">#</a></h1>
+<p>General utils for the MORL baselines.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.get_grad_norm">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">get_grad_norm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.common.utils.get_grad_norm" title="Permalink to this definition">#</a></dt>
+<dd><p>This is how the grad norm is computed inside torch.nn.clip_grad_norm_().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> – The parameters to compute the grad norm for.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>The grad norm.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.huber">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">huber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.huber" title="Permalink to this definition">#</a></dt>
+<dd><p>Huber loss function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The input tensor.</p></li>
+<li><p><strong>min_priority</strong> – The minimum priority.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>The huber loss.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.layer_init">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">layer_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'orthogonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias_const</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.common.utils.layer_init" title="Permalink to this definition">#</a></dt>
+<dd><p>Initialize a layer with the given method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>layer</strong> – The layer to initialize.</p></li>
+<li><p><strong>method</strong> – The initialization method to use.</p></li>
+<li><p><strong>weight_gain</strong> – The gain for the weights.</p></li>
+<li><p><strong>bias_const</strong> – The constant for the bias.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.linearly_decaying_value">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">linearly_decaying_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decay_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.linearly_decaying_value" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the current value for a linearly decaying parameter.</p>
+<p>This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
+al., 2015). The schedule is as follows:
+Begin at 1. until warmup_steps steps have been taken; then
+Linearly decay epsilon from 1. to epsilon in decay_period steps; and then
+Use epsilon from there on.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>decay_period</strong> – float, the period over which the value is decayed.</p></li>
+<li><p><strong>step</strong> – int, the number of training steps completed so far.</p></li>
+<li><p><strong>warmup_steps</strong> – int, the number of steps taken before the value is decayed.</p></li>
+<li><p><strong>value</strong> (<em>final</em>) – float, the final value to which to decay the value parameter.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>A float, the current value computed according to the schedule.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.log_episode_info">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">log_episode_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">SummaryWriter</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.log_episode_info" title="Permalink to this definition">#</a></dt>
+<dd><p>Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>info</strong> – info dictionary containing the episode statistics</p></li>
+<li><p><strong>scalarization</strong> – scalarization function</p></li>
+<li><p><strong>weights</strong> – weights to be used in the scalarization</p></li>
+<li><p><strong>global_timestep</strong> – global timestep</p></li>
+<li><p><strong>id</strong> – agent’s id</p></li>
+<li><p><strong>writer</strong> – wandb writer</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.polyak_update">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">polyak_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.common.utils.polyak_update" title="Permalink to this definition">#</a></dt>
+<dd><p>Polyak averaging for target network parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> – The parameters to update.</p></li>
+<li><p><strong>target_params</strong> – The target parameters.</p></li>
+<li><p><strong>tau</strong> – The polyak averaging coefficient (usually small).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.random_weights">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">random_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'gaussian'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.utils.random_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim</strong> – size of the weight vector</p></li>
+<li><p><strong>seed</strong> – random seed</p></li>
+<li><p><strong>n</strong> – number of weight vectors to generate</p></li>
+<li><p><strong>dist</strong> – distribution to use, either ‘gaussian’ or ‘dirichlet’</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
         </article>
@@ -280,8 +401,33 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Miscellaneous</a><ul>
+<li><a class="reference internal" href="#morl_baselines.common.utils.get_grad_norm"><code class="docutils literal notranslate"><span class="pre">get_grad_norm()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.huber"><code class="docutils literal notranslate"><span class="pre">huber()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.layer_init"><code class="docutils literal notranslate"><span class="pre">layer_init()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.linearly_decaying_value"><code class="docutils literal notranslate"><span class="pre">linearly_decaying_value()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.log_episode_info"><code class="docutils literal notranslate"><span class="pre">log_episode_info()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.polyak_update"><code class="docutils literal notranslate"><span class="pre">polyak_update()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.random_weights"><code class="docutils literal notranslate"><span class="pre">random_weights()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

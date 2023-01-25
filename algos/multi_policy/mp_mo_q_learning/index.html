@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -227,7 +227,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -235,6 +235,41 @@
         <article role="main">
           <section id="mpmoq-learning">
 <h1>MPMOQ Learning<a class="headerlink" href="#mpmoq-learning" title="Permalink to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.</span></span><span class="sig-name descname"><span class="pre">MPMOQLearning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_point:</span> <span class="pre">~numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights_step_size:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization=&lt;function</span> <span class="pre">weighted_sum&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_decay_steps:</span> <span class="pre">~typing.Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_starts:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_timesteps:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">500000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_freq:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MORL-baselines'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MultiPolicy</span> <span class="pre">MO</span> <span class="pre">Q-Learning'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning" title="Permalink to this definition">#</a></dt>
+<dd><p>Multi-policy MOQ-Learning: Outer loop version of mo_q_learning.</p>
+<p>Paper: Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.eval_all_agents">
+<span class="sig-name descname"><span class="pre">eval_all_agents</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.eval_all_agents" title="Permalink to this definition">#</a></dt>
+<dd><p>Evaluate all agents and return the rewards and discounted rewards.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>a tuple of rewards and discounted rewards.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.get_config" title="Permalink to this definition">#</a></dt>
+<dd><p>Generates dictionary of the algorithm parameters configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dict</strong> – Config</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.train" title="Permalink to this definition">#</a></dt>
+<dd><p>Train the algorithm.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
         </article>
@@ -280,8 +315,32 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">MPMOQ Learning</a><ul>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning</span></code></a><ul>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.eval_all_agents"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.eval_all_agents()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.get_config"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.get_config()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.train"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.train()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
