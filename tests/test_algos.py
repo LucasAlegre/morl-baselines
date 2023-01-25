@@ -124,6 +124,7 @@ def test_ols():
             initial_epsilon=1,
             final_epsilon=0.01,
             epsilon_decay_steps=int(1e5),
+            log=False,
         )
         new_policy.train(0, total_timesteps=int(1e4))
 
