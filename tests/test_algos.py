@@ -128,7 +128,7 @@ def test_ols():
         )
         new_policy.train(0, total_timesteps=int(1e4))
 
-        _, _, vec, discounted_vec = new_policy.policy_eval(eval_env=env, weights=w, writer=new_policy.writer)
+        _, _, vec, discounted_vec = new_policy.policy_eval(eval_env=env, weights=w)
         policies.append(new_policy)
 
         removed_inds = ols.add_solution(discounted_vec, w)
