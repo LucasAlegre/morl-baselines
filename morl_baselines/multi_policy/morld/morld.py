@@ -7,6 +7,7 @@ import gym
 import mo_gym
 import numpy as np
 import torch as th
+import wandb as wandb
 from mo_gym import MONormalizeReward, MORecordEpisodeStatistics, MOSyncVectorEnv
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import optim
@@ -14,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.common.performance_indicators import hypervolume, igd, sparsity
+from morl_baselines.common.performance_indicators import hypervolume, igd, sparsity, eum
 from morl_baselines.common.scalarization import tchebicheff, weighted_sum
 from morl_baselines.common.utils import nearest_neighbors, polyak_update, random_weights
 
@@ -89,6 +90,7 @@ class MORLD(MOAgent):
         weight_init_method: str = "uniform",
         weight_adaptation_method: Optional[str] = None,  # "PSA" or None
         front: List[np.ndarray] = [],
+        eum_samples: int = 20,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "MORL-D",
         log: bool = True,
@@ -121,6 +123,7 @@ class MORLD(MOAgent):
             weight_init_method: weight initialization method. "uniform" or "random"
             weight_adaptation_method: weight adaptation method. "PSA" or None.
             front: Known pareto front, if any.
+            eum_samples: number of samples to use for the eum metric.
             project_name: For wandb logging
             experiment_name: For wandb logging
             log: For wandb logging
@@ -194,6 +197,7 @@ class MORLD(MOAgent):
         self.project_name = project_name
         self.experiment_name = experiment_name
         self.log = log
+        self.eum_samples = eum_samples
 
         if self.log:
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
@@ -230,6 +234,7 @@ class MORLD(MOAgent):
             "transfer": self.transfer,
             "weight_init_method": self.weight_init_method,
             "weight_adapt_method": self.weight_adaptation_method,
+            "eum_samples": self.eum_samples,
             "delta_adapt": self.delta,
             "project_name": self.project_name,
             "experiment_name": self.experiment_name,
@@ -304,13 +309,23 @@ class MORLD(MOAgent):
 
         hv = hypervolume(self.ref_point, self.archive.evaluations)
         sp = sparsity(self.archive.evaluations)
-        # TODO add EUM and log front
-        self.writer.add_scalar("charts/hypervolume", hv, self.global_step)
-        self.writer.add_scalar("charts/sparsity", sp, self.global_step)
+        eum_metric = eum(
+            front=self.archive.evaluations,
+            weights_set=get_reference_directions("energy", self.reward_dim, self.eum_samples).astype(np.float32),
+        )
+        if self.log:
+            front = wandb.Table(
+                columns=[f"objective_{i}" for i in range(1, self.reward_dim + 1)],
+                data=[p.tolist() for p in self.archive.evaluations],
+            )
+            self.writer.add_scalar("charts/hypervolume", hv, self.global_step)
+            self.writer.add_scalar("charts/sparsity", sp, self.global_step)
+            self.writer.add_scalar("charts/eum", eum_metric, self.global_step)
+            wandb.log({"charts/pareto_front": front})
 
-        if self.known_front:
-            igd_metric = igd(known_front=self.known_front, current_estimate=self.archive.evaluations)
-            self.writer.add_scalar("charts/IGD", igd_metric, self.global_step)
+            if self.known_front:
+                igd_metric = igd(known_front=self.known_front, current_estimate=self.archive.evaluations)
+                self.writer.add_scalar("charts/IGD", igd_metric, self.global_step)
 
     def __share(self, last_trained: Policy):
         """Shares information between neighbor policies.
