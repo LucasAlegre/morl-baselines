@@ -1,9 +1,9 @@
 """Performance indicators for multi-objective RL algorithms.
 
-We mostly rely on pymoo for the computation of the indicator, but some are customly made.
+We mostly rely on pymoo for the computation of axiomatic indicators (HV and IGD), but some are customly made.
 """
 from copy import deepcopy
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 import numpy.typing as npt
@@ -47,3 +47,25 @@ def sparsity(front: List[np.ndarray]) -> float:
     sparsity_value /= len(front) - 1
 
     return sparsity_value
+
+
+def eum(front: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot) -> float:
+    """Expected Utility Metric.
+
+    Similar to R-Metrics in MOO. But only needs one PF approximation.
+    Paper: L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau, “Quality Assessment of MORL Algorithms: A Utility-Based Approach,” 2015.
+
+    Args:
+        front: current pareto front to compute the eum on
+        weights_set: weights to use for the utility computation
+        utility: utility function to use (default: dot product)
+
+    Returns:
+        float: eum metric
+    """
+    maxs = []
+    for weights in weights_set:
+        scalarized_front = np.array([utility(weights, point) for point in front])
+        maxs.append(np.max(scalarized_front))
+
+    return np.mean(np.array(maxs), axis=0)
