@@ -1,8 +1,8 @@
+"""Outer-loop MOQ-learning algorithm (uses multiple weights)."""
 import time
-from typing import Optional, Union
+from typing_extensions import override
 
 import numpy as np
-from mo_gym import eval_mo
 
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.performance_indicators import hypervolume
@@ -11,8 +11,9 @@ from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
 
 class MPMOQLearning(MOAgent):
-    """
-    Outer loop version of mo_q_learning
+    """Multi-policy MOQ-Learning: Outer loop version of mo_q_learning.
+
+    Paper: Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.
     """
 
     def __init__(
@@ -33,6 +34,25 @@ class MPMOQLearning(MOAgent):
         experiment_name: str = "MultiPolicy MO Q-Learning",
         log: bool = True,
     ):
+        """Initialize the Multi-policy MOQ-learning algorithm.
+
+        Args:
+            env: The environment to learn from.
+            ref_point: The reference point for the hypervolume calculation.
+            weights_step_size: The step size for the weights creation.
+            scalarization: The scalarization function to use.
+            learning_rate: The learning rate.
+            gamma: The discount factor.
+            initial_epsilon: The initial epsilon value.
+            final_epsilon: The final epsilon value.
+            epsilon_decay_steps: The number of steps for epsilon decay.
+            learning_starts: The number of steps before learning starts.
+            num_timesteps: The number of timesteps for each agent to train for.
+            eval_freq: The frequency of evaluation.
+            project_name: The name of the project for logging.
+            experiment_name: The name of the experiment for logging.
+            log: Whether to log or not.
+        """
         super().__init__(env)
         # Learning
         self.scalarization = scalarization
@@ -56,6 +76,8 @@ class MPMOQLearning(MOAgent):
         print(f"Generated weights: {self.weights}")
         if self.log:
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
+        else:
+            self.writer = None
 
         self.agents = [
             MOQLearning(
@@ -77,6 +99,7 @@ class MPMOQLearning(MOAgent):
             for i, w in enumerate(self.weights)
         ]
 
+    @override
     def get_config(self) -> dict:
         return {
             "alpha": self.learning_rate,
@@ -93,17 +116,24 @@ class MPMOQLearning(MOAgent):
         return np.linspace((0.0, 1.0), (1.0, 0.0), int(1 / step_size) + 1, dtype=np.float32)
 
     def eval_all_agents(self):
+        """Evaluate all agents and return the rewards and discounted rewards.
+
+        Returns:
+            a tuple of rewards and discounted rewards.
+        """
         discounted_rewards = []
         rewards = []
         for a in self.agents:
             _, _, vec, discounted_vec = a.policy_eval(eval_env=self.env, weights=a.weights, writer=self.writer)
             discounted_rewards.append(discounted_vec)
             rewards.append(vec)
-        print(f"Evaluation of all agents: {rewards}")
-        print(f"discounted: {discounted_rewards}")
+        if self.log:
+            print(f"Evaluation of all agents: {rewards}")
+            print(f"discounted: {discounted_rewards}")
         return rewards, discounted_rewards
 
     def train(self):
+        """Train the algorithm."""
         start_time = time.time()
         training_epoch = int(self.num_timesteps / self.eval_freq)
         for e in range(training_epoch):
@@ -117,6 +147,8 @@ class MPMOQLearning(MOAgent):
             self.global_step += len(self.agents) * self.eval_freq
             rewards, disc_rewards = self.eval_all_agents()
             hv = hypervolume(self.ref_point, rewards)
-            self.writer.add_scalar("metrics/hypervolume", hv, self.global_step)
+            if self.log:
+                self.writer.add_scalar("metrics/hypervolume", hv, self.global_step)
 
-        self.writer.close()
+        if self.writer is not None:
+            self.writer.close()

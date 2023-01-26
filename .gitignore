@@ -130,3 +130,7 @@ dmypy.json
 
 # wandb
 wandb/
+
+# Pycharm
+.idea/
+.DS_Store

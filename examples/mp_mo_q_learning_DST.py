@@ -2,12 +2,13 @@ import gym.wrappers
 import numpy as np
 from matplotlib import pyplot as plt
 from mo_gym import MORecordEpisodeStatistics
+from mo_gym.deep_sea_treasure.deep_sea_treasure import DEFAULT_MAP, DeepSeaTreasure
 
-from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, DEFAULT_MAP
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
+
 
 if __name__ == "__main__":
     env = MORecordEpisodeStatistics(DeepSeaTreasure(dst_map=DEFAULT_MAP), gamma=0.9)

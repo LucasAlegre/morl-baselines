@@ -1,14 +1,18 @@
+"""Performance indicators for multi-objective RL algorithms.
+
+We mostly rely on pymoo for the computation of the indicator, but some are customly made.
+"""
 from copy import deepcopy
 from typing import List
 
 import numpy as np
-from pymoo.factory import get_performance_indicator
+import numpy.typing as npt
 from pymoo.indicators.hv import HV
 from pymoo.indicators.igd import IGD
 
 
-def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
-    """Computes the hypervolume metric for a set of points (value vectors) and a reference point.
+def hypervolume(ref_point: np.ndarray, points: List[npt.ArrayLike]) -> float:
+    """Computes the hypervolume metric for a set of points (value vectors) and a reference point (from Pymoo).
 
     Args:
         ref_point (np.ndarray): Reference point
@@ -21,9 +25,15 @@ def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
 
 
 def sparsity(front: List[np.ndarray]) -> float:
-    """
-    Sparsity metric from PGMORL
-    :param front: current pareto front to compute the sparsity on
+    """Sparsity metric from PGMORL.
+
+    Basically, the sparsity is the average distance between each point in the front.
+
+    Args:
+        front: current pareto front to compute the sparsity on
+
+    Returns:
+        float: sparsity metric
     """
     if len(front) < 2:
         return 0.0

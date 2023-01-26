@@ -1,7 +1,14 @@
+"""PGMORL algorithm implementation.
+
+Some code in this file has been adapted from the original code provided by the authors of the paper https://github.com/mit-gfx/PGMORL.
+(!) Limited to 2 objectives for now.
+(!) The post-processing phase has not been implemented yet.
+"""
 import random
 import time
 from copy import deepcopy
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
+from typing_extensions import override
 
 import gym
 import mo_gym
@@ -9,15 +16,21 @@ import numpy as np
 import torch as th
 from scipy.optimize import least_squares
 
-from morl_baselines.common.performance_indicators import sparsity, hypervolume
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.single_policy.ser.mo_ppo import make_env, MOPPONet, MOPPO
+from morl_baselines.common.performance_indicators import hypervolume, sparsity
+from morl_baselines.single_policy.ser.mo_ppo import MOPPO, MOPPONet, make_env
 
 
-# Some code in this file has been adapted from the original code provided by the authors of the paper
-# https://github.com/mit-gfx/PGMORL
 class PerformancePredictor:
+    """Performance prediction model.
+
+    Stores the performance deltas along with the used weights after each generation.
+    Then, uses these stored samples to perform a regression for predicting the performance of using a given weight
+    to train a given policy.
+    Predicts: Weight & performance -> delta performance
+    """
+
     def __init__(
         self,
         neighborhood_threshold: float = 0.1,
@@ -26,10 +39,14 @@ class PerformancePredictor:
         A_bound_max: float = 500.0,
         f_scale: float = 20.0,
     ):
-        """
-        Stores the performance deltas along with the used weights after each generation.
-        Then, uses these stored samples to perform a regression for predicting the performance of using a given weight
-        to train a given policy.
+        """Initialize the performance predictor.
+
+        Args:
+            neighborhood_threshold: The threshold for the neighborhood of an evaluation.
+            sigma: The sigma value for the prediction model
+            A_bound_min: The minimum value for the A parameter of the prediction model.
+            A_bound_max: The maximum value for the A parameter of the prediction model.
+            f_scale: The scale value for the prediction model.
         """
         # Memory
         self.previous_performance = []
@@ -43,7 +60,17 @@ class PerformancePredictor:
         self.f_scale = f_scale
         self.sigma = sigma
 
-    def add(self, weight: np.ndarray, eval_before_pg: np.ndarray, eval_after_pg: np.ndarray):
+    def add(self, weight: np.ndarray, eval_before_pg: np.ndarray, eval_after_pg: np.ndarray) -> None:
+        """Add a new sample to the performance predictor.
+
+        Args:
+            weight: The weight used to train the policy.
+            eval_before_pg: The evaluation before training the policy.
+            eval_after_pg: The evaluation after training the policy.
+
+        Returns:
+            None
+        """
         self.previous_performance.append(eval_before_pg)
         self.next_performance.append(eval_after_pg)
         self.used_weight.append(weight)
@@ -58,10 +85,10 @@ class PerformancePredictor:
         weight_candidate: np.ndarray,
         sigma: float,
     ):
-        """
-        Uses the hyperbolic model on the training data: weights, deltas and next_perfs to predict the next delta
-        given the current evaluation and weight.
-        :return: The expected delta from current_eval by using weight_candidate.
+        """Uses the hyperbolic model on the training data: weights, deltas and next_perfs to predict the next delta given the current evaluation and weight.
+
+        Returns:
+             The expected delta from current_eval by using weight_candidate.
         """
 
         def __f(x, A, a, b, c):
@@ -76,7 +103,7 @@ class PerformancePredictor:
             ) * w
 
         def __jacobian(params, x, y):
-            A, a, b, c = params[0], params[1], params[2], params[3]
+            A, a, b, _ = params[0], params[1], params[2], params[3]
             J = np.zeros([len(params), len(x)])
             # df_dA = (exp(a(x - b)) - 1) / (exp(a(x - b)) + 1)
             J[0] = ((np.exp(a * (x - b)) - 1) / (np.exp(a * (x - b)) + 1)) * w
@@ -119,12 +146,17 @@ class PerformancePredictor:
         return __f(weight_candidate[current_dim], *res_robust.x)
 
     def predict_next_evaluation(self, weight_candidate: np.ndarray, policy_eval: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """
+        """Predict the next evaluation of the policy.
+
         Use a part of the collected data (determined by the neighborhood threshold) to predict the performance
         after using weight to train the policy whose current evaluation is policy_eval.
-        :param weight_candidate: weight candidate
-        :param policy_eval: current evaluation of the policy
-        :return: the delta prediction, along with the predicted next evaluations
+
+        Args:
+            weight_candidate: weight candidate
+            policy_eval: current evaluation of the policy
+
+        Returns:
+            the delta prediction, along with the predicted next evaluations
         """
         neighbor_weights = []
         neighbor_deltas = []
@@ -164,39 +196,56 @@ class PerformancePredictor:
 
 
 def generate_weights(delta_weight: float) -> np.ndarray:
-    """
-    Generates weights uniformly distributed over the objective dimensions. These weight vectors are separated by
-    delta_weight distance.
-    :param delta_weight: distance between weight vectors
-    :return: all the candidate weights
+    """Generates weights uniformly distributed over the objective dimensions. These weight vectors are separated by delta_weight distance.
+
+    Args:
+        delta_weight: distance between weight vectors
+    Returns:
+        all the candidate weights
     """
     return np.linspace((0.0, 1.0), (1.0, 0.0), int(1 / delta_weight) + 1, dtype=np.float32)
 
 
 class PerformanceBuffer:
-    """
-    Divides the objective space in to n bins of size max_size.
-    Stores the population
+    """Stores the population. Divides the objective space in to n bins of size max_size.
+
+    (!) restricted to 2D objective space (!)
     """
 
-    def __init__(self, num_bins: int, max_size: int, ref_point: np.ndarray):
+    def __init__(self, num_bins: int, max_size: int, origin: np.ndarray):
+        """Initializes the buffer.
+
+        Args:
+            num_bins: number of bins
+            max_size: maximum size of each bin
+            origin: origin of the objective space (to have only positive values)
+        """
         self.num_bins = num_bins
         self.max_size = max_size
-        self.origin = -ref_point
+        self.origin = -origin
         self.dtheta = np.pi / 2.0 / self.num_bins
         self.bins = [[] for _ in range(self.num_bins)]
         self.bins_evals = [[] for _ in range(self.num_bins)]
 
     @property
     def evaluations(self) -> List[np.ndarray]:
+        """Returns the evaluations of the individuals in the buffer."""
         # flatten
         return [e for l in self.bins_evals for e in l]
 
     @property
     def individuals(self) -> list:
+        """Returns the individuals in the buffer."""
         return [i for l in self.bins for i in l]
 
     def add(self, candidate, evaluation: np.ndarray):
+        """Adds a candidate to the buffer.
+
+        Args:
+            candidate: candidate to add
+            evaluation: evaluation of the candidate
+        """
+
         def center_eval(eval):
             # Objectives must be positive
             return np.clip(eval + self.origin, 0.0, float("inf"))
@@ -222,14 +271,15 @@ class PerformanceBuffer:
 
 
 class PGMORL(MOAgent):
-    """
-    J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik,
+    """Prediction Guided Multi-Objective Reinforcement Learning.
+
+    Reference: J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik,
     “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,”
     in Proceedings of the 37th International Conference on Machine Learning,
     Nov. 2020, pp. 10607–10616. Available: https://proceedings.mlr.press/v119/xu20h.html
 
-    https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf
-    https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf
+    Paper: https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf
+    Supplementary materials: https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf
     """
 
     def __init__(
@@ -271,6 +321,46 @@ class PGMORL(MOAgent):
         gae_lambda: float = 0.95,
         device: Union[th.device, str] = "auto",
     ):
+        """Initializes the PGMORL agent.
+
+        Args:
+            env_id: environment id
+            ref_point: reference point for the hypervolume calculation
+            num_envs: number of environments to use (VectorizedEnvs)
+            pop_size: population size
+            warmup_iterations: number of warmup iterations
+            steps_per_iteration: number of steps per iteration
+            limit_env_steps: limit the number of environment steps
+            evolutionary_iterations: number of evolutionary iterations
+            num_weight_candidates: number of weight candidates
+            num_performance_buffer: number of performance buffers
+            performance_buffer_size: size of the performance buffers
+            min_weight: minimum weight
+            max_weight: maximum weight
+            delta_weight: delta weight for weight generation
+            env: environment
+            gamma: discount factor
+            project_name: name of the project. Usually MORL-baselines.
+            experiment_name: name of the experiment. Usually PGMORL.
+            seed: seed for the random number generator
+            torch_deterministic: whether to use deterministic torch operations
+            log: whether to log the results
+            net_arch: number of units per layer
+            num_minibatches: number of minibatches
+            update_epochs: number of update epochs
+            learning_rate: learning rate
+            anneal_lr: whether to anneal the learning rate
+            clip_coef: coefficient for the policy gradient clipping
+            ent_coef: coefficient for the entropy term
+            vf_coef: coefficient for the value function loss
+            clip_vloss: whether to clip the value function loss
+            max_grad_norm: maximum gradient norm
+            norm_adv: whether to normalize the advantages
+            target_kl: target KL divergence
+            gae: whether to use generalized advantage estimation
+            gae_lambda: lambda parameter for GAE
+            device: device on which the code should run
+        """
         super().__init__(env, device=device)
         # Env dimensions
         self.tmp_env = mo_gym.make(env_id)
@@ -300,7 +390,7 @@ class PGMORL(MOAgent):
         self.population = PerformanceBuffer(
             num_bins=self.num_performance_buffer,
             max_size=self.performance_buffer_size,
-            ref_point=self.ref_point,
+            origin=self.ref_point,
         )
         self.predictor = PerformancePredictor()
 
@@ -332,7 +422,8 @@ class PGMORL(MOAgent):
         self.num_envs = num_envs
         if env is None:
             self.env = mo_gym.MOSyncVectorEnv(
-                [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
+                # Video recording is disabled since broken for now
+                [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(1, self.num_envs + 1)]
             )
         else:
             raise ValueError("Environments should be vectorized for PPO. You should provide an environment id instead.")
@@ -341,6 +432,8 @@ class PGMORL(MOAgent):
         self.log = log
         if self.log:
             self.setup_wandb(project_name, experiment_name)
+        else:
+            self.writer = None
 
         self.networks = [
             MOPPONet(
@@ -354,7 +447,6 @@ class PGMORL(MOAgent):
 
         weights = generate_weights(self.delta_weight)
         print(f"Warmup phase - sampled weights: {weights}")
-        self.pop_size = len(weights)
 
         self.agents = [
             MOPPO(
@@ -370,6 +462,7 @@ class PGMORL(MOAgent):
             for i in range(self.pop_size)
         ]
 
+    @override
     def get_config(self) -> dict:
         return {
             "env_id": self.env_id,
@@ -411,9 +504,7 @@ class PGMORL(MOAgent):
             agent.train(self.start_time, self.iteration, self.max_iterations)
 
     def __eval_all_agents(self, evaluations_before_train: List[np.ndarray], add_to_prediction: bool = True):
-        """
-        Evaluates all agents and store their current performances on the buffer and pareto archive
-        """
+        """Evaluates all agents and store their current performances on the buffer and pareto archive."""
         for i, agent in enumerate(self.agents):
             _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], weights=agent.weights, writer=self.writer)
             # Storing current results
@@ -427,17 +518,16 @@ class PGMORL(MOAgent):
                 )
             evaluations_before_train[i] = discounted_reward
 
-        print("Current pareto archive:")
-        print(self.archive.evaluations)
-        hv = hypervolume(self.ref_point, self.archive.evaluations)
-        sp = sparsity(self.archive.evaluations)
-        self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
-        self.writer.add_scalar("charts/sparsity", sp, self.iteration)
+        if self.log:
+            print("Current pareto archive:")
+            print(self.archive.evaluations)
+            hv = hypervolume(self.ref_point, self.archive.evaluations)
+            sp = sparsity(self.archive.evaluations)
+            self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
+            self.writer.add_scalar("charts/sparsity", sp, self.iteration)
 
     def __task_weight_selection(self):
-        """
-        Chooses agents and weights to train at the next iteration based on the current population and prediction model.
-        """
+        """Chooses agents and weights to train at the next iteration based on the current population and prediction model."""
         candidate_weights = generate_weights(self.delta_weight / 2.0)  # Generates more weights than agents
         np.random.shuffle(candidate_weights)  # Randomize
 
@@ -507,6 +597,7 @@ class PGMORL(MOAgent):
             )
 
     def train(self):
+        """Trains the agents."""
         # Init
         current_evaluations = [np.zeros(self.reward_dim) for _ in range(len(self.agents))]
         self.__eval_all_agents(current_evaluations, add_to_prediction=False)
@@ -514,8 +605,9 @@ class PGMORL(MOAgent):
 
         # Warmup
         for i in range(1, self.warmup_iterations + 1):
-            self.writer.add_scalar("charts/warmup_iterations", i)
             print(f"Warmup iteration #{self.iteration}")
+            if self.log:
+                self.writer.add_scalar("charts/warmup_iterations", i)
             self.__train_all_agents()
             self.iteration += 1
         self.__eval_all_agents(current_evaluations)
@@ -527,15 +619,17 @@ class PGMORL(MOAgent):
             # Every evolutionary iterations, change the task - weight assignments
             self.__task_weight_selection()
             print(f"Evolutionary generation #{evolutionary_generation}")
-            self.writer.add_scalar("charts/evolutionary_generation", evolutionary_generation)
+            if self.log:
+                self.writer.add_scalar("charts/evolutionary_generation", evolutionary_generation)
 
             for _ in range(self.evolutionary_iterations):
                 # Run training of every agent for evolutionary iterations.
-                print(f"Evolutionary iteration #{self.iteration - self.warmup_iterations}")
-                self.writer.add_scalar(
-                    "charts/evolutionary_iterations",
-                    self.iteration - self.warmup_iterations,
-                )
+                if self.log:
+                    print(f"Evolutionary iteration #{self.iteration - self.warmup_iterations}")
+                    self.writer.add_scalar(
+                        "charts/evolutionary_iterations",
+                        self.iteration - self.warmup_iterations,
+                    )
                 self.__train_all_agents()
                 self.iteration += 1
             self.__eval_all_agents(current_evaluations)
@@ -543,4 +637,5 @@ class PGMORL(MOAgent):
 
         print("Done training!")
         self.env.close()
-        self.close_wandb()
+        if self.log:
+            self.close_wandb()
