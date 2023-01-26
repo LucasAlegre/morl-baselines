@@ -52,6 +52,7 @@ def sparsity(front: List[np.ndarray]) -> float:
 def eum(front: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot) -> float:
     """Expected Utility Metric.
 
+    Expected utility of the policies on the PF for various weights.
     Similar to R-Metrics in MOO. But only needs one PF approximation.
     Paper: L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau, “Quality Assessment of MORL Algorithms: A Utility-Based Approach,” 2015.
 
