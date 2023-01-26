@@ -1,36 +1,46 @@
+"""MORL/D Multi-Objective Reinforcement Learning based on Decomposition."""
 import math
-import time
-from typing import Union, Callable, Optional, List, Tuple
+from typing import Callable, List, Optional, Tuple, Union
+from typing_extensions import override
 
 import gym
 import mo_gym
 import numpy as np
 import torch as th
-import wandb
-from gym.wrappers import TimeLimit
-from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv, MONormalizeReward
-from mo_gym.deep_sea_treasure.deep_sea_treasure import DeepSeaTreasure, CONCAVE_MAP
+from mo_gym import MONormalizeReward, MORecordEpisodeStatistics, MOSyncVectorEnv
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.common.performance_indicators import hypervolume, sparsity, igd
-from morl_baselines.common.scalarization import weighted_sum, tchebicheff
-from morl_baselines.common.utils import random_weights, nearest_neighbors, polyak_update
+from morl_baselines.common.performance_indicators import hypervolume, igd, sparsity
+from morl_baselines.common.scalarization import tchebicheff, weighted_sum
+from morl_baselines.common.utils import nearest_neighbors, polyak_update, random_weights
+
 
 np.set_printoptions(threshold=np.inf)
 
 
 class Policy:
+    """Individual policy for MORL/D."""
+
     def __init__(self, id: int, weights: np.ndarray, wrapped: MOPolicy):
+        """Initializes a policy.
+
+        Args:
+            id (int): Policy ID
+            weights (np.ndarray): Weight vector
+            wrapped (MOPolicy): Wrapped policy
+        """
         self.id = id
         self.weights = weights
         self.wrapped = wrapped
 
 
-def make_env(env_id, seed, idx, capture_video, run_name, gamma, norm=True):
+def _make_env(env_id: str, seed: int, idx: int, capture_video: bool, run_name: str, gamma: float, norm=True):
+    """Creates a single environment."""
+
     def thunk():
         env = mo_gym.make(env_id, render_mode=None)
         # env = mo_gym.make(env_id, render_mode=None, dst_map=CONCAVE_MAP)
@@ -52,9 +62,7 @@ def make_env(env_id, seed, idx, capture_video, run_name, gamma, norm=True):
 
 
 class MORLD(MOAgent):
-    """
-    MORL/D implementation, decomposition based technique for MORL
-    """
+    """MORL/D implementation, decomposition based technique for MORL."""
 
     def __init__(
         self,
@@ -86,35 +94,37 @@ class MORLD(MOAgent):
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
-        """
-        :param env_name: environment id
-        :param policy_factory: factory method to create low level, single objective policies, takes
-            int: id
-            gym.Env: environment
-            np.ndarray: weight,
-            Callable: scalarization function
-            float: gamma
-        :param scalarization_method: scalarization method to apply. "ws" or "tch".
-        :param evaluation_mode: esr or ser (for evaluation env)
-        :param eval_reps: number of policy evaluation repetitions
-        :param ref_point: reference point for the hypervolume metric
-        :param gamma: gamma
-        :param pop_size: size of population
-        :param num_envs: number of parallel environments
-        :param seed: seed for RNG
-        :param exchange_every: exchange trigger (timesteps based)
-        :param neighborhood_size: size of the neighbordhood ( in [0, pop_size)
-        :param dist_metric: distance metric between weight vectors to determine neighborhood
-        :param shared_buffer: whether buffer should be shared or not
-        :param sharing_mechanism: list containing potential sharing mechanisms: "transfer" is only supported for now.
-        :param update_passes: number of times to update all policies after sampling from one policy.
-        :param weight_init_method: weight initialization method. "uniform" or "random"
-        :param weight_adaptation_method: weight adaptation method. "PSA" or None.
-        :param front: Known pareto front, if any.
-        :param project_name: For wandb logging
-        :param experiment_name: For wandb logging
-        :param log: For wandb logging
-        :param device: torch device
+        """Initializes MORL/D.
+
+        Args:
+            env_name: environment id
+            policy_factory: factory method to create low level, single objective policies, takes
+                int: id
+                gym.Env: environment
+                np.ndarray: weight,
+                Callable: scalarization function
+                float: gamma
+            scalarization_method: scalarization method to apply. "ws" or "tch".
+            evaluation_mode: esr or ser (for evaluation env)
+            eval_reps: number of policy evaluation repetitions
+            ref_point: reference point for the hypervolume metric
+            gamma: gamma
+            pop_size: size of population
+            num_envs: number of parallel environments
+            seed: seed for RNG
+            exchange_every: exchange trigger (timesteps based)
+            neighborhood_size: size of the neighbordhood ( in [0, pop_size)
+            dist_metric: distance metric between weight vectors to determine neighborhood
+            shared_buffer: whether buffer should be shared or not
+            sharing_mechanism: list containing potential sharing mechanisms: "transfer" is only supported for now.
+            update_passes: number of times to update all policies after sampling from one policy.
+            weight_init_method: weight initialization method. "uniform" or "random"
+            weight_adaptation_method: weight adaptation method. "PSA" or None.
+            front: Known pareto front, if any.
+            project_name: For wandb logging
+            experiment_name: For wandb logging
+            log: For wandb logging
+            device: torch device
         """
         self.env_name = env_name
         self.gamma = gamma
@@ -123,12 +133,12 @@ class MORLD(MOAgent):
 
         self.envs = MOSyncVectorEnv(
             [
-                make_env(self.env_name, self.seed, i, capture_video=False, run_name=experiment_name, gamma=self.gamma)
+                _make_env(self.env_name, self.seed, i, capture_video=False, run_name=experiment_name, gamma=self.gamma)
                 for i in range(self.num_envs)
             ]
         )
         super().__init__(self.envs, device)
-        self.eval_env = make_env(
+        self.eval_env = _make_env(
             self.env_name, self.seed, 0, capture_video=False, run_name=experiment_name, gamma=self.gamma, norm=False
         )()
 
@@ -202,6 +212,7 @@ class MORLD(MOAgent):
         if self.shared_buffer:
             self.__share_buffers()
 
+    @override
     def get_config(self) -> dict:
         return {
             "env_name": self.env_name,
@@ -228,9 +239,10 @@ class MORLD(MOAgent):
         }
 
     def __share_buffers(self, neighborhood: bool = False):
-        """
-        Shares replay buffer among all policies
-        :param neighborhood: whether we should share only with closest neighbors. False = share with everyone.
+        """Shares replay buffer among all policies.
+
+        Args:
+            neighborhood: whether we should share only with closest neighbors. False = share with everyone.
         """
         if neighborhood:
             # Sharing only with neighbors
@@ -244,22 +256,21 @@ class MORLD(MOAgent):
             for p in self.population:
                 p.wrapped.set_buffer(shared_buffer)
 
-    def __select_candidate(self):
-        """
-        Candidate selection at every iteration
-        Turn by turn in this case.
-        """
+    def __select_candidate(self) -> Policy:
+        """Candidate selection at every iteration. Turn by turn in this case."""
         candidate = self.population[self.current_policy]
         if self.current_policy + 1 == self.pop_size:
             self.iteration += 1
         self.current_policy = (self.current_policy + 1) % self.pop_size
         return candidate
 
-    def __eval_policy(self, policy: Policy):
-        """
-        Evaluates a policy
-        :param policy: to evaluate
-        :return: the discounted reward
+    def __eval_policy(self, policy: Policy) -> np.ndarray:
+        """Evaluates a policy.
+
+        Args:
+            policy: to evaluate
+        Return:
+             the discounted returns of the policy
         """
         if self.evaluation_mode == "ser":
             acc = np.zeros(self.reward_dim)
@@ -281,9 +292,7 @@ class MORLD(MOAgent):
         return acc / self.eval_reps
 
     def __eval_all_policies(self):
-        """
-        Evaluates all policies and store their current performances on the buffer and pareto archive
-        """
+        """Evaluates all policies and store their current performances on the buffer and pareto archive."""
         for i, agent in enumerate(self.population):
             discounted_reward = self.__eval_policy(agent)
             # Storing current results
@@ -295,6 +304,7 @@ class MORLD(MOAgent):
 
         hv = hypervolume(self.ref_point, self.archive.evaluations)
         sp = sparsity(self.archive.evaluations)
+        # TODO add EUM and log front
         self.writer.add_scalar("charts/hypervolume", hv, self.global_step)
         self.writer.add_scalar("charts/sparsity", sp, self.global_step)
 
@@ -303,9 +313,10 @@ class MORLD(MOAgent):
             self.writer.add_scalar("charts/IGD", igd_metric, self.global_step)
 
     def __share(self, last_trained: Policy):
-        """
-        Shares information between neighbor policies
-        :param last_trained: last trained policy
+        """Shares information between neighbor policies.
+
+        Args:
+            last_trained: last trained policy
         """
         if self.transfer and self.iteration == 0:
             # Transfer weights from trained policy to closest neighbors
@@ -332,15 +343,15 @@ class MORLD(MOAgent):
                     )
 
     def __adapt_weights(self):
-        """
-        Weight adaptation mechanism. Many strategies exist e.g. MOEA/D-AWA.
-        """
+        """Weight adaptation mechanism. Many strategies exist e.g. MOEA/D-AWA."""
 
         def closest_non_dominated(eval_policy: np.ndarray) -> Tuple[Policy, np.ndarray]:
-            """
-            Returns the closest policy to eval_policy currently in the Pareto Archive
-            :param eval_policy: evaluation where we want to find the closest one
-            :return: closest individual and evaluation in the pareto archive
+            """Returns the closest policy to eval_policy currently in the Pareto Archive.
+
+            Args:
+                eval_policy: evaluation where we want to find the closest one
+            Return:
+                closest individual and evaluation in the pareto archive
             """
             closest_distance = math.inf
             closest_nd = None
@@ -383,9 +394,7 @@ class MORLD(MOAgent):
         pass
 
     def __update_others(self, current: Policy):
-        """
-        Runs policy improvements on all policies in the population except current
-        """
+        """Runs policy improvements on all policies in the population except current."""
         print("Updating other policies...")
         for i in range(self.update_passes):
             for p in self.population:
@@ -393,6 +402,12 @@ class MORLD(MOAgent):
                     p.wrapped.update()
 
     def train(self, total_timesteps: int, reset_num_timesteps: bool = False):
+        """Trains the algorithm.
+
+        Args:
+            total_timesteps: total number of timesteps
+            reset_num_timesteps: whether to reset the number of timesteps or not
+        """
         # Init
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes

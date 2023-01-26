@@ -1,7 +1,6 @@
 from typing import Callable, Optional
 
 import gym
-import mo_gym
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 

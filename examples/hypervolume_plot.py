@@ -1,6 +1,8 @@
-import wandb
-import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import wandb
+
 
 api = wandb.Api()
 
@@ -20,7 +22,6 @@ for run in runs:
     else:
         hypervolumes_vanilla.append(hypervolume_df)
 
-import pandas as pd
 
 vanilla_dfs = [df.set_index("Timesteps") for df in hypervolumes_vanilla]
 sb_psa_dfs = [df.set_index("Timesteps") for df in hypervolumes_sb_psa]

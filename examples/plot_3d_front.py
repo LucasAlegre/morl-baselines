@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-from numpy import array
+import pandas as pd
 import seaborn as sns
-from mpl_toolkits.mplot3d import Axes3D
+from numpy import array
+
 
 if __name__ == "__main__":
 

@@ -1,13 +1,11 @@
 from typing import Callable, Optional
 
 import gym
-import mo_gym
 import numpy as np
+import torch as th
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.multi_policy.morld.morld import MORLD, Policy
-from morl_baselines.single_policy.esr.eupg import EUPG
-import torch as th
 from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
 
 

@@ -1,7 +1,15 @@
+"""Multi-objective Soft Actor-Critic (SAC) algorithm for continuous action spaces.
+
+It implements a multi-objective critic with weighted sum scalarization.
+The implementation of this file is largely based on CleanRL's SAC implementation
+https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88/cleanrl/sac_continuous_action.py
+"""
+
 import random
 import time
 from copy import deepcopy
-from typing import Union, Tuple, Optional
+from typing import Optional, Tuple, Union
+from typing_extensions import override
 
 import gym
 import numpy as np
@@ -9,7 +17,7 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from mo_gym import MOSyncVectorEnv, MORecordEpisodeStatistics
+from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.buffer import ReplayBuffer
@@ -18,11 +26,9 @@ from morl_baselines.common.networks import mlp
 from morl_baselines.common.utils import log_episode_info, polyak_update
 
 
-# The implementation of this file is largely based on CleanRL's SAC implementation
-# https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88/cleanrl/sac_continuous_action.py
+def make_env(env_id: str, seed: int, idx: int, capture_video: bool, run_name: str):
+    """Utility function for creating the env."""
 
-
-def make_env(env_id, seed, idx, capture_video, run_name):
     def thunk():
         env = gym.make(env_id)
         env = MORecordEpisodeStatistics(env)
@@ -39,6 +45,8 @@ def make_env(env_id, seed, idx, capture_video, run_name):
 
 # ALGO LOGIC: initialize agent here:
 class MOSoftQNetwork(nn.Module):
+    """Soft Q-network: S, A -> ... -> |R| (multi-objective)."""
+
     def __init__(
         self,
         obs_shape,
@@ -46,6 +54,7 @@ class MOSoftQNetwork(nn.Module):
         reward_dim,
         net_arch=[256, 256],
     ):
+        """Initialize the soft Q-network."""
         super().__init__()
         self.obs_shape = obs_shape
         self.action_shape = action_shape
@@ -61,6 +70,7 @@ class MOSoftQNetwork(nn.Module):
         )
 
     def forward(self, x, a):
+        """Forward pass of the soft Q-network."""
         x = th.cat([x, a], dim=-1)
         x = self.critic(x)
         return x
@@ -71,9 +81,7 @@ LOG_STD_MIN = -5
 
 
 class MOSACActor(nn.Module):
-    """
-    Actor network: S -> A. Does not need any multi-objective concept.
-    """
+    """Actor network: S -> A. Does not need any multi-objective concept."""
 
     def __init__(
         self,
@@ -84,6 +92,7 @@ class MOSACActor(nn.Module):
         action_upper_bound,
         net_arch=[256, 256],
     ):
+        """Initialize SAC actor."""
         super().__init__()
         self.obs_shape = obs_shape
         self.action_shape = action_shape
@@ -101,6 +110,7 @@ class MOSACActor(nn.Module):
         self.register_buffer("action_bias", th.tensor((action_upper_bound + action_lower_bound) / 2.0, dtype=th.float32))
 
     def forward(self, x):
+        """Forward pass of the actor network."""
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         mean = self.fc_mean(x)
@@ -111,6 +121,7 @@ class MOSACActor(nn.Module):
         return mean, log_std
 
     def get_action(self, x):
+        """Get action from the actor network."""
         mean, log_std = self(x)
         std = log_std.exp()
         normal = th.distributions.Normal(mean, std)
@@ -126,6 +137,11 @@ class MOSACActor(nn.Module):
 
 
 class MOSAC(MOPolicy):
+    """Multi-objective Soft Actor-Critic (SAC) algorithm.
+
+    It is a multi-objective version of the SAC algorithm, with multi-objective critic and weighted sum scalarization.
+    """
+
     def __init__(
         self,
         envs: MOSyncVectorEnv,
@@ -150,29 +166,31 @@ class MOSAC(MOPolicy):
         log: bool = True,
         seed: int = 42,
     ):
-        """
-        :param envs: Vectorized Envs
-        :param weights: weights for the scalarization
-        :param scalarization: scalarization
-        :param buffer_size: buffer size
-        :param gamma:
-        :param tau: target smoothing coefficient (polyak update)
-        :param batch_size:
-        :param learning_starts: how many steps to collect before triggering the learning
-        :param net_arch: number of nodes in the hidden layers
-        :param policy_lr: learning rate of the policy
-        :param q_lr: learning rate of the q networks
-        :param policy_freq: the frequency of training policy (delayed)
-        :param target_net_freq: the frequency of updates for the target networks
-        :param alpha: Entropy regularization coefficient
-        :param autotune: automatic tuning of alpha
-        :param id: id of the SAC policy, for multi-policy algos
-        :param device: torch device
-        :param torch_deterministic:
-        :param log: logging activated or not
-        :param seed:
-        """
+        """Initialize the MOSAC algorithm.
 
+        Args:
+            envs: Vectorized Envs
+            weights: weights for the scalarization
+            scalarization: scalarization function
+            buffer_size: buffer size
+            gamma: discount factor
+            tau: target smoothing coefficient (polyak update)
+            batch_size: batch size
+            learning_starts: how many steps to collect before triggering the learning
+            net_arch: number of nodes in the hidden layers
+            policy_lr: learning rate of the policy
+            q_lr: learning rate of the q networks
+            policy_freq: the frequency of training policy (delayed)
+            target_net_freq: the frequency of updates for the target networks
+            alpha: Entropy regularization coefficient
+            autotune: automatic tuning of alpha
+            id: id of the SAC policy, for multi-policy algos
+            device: torch device
+            torch_deterministic: whether to use deterministic version of pytorch
+            parent_writer: writer for wandb
+            log: logging activated or not
+            seed: seed for the random generators
+        """
         super().__init__(id, device)
         # Seeding
         self.seed = seed
@@ -265,7 +283,11 @@ class MOSAC(MOPolicy):
             self.writer = parent_writer
 
     def __deepcopy__(self, memo):
+        """Deep copy of the policy.
 
+        Args:
+            memo (dict): memoization dict
+        """
         copied = type(self)(
             envs=self.envs,
             weights=self.weights,
@@ -307,23 +329,32 @@ class MOSAC(MOPolicy):
         copied.buffer = deepcopy(self.buffer)
         return copied
 
+    @override
     def get_buffer(self):
         return self.buffer
 
+    @override
     def set_buffer(self, buffer):
         self.buffer = buffer
 
+    @override
     def get_policy_net(self) -> th.nn.Module:
         return self.actor
 
+    @override
     def set_weights(self, weights: np.ndarray):
         self.weights = weights
         self.weights_tensor = th.from_numpy(self.weights).unsqueeze(1).repeat(1, self.num_envs).to(self.device)
 
-    def eval(self, obs: np.ndarray, w: Optional[np.ndarray]) -> Union[int, np.ndarray]:
-        """
-        Returns the best action to perform for the given obs
-        :return: action as a numpy array (continuous actions)
+    @override
+    def eval(self, obs: np.ndarray, w: Optional[np.ndarray] = None) -> Union[int, np.ndarray]:
+        """Returns the best action to perform for the given obs.
+
+        Args:
+            obs: observation as a numpy array
+            w: None
+        Return:
+            action as a numpy array (continuous actions)
         """
         obs = th.as_tensor(obs).float().to(self.device)
         obs = obs.unsqueeze(0).repeat(self.num_envs, 1)  # duplicate observation to fit the NN input
@@ -332,6 +363,7 @@ class MOSAC(MOPolicy):
 
         return action[0].detach().cpu().numpy()
 
+    @override
     def update(self):
         (mb_obs, mb_act, mb_rewards, mb_next_obs, mb_dones) = self.buffer.sample(
             self.batch_size, to_tensor=True, device=self.device
@@ -401,6 +433,12 @@ class MOSAC(MOPolicy):
                 self.writer.add_scalar(f"losses{log_str}/alpha_loss", alpha_loss.item(), self.global_step)
 
     def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None):
+        """Train the agent.
+
+        Args:
+            total_timesteps (int): Total number of timesteps (env steps) to train for
+            eval_env (Optional[gym.Env]): Gym environment used for evaluation.
+        """
         start_time = time.time()
 
         # TRY NOT TO MODIFY: start the game

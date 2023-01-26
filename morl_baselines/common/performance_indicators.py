@@ -51,11 +51,14 @@ def sparsity(front: List[np.ndarray]) -> float:
 
 
 def igd(known_front: List[np.ndarray], current_estimate: List[np.ndarray]) -> float:
-    """
-    Inverted generational distance metric. Requires to know the front.
-    :param known_front: known pareto front for the problem
-    :param current_estimate: current pareto front
-    :return: a float stating the average distance between a point in current_estimate and its nearest point in known_front
+    """Inverted generational distance metric. Requires to know the front.
+
+    Args:
+        known_front: known pareto front for the problem
+        current_estimate: current pareto front
+
+    Return:
+        a float stating the average distance between a point in current_estimate and its nearest point in known_front
     """
     ind = IGD(np.array(known_front))
     return ind(np.array(current_estimate))

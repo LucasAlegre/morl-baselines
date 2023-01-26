@@ -1,8 +1,8 @@
 """EUPG is an ESR algorithm based on Policy Gradient (REINFORCE like)."""
-from typing_extensions import override
 import time
 from copy import deepcopy
-from typing import List, Optional, Union, Callable, OrderedDict
+from typing import Callable, List, Optional, Union
+from typing_extensions import override
 
 import gym
 import numpy as np
@@ -11,6 +11,7 @@ import torch.nn
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
+from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.accrued_reward_buffer import AccruedRewardReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
@@ -103,6 +104,8 @@ class EUPG(MOPolicy, MOAgent):
         Args:
             env: Environment
             scalarization: Scalarization function to use (can be non-linear)
+            weights: Weights to use for the scalarization function
+            id: Id of the agent (for logging)
             buffer_size: Size of the replay buffer
             net_arch: Number of units per layer
             gamma: Discount factor
@@ -110,6 +113,8 @@ class EUPG(MOPolicy, MOAgent):
             project_name: Name of the project (for logging)
             experiment_name: Name of the experiment (for logging)
             log: Whether to log or not
+            log_every: Log every n episodes
+            parent_writer: Parent writer (for logging)
             device: Device to use for NN. Can be "cpu", "cuda" or "auto".
         """
         MOAgent.__init__(self, env, device)
@@ -159,6 +164,7 @@ class EUPG(MOPolicy, MOAgent):
             self.setup_wandb(self.project_name, self.experiment_name)
 
     def __deepcopy__(self, memo):
+        """Deep copy the policy."""
         copied_net = deepcopy(self.net)
         copied = type(self)(
             self.env,
@@ -181,9 +187,11 @@ class EUPG(MOPolicy, MOAgent):
         copied.buffer = deepcopy(self.buffer)
         return copied
 
+    @override
     def get_policy_net(self) -> torch.nn.Module:
         return self.net
 
+    @override
     def get_buffer(self):
         return self.buffer
 
@@ -191,10 +199,12 @@ class EUPG(MOPolicy, MOAgent):
     def set_buffer(self, buffer):
         raise Exception("On-policy algorithms should not share buffer.")
 
+    @override
     def set_weights(self, weights: np.ndarray):
         self.weights = weights
 
     @th.no_grad()
+    @override
     def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
         if type(obs) is int:
             obs = th.as_tensor([obs]).to(self.device)
@@ -206,7 +216,7 @@ class EUPG(MOPolicy, MOAgent):
         return greedy_act.detach().item()
 
     @th.no_grad()
-    def choose_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
+    def __choose_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
         action = self.net.distribution(obs, accrued_reward)
         action = action.sample().detach().item()
         return action

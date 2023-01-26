@@ -21,6 +21,7 @@ class ReplayBuffer:
         Args:
             obs_shape: Shape of the observations
             action_dim: Dimension of the actions
+            num_envs: Number of parallel environments
             rew_dim: Dimension of the rewards
             max_size: Maximum size of the buffer
             obs_dtype: Data type of the observations

@@ -1,8 +1,9 @@
-import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
-from numpy import array
+import numpy as np
 import pandas as pd
+import seaborn as sns
+from numpy import array
+
 
 if __name__ == "__main__":
     FRONT = np.array(

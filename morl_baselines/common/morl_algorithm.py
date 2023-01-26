@@ -1,11 +1,10 @@
 """MORL algorithm base classes."""
 from abc import ABC, abstractmethod
-from typing import Union, Optional, OrderedDict
+from typing import Optional, Union
 
 import gym
 import numpy as np
 import torch as th
-import mo_gym
 import torch.nn
 from gym import spaces
 from mo_gym import eval_mo, eval_mo_reward_conditioned

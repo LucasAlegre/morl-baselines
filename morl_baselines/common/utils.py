@@ -1,6 +1,6 @@
 """General utils for the MORL baselines."""
 import math
-from typing import Iterable, Optional, List, Callable
+from typing import Callable, Iterable, List, Optional
 
 import numpy as np
 import torch as th
