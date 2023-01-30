@@ -163,7 +163,7 @@ def test_envelope():
 
 # This test is a bit long to execute, idk what to do with it.
 def test_pgmorl():
-    env_id = "mo-MountainCarContinuous-v0"
+    env_id = "mo-mountaincarcontinuous-v0"
     algo = PGMORL(
         env_id=env_id,
         num_envs=4,
