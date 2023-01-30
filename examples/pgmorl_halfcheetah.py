@@ -1,4 +1,4 @@
-import mo_gym
+import mo_gymnasium as mo_gym
 import numpy as np
 
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL

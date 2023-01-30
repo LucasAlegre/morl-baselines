@@ -4,11 +4,11 @@ from copy import deepcopy
 from typing import List, Optional, Union
 from typing_extensions import override
 
-import gym
-import mo_gym
+import gymnasium as gym
+import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
-from mo_gym import MORecordEpisodeStatistics
+from mo_gymnasium import MORecordEpisodeStatistics
 from torch import nn, optim
 from torch.distributions import Normal
 from torch.utils.tensorboard import SummaryWriter

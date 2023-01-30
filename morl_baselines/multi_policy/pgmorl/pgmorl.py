@@ -10,8 +10,8 @@ from copy import deepcopy
 from typing import List, Optional, Tuple, Union
 from typing_extensions import override
 
-import gym
-import mo_gym
+import gymnasium as gym
+import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
 from scipy.optimize import least_squares

@@ -2,11 +2,11 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import torch as th
-from gym import spaces
-from mo_gym import eval_mo, eval_mo_reward_conditioned
+from gymnasium import spaces
+from mo_gymnasium import eval_mo, eval_mo_reward_conditioned
 from torch.utils.tensorboard import SummaryWriter
 
 
