@@ -236,7 +236,28 @@
           <section id="module-morl_baselines.common.performance_indicators">
 <span id="performance-indicators"></span><h1>Performance indicators<a class="headerlink" href="#module-morl_baselines.common.performance_indicators" title="Permalink to this heading">#</a></h1>
 <p>Performance indicators for multi-objective RL algorithms.</p>
-<p>We mostly rely on pymoo for the computation of the indicator, but some are customly made.</p>
+<p>We mostly rely on pymoo for the computation of axiomatic indicators (HV and IGD), but some are customly made.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.performance_indicators.expected_utility">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.performance_indicators.</span></span><span class="sig-name descname"><span class="pre">expected_utility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">front:</span> <span class="pre">~typing.List[~numpy.ndarray],</span> <span class="pre">weights_set:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">utility:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">dot&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.performance_indicators.expected_utility" title="Permalink to this definition">#</a></dt>
+<dd><p>Expected Utility Metric.</p>
+<p>Expected utility of the policies on the PF for various weights.
+Similar to R-Metrics in MOO. But only needs one PF approximation.
+Paper: L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau, “Quality Assessment of MORL Algorithms: A Utility-Based Approach,” 2015.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>front</strong> – current pareto front to compute the eum on</p></li>
+<li><p><strong>weights_set</strong> – weights to use for the utility computation</p></li>
+<li><p><strong>utility</strong> – utility function to use (default: dot product)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>float</strong> – eum metric</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.performance_indicators.hypervolume">
 <span class="sig-prename descclassname"><span class="pre">morl_baselines.common.performance_indicators.</span></span><span class="sig-name descname"><span class="pre">hypervolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">complex</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">complex</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.performance_indicators.hypervolume" title="Permalink to this definition">#</a></dt>
@@ -327,6 +348,7 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Performance indicators</a><ul>
+<li><a class="reference internal" href="#morl_baselines.common.performance_indicators.expected_utility"><code class="docutils literal notranslate"><span class="pre">expected_utility()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.performance_indicators.hypervolume"><code class="docutils literal notranslate"><span class="pre">hypervolume()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.performance_indicators.sparsity"><code class="docutils literal notranslate"><span class="pre">sparsity()</span></code></a></li>
 </ul>
