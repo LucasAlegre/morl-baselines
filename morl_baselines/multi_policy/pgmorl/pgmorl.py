@@ -615,7 +615,7 @@ class PGMORL(MOAgent):
         # Evolution
         remaining_iterations = max(self.max_iterations - self.warmup_iterations, self.evolutionary_iterations)
         evolutionary_generation = 1
-        while self.iteration < remaining_iterations:
+        while self.iteration < (remaining_iterations + self.warmup_iterations):
             # Every evolutionary iterations, change the task - weight assignments
             self.__task_weight_selection()
             print(f"Evolutionary generation #{evolutionary_generation}")
