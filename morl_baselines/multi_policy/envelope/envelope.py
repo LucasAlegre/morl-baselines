@@ -3,7 +3,7 @@ import os
 from typing import List, Optional, Union
 from typing_extensions import override
 
-import gym
+import gymnasium as gym
 import numpy as np
 import torch as th
 import torch.nn as nn

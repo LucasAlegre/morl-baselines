@@ -1,9 +1,9 @@
 """Mostly tests to make sure the algorithms are able to run."""
 import time
 
-import mo_gym
+import mo_gymnasium as mo_gym
 import numpy as np
-from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
+from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.envelope.envelope import Envelope
@@ -163,7 +163,7 @@ def test_envelope():
 
 # This test is a bit long to execute, idk what to do with it.
 def test_pgmorl():
-    env_id = "mo-MountainCarContinuous-v0"
+    env_id = "mo-mountaincarcontinuous-v0"
     algo = PGMORL(
         env_id=env_id,
         num_envs=4,

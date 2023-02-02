@@ -59,13 +59,8 @@ features/misc
 
 ```{toctree}
 :hidden:
-:caption: Community
-community/community
-```
-
-```{toctree}
-:hidden:
 :caption: Development
 
+community/community
 Github <https://github.com/LucasAlegre/MORL-baselines>
 ```
