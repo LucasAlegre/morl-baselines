@@ -24,8 +24,7 @@ jobs:
         pip install mujoco
         sudo apt-get install libgmp-dev
         pip install -e .[all]
-        pip uninstall mo-gymnasium
-        pip install git+git://https://github.com/Farama-Foundation/MO-Gymnasium@main
+        pip install --upgrade git+git://https://github.com/Farama-Foundation/MO-Gymnasium@main
     - name: Full Python tests
       run: |
         pytest tests/test_algos.py
