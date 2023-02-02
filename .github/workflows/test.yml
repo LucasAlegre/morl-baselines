@@ -24,7 +24,7 @@ jobs:
         pip install mujoco
         sudo apt-get install libgmp-dev
         pip install -e .[all]
-        pip install --upgrade git+https://github.com/Farama-Foundation/MO-Gymnasium@main
+        pip install --force-reinstall git+https://github.com/Farama-Foundation/MO-Gymnasium@main
     - name: Full Python tests
       run: |
         pytest tests/test_algos.py
