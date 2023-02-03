@@ -3,7 +3,7 @@ import time
 from typing import Optional
 from typing_extensions import override
 
-import gym
+import gymnasium as gym
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 

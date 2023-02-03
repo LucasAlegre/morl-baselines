@@ -22,8 +22,8 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ]
 dependencies = [
-    "mo-gym >=0.2.1",
-    "gymnasium >=0.26",
+    "mo-gymnasium >=0.3.1",
+    "gymnasium >=0.27",
     "numpy >=1.21.0",
     "torch >=1.11.0",
     "pygame >=2.1.0",

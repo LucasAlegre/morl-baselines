@@ -1,4 +1,4 @@
-import mo_gym
+import mo_gymnasium as mo_gym
 
 from morl_baselines.multi_policy.ols.ols import OLS
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning

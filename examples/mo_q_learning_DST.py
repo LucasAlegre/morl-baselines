@@ -1,10 +1,13 @@
 import time
 
-import gym
-import mo_gym
+import gymnasium as gym
+import mo_gymnasium as mo_gym
 import numpy as np
-from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP, DeepSeaTreasure
-from mo_gym.utils import MORecordEpisodeStatistics
+from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import (
+    CONCAVE_MAP,
+    DeepSeaTreasure,
+)
+from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning

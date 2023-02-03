@@ -1,5 +1,5 @@
-import mo_gym
-from mo_gym.utils import MORecordEpisodeStatistics
+import mo_gymnasium as mo_gym
+from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 
