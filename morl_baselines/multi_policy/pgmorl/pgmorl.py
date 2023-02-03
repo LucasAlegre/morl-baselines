@@ -397,7 +397,8 @@ class PGMORL(MOAgent):
         # PPO Parameters
         self.net_arch = net_arch
         self.batch_size = int(self.num_envs * self.steps_per_iteration)
-        self.minibatch_size = int(self.batch_size // num_minibatches)
+        self.num_minibatches = num_minibatches
+        self.minibatch_size = int(self.batch_size // self.num_minibatches)
         self.update_epochs = update_epochs
         self.learning_rate = learning_rate
         self.anneal_lr = anneal_lr
