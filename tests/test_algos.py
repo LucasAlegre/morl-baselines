@@ -167,7 +167,7 @@ def test_pgmorl():
     algo = PGMORL(
         env_id=env_id,
         num_envs=4,
-        pop_size=3,
+        pop_size=6,
         warmup_iterations=2,
         evolutionary_iterations=2,
         num_weight_candidates=5,
