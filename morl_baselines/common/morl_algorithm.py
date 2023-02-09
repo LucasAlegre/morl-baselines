@@ -71,6 +71,14 @@ class MOPolicy(ABC):
                 discounted_vec_return[i],
                 self.global_step,
             )
+        log_dict = {
+            "train/step": self.global_step  
+            "train/scalarized_return": scalarized_return, 
+            "train/scalarized_discounted_return": scalarized_discounted_return, 
+            "train/vec_return": vec_return, 
+            "train/discounted_vec_return": discounted_vec_return
+        }
+        wandb.log(log_dict)
 
     def policy_eval(
         self,
@@ -223,6 +231,10 @@ class MOAgent(ABC):
         self.writer = SummaryWriter(f"/tmp/{self.experiment_name}")
         # The default "step" of wandb is not the actual time step (gloabl_step) of the MDP
         wandb.define_metric("*", step_metric="global_step")
+        #to save the step log in the folder "train"
+        wandb.define_metric("train/step")
+        # set all other train/ metrics to use this step
+        wandb.define_metric("train/*", step_metric="train/step")
 
     def close_wandb(self) -> None:
         """Closes the wandb writer and finishes the run."""
