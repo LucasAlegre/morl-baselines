@@ -169,6 +169,11 @@ class PerformancePredictor:
             current_sigma *= 2.0
             current_neighb_threshold *= 2.0
 
+            print(f"current_neighb_threshold: {current_neighb_threshold}")
+            print(f"np.abs(policy_eval): {np.abs(policy_eval)}")
+            if current_neighb_threshold == np.inf or current_sigma == np.inf:
+                raise ValueError("Cannot find at least 4 neighbors by enlarging the neighborhood.")
+
             # Filtering for neighbors
             for previous_perf, next_perf, neighb_w in zip(self.previous_performance, self.next_performance, self.used_weight):
                 if np.all(np.abs(previous_perf - policy_eval) < current_neighb_threshold * np.abs(policy_eval)) and tuple(
