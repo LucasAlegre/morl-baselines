@@ -397,7 +397,8 @@ class PGMORL(MOAgent):
         # PPO Parameters
         self.net_arch = net_arch
         self.batch_size = int(self.num_envs * self.steps_per_iteration)
-        self.minibatch_size = int(self.batch_size // num_minibatches)
+        self.num_minibatches = num_minibatches
+        self.minibatch_size = int(self.batch_size // self.num_minibatches)
         self.update_epochs = update_epochs
         self.learning_rate = learning_rate
         self.anneal_lr = anneal_lr
@@ -419,7 +420,6 @@ class PGMORL(MOAgent):
         th.backends.cudnn.deterministic = torch_deterministic
 
         # env setup
-        self.num_envs = num_envs
         if env is None:
             self.env = mo_gym.MOSyncVectorEnv(
                 # Video recording is disabled since broken for now
@@ -458,6 +458,20 @@ class PGMORL(MOAgent):
                 gamma=self.gamma,
                 device=self.device,
                 seed=self.seed,
+                steps_per_iteration=self.steps_per_iteration,
+                num_minibatches=self.num_minibatches,
+                update_epochs=self.update_epochs,
+                learning_rate=self.learning_rate,
+                anneal_lr=self.anneal_lr,
+                clip_coef=self.clip_coef,
+                ent_coef=self.ent_coef,
+                vf_coef=self.vf_coef,
+                clip_vloss=self.clip_vloss,
+                max_grad_norm=self.max_grad_norm,
+                norm_adv=self.norm_adv,
+                target_kl=self.target_kl,
+                gae=self.gae,
+                gae_lambda=self.gae_lambda,
             )
             for i in range(self.pop_size)
         ]
@@ -613,9 +627,9 @@ class PGMORL(MOAgent):
         self.__eval_all_agents(current_evaluations)
 
         # Evolution
-        remaining_iterations = max(self.max_iterations - self.warmup_iterations, self.evolutionary_iterations)
+        max_iterations = max(self.max_iterations, self.warmup_iterations + self.evolutionary_iterations)
         evolutionary_generation = 1
-        while self.iteration < remaining_iterations:
+        while self.iteration < max_iterations:
             # Every evolutionary iterations, change the task - weight assignments
             self.__task_weight_selection()
             print(f"Evolutionary generation #{evolutionary_generation}")
