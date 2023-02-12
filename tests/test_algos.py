@@ -10,7 +10,7 @@ from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
-from morl_baselines.multi_policy.ols.ols import OLS
+from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.esr.eupg import EUPG
@@ -110,7 +110,7 @@ def test_mp_moql():
 def test_ols():
     env = mo_gym.make("deep-sea-treasure-v0")
 
-    ols = OLS(num_objectives=2, epsilon=0.1, verbose=False)
+    ols = LinearSupport(num_objectives=2, epsilon=0.1, verbose=False)
     policies = []
     while not ols.ended():
         w = ols.next_weight()
