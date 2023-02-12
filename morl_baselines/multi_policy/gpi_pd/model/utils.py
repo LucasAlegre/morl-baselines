@@ -2,6 +2,10 @@ from typing import Tuple
 
 import numpy as np
 import torch as th
+import torch.nn.functional as F
+from gymnasium.spaces import Discrete, Box
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def termination_fn_false(obs, act, next_obs):
@@ -129,7 +133,7 @@ def visualize_eval(agent, env, model=None, w=None, horizon=10, init_obs=None, co
     actions = []
     real_obs = []
     real_rewards = []
-    real_phis = []
+    real_vec_rewards = []
     obs = init_obs.copy()
     for step in range(horizon):
         if w is not None:
@@ -140,9 +144,14 @@ def visualize_eval(agent, env, model=None, w=None, horizon=10, init_obs=None, co
         obs, r, terminated, truncated, info = env.step(act)
         done = terminated or truncated
         real_obs.append(obs.copy())
-        real_rewards.append(r)
+        if type(r) is float:
+            real_rewards.append(r)
+        else:
+            real_rewards.append(np.dot(r, w))
         if 'vector_reward' in info:
-            real_phis.append(info['vector_reward'])
+            real_vec_rewards.append(info['vector_reward'])
+        elif type(r) is np.ndarray:
+            real_vec_rewards.append(r)
         if done: 
             break
     
@@ -183,7 +192,7 @@ def visualize_eval(agent, env, model=None, w=None, horizon=10, init_obs=None, co
             axs[i].set_ylabel(f"Reward {i - obs_dim}")
             axs[i].grid(alpha=0.25)
             if w is not None:
-                axs[i].plot(x, [real_phis[step][i - obs_dim] for step in x], label='Environment', color='black')
+                axs[i].plot(x, [real_vec_rewards[step][i - obs_dim] for step in x], label='Environment', color='black')
             else:
                 axs[i].plot(x, [real_rewards[step] for step in x], label='Environment', color='black')
             if model is not None:
