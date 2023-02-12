@@ -1,5 +1,5 @@
 """General utils for the MORL baselines."""
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 import numpy as np
 import torch as th
@@ -101,6 +101,20 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
     value = final_value + bonus
     value = np.clip(value, min(initial_value, final_value), max(initial_value, final_value))
     return value
+
+
+def extrema_weights(dim: int) -> List[np.ndarray]:
+    """Generate weight vectors in the extrema of the weight simplex.
+
+    Args:
+        dim: size of the weight vector
+    """
+    extrema_weights = []
+    for i in range(dim):
+        w = np.zeros(dim, dtype=np.float32)
+        w[i] = 1.0
+        extrema_weights.append(w)
+    return extrema_weights
 
 
 def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
