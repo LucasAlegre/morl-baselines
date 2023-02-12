@@ -109,7 +109,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
 
     weight_history = []
 
-    test_tasks = random_weights(dim=3, seed=42, n=100 - 3, dist="dirichlet") + extrema_weights(3)
+    test_tasks = list(random_weights(dim=3, seed=42, n=100 - 3, dist="dirichlet")) + extrema_weights(3)
     ccs = eval_env.convex_coverage_set(frame_skip=4, discount=0.98, incremental_frame_skip=True, symmetric=True)
     max_iter = 15
     for iter in range(1, max_iter + 1):
