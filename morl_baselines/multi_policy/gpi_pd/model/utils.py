@@ -1,11 +1,11 @@
 from typing import Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import torch as th
 import torch.nn.functional as F
-from gymnasium.spaces import Discrete, Box
-import matplotlib.pyplot as plt
-import seaborn as sns
+from gymnasium.spaces import Box, Discrete
 
 
 def termination_fn_false(obs, act, next_obs):
@@ -14,18 +14,21 @@ def termination_fn_false(obs, act, next_obs):
     done = done[:, np.newaxis]
     return done
 
+
 def termination_fn_dst(obs, act, next_obs):
     from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
+
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
-    done = np.array([False]).repeat(len(obs)) 
+    done = np.array([False]).repeat(len(obs))
     next_obs_int = (next_obs * 10).astype(int)
     for i in range(len(done)):
-        if next_obs_int[i,0] < 0 or next_obs_int[i,0] > 10 or next_obs_int[i,1] < 0 or next_obs_int[i,1] > 10:
+        if next_obs_int[i, 0] < 0 or next_obs_int[i, 0] > 10 or next_obs_int[i, 1] < 0 or next_obs_int[i, 1] > 10:
             done[i] = False
         else:
-            done[i] = CONCAVE_MAP[next_obs_int[i,0]][next_obs_int[i,1]] > 0.1
+            done[i] = CONCAVE_MAP[next_obs_int[i, 0]][next_obs_int[i, 1]] > 0.1
     done = done[:, np.newaxis]
     return done
+
 
 def termination_fn_mountaincar(obs, act, next_obs):
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
@@ -64,13 +67,12 @@ def termination_fn_hopper(obs, act, next_obs):
 
 
 class ModelEnv:
-
     def __init__(self, model, env_id=None, rew_dim=1):
         self.model = model
         self.rew_dim = rew_dim
-        if env_id == "Hopper-v2" or env_id == 'Hopper-v4' or env_id == 'mo-hopper-v4':
+        if env_id == "Hopper-v2" or env_id == "Hopper-v4" or env_id == "mo-hopper-v4":
             self.termination_func = termination_fn_hopper
-        elif env_id == "HalfCheetah-v2" or env_id == 'mo-halfcheetah-v4':
+        elif env_id == "HalfCheetah-v2" or env_id == "mo-halfcheetah-v4":
             self.termination_func = termination_fn_false
         elif env_id == "LunarLanderContinuous-v2":
             self.termination_func = termination_fn_false
@@ -82,14 +84,16 @@ class ModelEnv:
             self.termination_func = termination_fn_minecart
         elif env_id == "SEIRsingle-v0":
             self.termination_func = termination_fn_false
-        elif env_id == 'mo-highway-fast-v0' or env_id == 'mo-highway-v0':
+        elif env_id == "mo-highway-fast-v0" or env_id == "mo-highway-v0":
             self.termination_func = termination_fn_false
-        elif env_id == 'deep-sea-treasure-v0':
+        elif env_id == "deep-sea-treasure-v0":
             self.termination_func = termination_fn_dst
         else:
             raise NotImplementedError
 
-    def step(self, obs: th.Tensor, act: th.Tensor, deterministic: bool = False) -> Tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray]:
+    def step(
+        self, obs: th.Tensor, act: th.Tensor, deterministic: bool = False
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         assert len(obs.shape) == len(act.shape)
         if len(obs.shape) == 1:
             obs = obs.unsqueeze(0)
@@ -118,15 +122,15 @@ class ModelEnv:
             var_obs = var_obs[0]
             var_rewards = var_rewards[0]
 
-        info = {'uncertainty': uncertainties,
-                'var_obs': var_obs,
-                'var_rewards': var_rewards}
+        info = {"uncertainty": uncertainties, "var_obs": var_obs, "var_rewards": var_rewards}
 
         # info = {'mean': return_means, 'std': return_stds, 'log_prob': log_prob, 'dev': dev}
         return next_obs, rewards, terminals, info
 
 
-def visualize_eval(agent, env, model=None, w=None, horizon=10, init_obs=None, compound=True, deterministic=False, show=False, filename=None):
+def visualize_eval(
+    agent, env, model=None, w=None, horizon=10, init_obs=None, compound=True, deterministic=False, show=False, filename=None
+):
     if init_obs is None:
         init_obs, _ = env.reset()
     obs_dim = env.observation_space.shape[0]
@@ -148,13 +152,13 @@ def visualize_eval(agent, env, model=None, w=None, horizon=10, init_obs=None, co
             real_rewards.append(r)
         else:
             real_rewards.append(np.dot(r, w))
-        if 'vector_reward' in info:
-            real_vec_rewards.append(info['vector_reward'])
+        if "vector_reward" in info:
+            real_vec_rewards.append(info["vector_reward"])
         elif type(r) is np.ndarray:
             real_vec_rewards.append(r)
-        if done: 
+        if done:
             break
-    
+
     model_obs = []
     model_obs_stds = []
     model_rewards_stds = []
@@ -169,12 +173,14 @@ def visualize_eval(agent, env, model=None, w=None, horizon=10, init_obs=None, co
             if compound or step == 0:
                 obs, r, done, info = model_env.step(th.tensor(obs).to(agent.device), acts[step], deterministic=deterministic)
             else:
-                obs, r, done, info = model_env.step(th.tensor(real_obs[step - 1]).to(agent.device), acts[step], deterministic=deterministic)
+                obs, r, done, info = model_env.step(
+                    th.tensor(real_obs[step - 1]).to(agent.device), acts[step], deterministic=deterministic
+                )
             model_obs.append(obs.copy())
-            model_obs_stds.append(np.sqrt(info['var_obs'].copy()))
-            model_rewards_stds.append(np.sqrt(info['var_rewards'].copy()))
+            model_obs_stds.append(np.sqrt(info["var_obs"].copy()))
+            model_rewards_stds.append(np.sqrt(info["var_rewards"].copy()))
             model_rewards.append(r)
-            #if done:
+            # if done:
             #    break
 
     num_plots = obs_dim + (1 if w is None else len(w)) + 1
@@ -187,27 +193,39 @@ def visualize_eval(agent, env, model=None, w=None, horizon=10, init_obs=None, co
         if i == num_plots - 1:
             axs[i].set_ylabel(f"Action")
             axs[i].grid(alpha=0.25)
-            axs[i].plot(x, [actions[step] for step in x], label='Action', color='orange')
+            axs[i].plot(x, [actions[step] for step in x], label="Action", color="orange")
         elif i >= obs_dim:
             axs[i].set_ylabel(f"Reward {i - obs_dim}")
             axs[i].grid(alpha=0.25)
             if w is not None:
-                axs[i].plot(x, [real_vec_rewards[step][i - obs_dim] for step in x], label='Environment', color='black')
+                axs[i].plot(x, [real_vec_rewards[step][i - obs_dim] for step in x], label="Environment", color="black")
             else:
-                axs[i].plot(x, [real_rewards[step] for step in x], label='Environment', color='black')
+                axs[i].plot(x, [real_rewards[step] for step in x], label="Environment", color="black")
             if model is not None:
-                axs[i].plot(x, [model_rewards[step][i - obs_dim] for step in x], label='Model', color='blue')
-                axs[i].fill_between(x, [model_rewards[step][i - obs_dim] + model_rewards_stds[step][i - obs_dim] for step in x], [model_rewards[step][i - obs_dim] - model_rewards_stds[step][i - obs_dim] for step in x], alpha=0.2, facecolor='blue')
+                axs[i].plot(x, [model_rewards[step][i - obs_dim] for step in x], label="Model", color="blue")
+                axs[i].fill_between(
+                    x,
+                    [model_rewards[step][i - obs_dim] + model_rewards_stds[step][i - obs_dim] for step in x],
+                    [model_rewards[step][i - obs_dim] - model_rewards_stds[step][i - obs_dim] for step in x],
+                    alpha=0.2,
+                    facecolor="blue",
+                )
         else:
             axs[i].set_ylabel(f"State {i}")
             axs[i].grid(alpha=0.25)
-            axs[i].plot(x, [real_obs[step][i] for step in x], label='Environment', color='black')
+            axs[i].plot(x, [real_obs[step][i] for step in x], label="Environment", color="black")
             if model is not None:
-                axs[i].plot(x, [model_obs[step][i] for step in x], label='Model', color='blue')
-                axs[i].fill_between(x, [model_obs[step][i] + model_obs_stds[step][i] for step in x], [model_obs[step][i] - model_obs_stds[step][i] for step in x], alpha=0.2, facecolor='blue')
+                axs[i].plot(x, [model_obs[step][i] for step in x], label="Model", color="blue")
+                axs[i].fill_between(
+                    x,
+                    [model_obs[step][i] + model_obs_stds[step][i] for step in x],
+                    [model_obs[step][i] - model_obs_stds[step][i] for step in x],
+                    alpha=0.2,
+                    facecolor="blue",
+                )
     sns.despine()
     if filename is not None:
-        plt.savefig(filename + '.pdf', format='pdf', bbox_inches='tight')
+        plt.savefig(filename + ".pdf", format="pdf", bbox_inches="tight")
     if show:
         plt.show()
     return plt

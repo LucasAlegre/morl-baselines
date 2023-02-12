@@ -1,17 +1,18 @@
 """Linear Support implementation."""
+import random
 from copy import deepcopy
 from typing import List, Optional
-import random
 
 import cdd
 import cvxpy as cp
-import numpy as np
 import gymnasium as gym
+import numpy as np
 from gymnasium.core import Env
 from mo_gymnasium.evaluation import policy_evaluation_mo
 
-from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.morl_algorithm import MOPolicy
+from morl_baselines.common.performance_indicators import hypervolume
+
 
 np.set_printoptions(precision=4)
 
@@ -20,7 +21,7 @@ class LinearSupport:
     """Linear Support for computing corner weights when using linear utility functions.
 
     Implements both
-    
+
     Optimistic Linear Support (OLS) algorithm:
     Paper: (Section 3.3 of http://roijers.info/pub/thesis.pdf).
 
@@ -52,7 +53,9 @@ class LinearSupport:
         for w in self.extrema_weights():
             self.queue.append((float("inf"), w))
 
-    def next_weight(self, algo: str = 'ols', gpi_agent: Optional[MOPolicy] = None, env: Optional[Env] = None, rep_eval: int = 1) -> np.ndarray:
+    def next_weight(
+        self, algo: str = "ols", gpi_agent: Optional[MOPolicy] = None, env: Optional[Env] = None, rep_eval: int = 1
+    ) -> np.ndarray:
         """Returns the next weight vector with highest priority.
         Args:
             algo (str): Algorithm to use. Either 'ols' or 'gpi-ls'.
@@ -70,10 +73,10 @@ class LinearSupport:
 
             self.queue = []
             for wc in W_corner:
-                if algo == 'ols':
+                if algo == "ols":
                     priority = self.ols_priority(wc)
 
-                elif algo == 'gpi-ls':
+                elif algo == "gpi-ls":
                     if gpi_agent is None:
                         raise ValueError("GPI-LS requires passing a GPI agent.")
                     gpi_expanded_set = [policy_evaluation_mo(gpi_agent, env, wc, rep=rep_eval) for wc in W_corner]
@@ -81,7 +84,7 @@ class LinearSupport:
 
                 if self.epsilon is None or priority >= self.epsilon:
                     # OLS does not try the same weight vector twice
-                    if not (algo == 'ols' and any([np.allclose(wc, w) for (p, w) in self.visited_weights])):
+                    if not (algo == "ols" and any([np.allclose(wc, w) for (p, w) in self.visited_weights])):
                         self.queue.append((priority, wc))
 
             if len(self.queue) > 0:
@@ -178,6 +181,7 @@ class LinearSupport:
         Returns:
             Priority of the weight vector.
         """
+
         def best_vector(values, w):
             max_v = values[0]
             for i in range(1, len(values)):
@@ -371,7 +375,9 @@ if __name__ == "__main__":
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
     num_objectives = 3
-    ols = LinearSupport(num_objectives=num_objectives, epsilon=0.0001, verbose=True)  # , min_value=0.0, max_value=1 / (1 - 0.95) * 1)
+    ols = LinearSupport(
+        num_objectives=num_objectives, epsilon=0.0001, verbose=True
+    )  # , min_value=0.0, max_value=1 / (1 - 0.95) * 1)
     while not ols.ended():
         w = ols.next_weight()
         print("w:", w)

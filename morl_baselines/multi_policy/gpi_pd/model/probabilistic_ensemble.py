@@ -20,8 +20,8 @@ class EnsembleLayer(nn.Module):
 
 
 class ProbabilisticEnsemble(nn.Module):
-    """Probababilistic ensemble of neural networks.
-    """
+    """Probababilistic ensemble of neural networks."""
+
     def __init__(
         self,
         input_dim,
@@ -66,7 +66,7 @@ class ProbabilisticEnsemble(nn.Module):
             + [{"params": self.max_logvar}, {"params": self.min_logvar}],
             lr=self.learning_rate,
         ) """
-        
+
         if device == "auto":
             self.device = th.device("cuda") if th.cuda.is_available() else th.device("cpu")
         else:
@@ -109,7 +109,7 @@ class ProbabilisticEnsemble(nn.Module):
             else:
                 return mean
         else:
-            std = th.exp(0.5*logvar)      # exp(0.5*logvar) = sqrt(exp(logvar))
+            std = th.exp(0.5 * logvar)  # exp(0.5*logvar) = sqrt(exp(logvar))
             samples = mean + std * th.randn(std.shape, device=std.device)
             if return_dist:
                 return samples, mean, logvar
@@ -129,7 +129,7 @@ class ProbabilisticEnsemble(nn.Module):
         batch_inds = np.arange(0, batch_size)
         model_inds = np.random.choice(self.elites, size=batch_size)
 
-        #Ensemble Standard Deviation/Variance (Lakshminarayanan et al., 2017)
+        # Ensemble Standard Deviation/Variance (Lakshminarayanan et al., 2017)
         mean_ensemble = means.mean(axis=0)
         var_ensemble = (means**2 + vars).mean(axis=0) - mean_ensemble**2
         std_ensemble = np.sqrt(var_ensemble + 1e-12)
@@ -147,11 +147,11 @@ class ProbabilisticEnsemble(nn.Module):
             y = y.unsqueeze(0).repeat(self.ensemble_size, 1, 1)
 
         var = th.exp(logvar)
-        total_losses = F.gaussian_nll_loss(mean, y, var, reduction='none')
+        total_losses = F.gaussian_nll_loss(mean, y, var, reduction="none")
         total_losses = total_losses.mean()
-        #total_losses = -D.Normal(mean, th.exp(0.5*logvar)).log_prob(y).mean()
+        # total_losses = -D.Normal(mean, th.exp(0.5*logvar)).log_prob(y).mean()
 
-        #inv_var = th.exp(-logvar)
+        # inv_var = th.exp(-logvar)
         """ mse_losses = (th.square(mean - y) * inv_var).mean(-1).mean(-1)
         var_losses = logvar.mean(-1).mean(-1)
         total_losses = (mse_losses + var_losses).sum() """
@@ -265,4 +265,3 @@ class ProbabilisticEnsemble(nn.Module):
 
         print("Epoch:", epoch, "Holdout losses:", ", ".join(["%.4f" % hl for hl in holdout_losses]))
         return np.mean(holdout_losses)
-

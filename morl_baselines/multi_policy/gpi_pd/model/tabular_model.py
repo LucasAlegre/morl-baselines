@@ -21,10 +21,7 @@ class TabularModel:
 
     def update(self, state, action, reward, next_state, terminal, priority=None):
         sa = (tuple(state), int(action))
-        srt = (tuple(next_state),
-               tuple(reward) if isinstance(reward, np.ndarray) else reward,
-               terminal
-        )
+        srt = (tuple(next_state), tuple(reward) if isinstance(reward, np.ndarray) else reward, terminal)
 
         if sa not in self.model:
             self.state_actions_pairs.append(sa)
@@ -62,7 +59,7 @@ class TabularModel:
         sa = (tuple(state), int(action))
         if sa not in self.model:
             return [((None, None, None), None)]
-        
+
         if self.deterministic:
             next_state, reward, terminal = self.model[sa]
             return [((next_state, reward, terminal), 1.0)]
@@ -103,7 +100,6 @@ class TabularModel:
             else:
                 return sa[0], sa[1], reward, next_state, terminal
 
-    
     def update_priority(self, ind, priority):
         self.priorities.set(ind, priority)
         if ind > 0:

@@ -1,9 +1,9 @@
 """General utils for the MORL baselines."""
 from typing import Iterable, Optional
 
-from PIL import Image
 import numpy as np
 import torch as th
+from PIL import Image
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
@@ -192,7 +192,7 @@ def log_episode_info(
 
 
 def make_gif(env, agent, weight: np.ndarray, fullpath: str, duration: int = 50, lenght: int = 300):
-    assert 'rgb_array' in env.metadata['render_modes'], "Environment does not have rgb_array rendering."
+    assert "rgb_array" in env.metadata["render_modes"], "Environment does not have rgb_array rendering."
 
     frames = []
     state, info = env.reset()
@@ -205,10 +205,10 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, duration: int = 50, 
     env.close()
 
     frames[0].save(
-        fullpath + '.gif',
+        fullpath + ".gif",
         save_all=True,
         append_images=frames[1:],
         duration=50,
         loop=0,
     )
-    print("Saved gif at: " + fullpath + '.gif')
+    print("Saved gif at: " + fullpath + ".gif")
