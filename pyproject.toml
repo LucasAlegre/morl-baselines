@@ -30,6 +30,7 @@ dependencies = [
     "scipy >=1.7.3",
     "pymoo >=0.6.0",
     "wandb",
+    "seaborn",
     "tensorboard",
     "cvxpy",
 ]
