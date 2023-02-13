@@ -134,7 +134,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         print("Next weight vector:", w)
         weight_history.append(w)
         if algo == "gpi-ls":
-            M = unique_tol(linear_support.get_weight_support() + linear_support.get_corner_weights(top_k=4) + [w])
+            M = linear_support.get_weight_support() + linear_support.get_corner_weights(top_k=4) + [w]
         elif algo == "ols":
             M = linear_support.get_weight_support() + [w]
         else:
@@ -166,6 +166,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
             ]
             mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
             wb.log({"eval/Mean Utility GPI": mean_gpi_returns_test_tasks, "iteration": iter})
+
             max_gap_gpi = max(
                 [np.dot(best_vector(ccs, w), w) - np.dot(best_vector(gpi_returns_test_tasks, w), w) for w in test_tasks]
             )
@@ -180,6 +181,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         )
         agent.use_gpi = algo != "envelope"
         wb.log({"eval/Mean Utility No GPI": mean_no_gpi_returns_test_tasks, "iteration": iter})
+        
         max_gap_no_gpi = max(
             [np.dot(best_vector(ccs, w), w) - np.dot(best_vector(no_gpi_returns_test_tasks, w), w) for w in test_tasks]
         )
