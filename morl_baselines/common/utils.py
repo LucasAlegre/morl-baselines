@@ -3,7 +3,6 @@ from typing import Iterable, List, Optional
 
 import numpy as np
 import torch as th
-from PIL import Image
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
@@ -205,24 +204,22 @@ def log_episode_info(
             )
 
 
-def make_gif(env, agent, weight: np.ndarray, fullpath: str, duration: int = 50, lenght: int = 300):
+def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, length: int = 300):
+    """Render an episode and save it as a gif."""
     assert "rgb_array" in env.metadata["render_modes"], "Environment does not have rgb_array rendering."
 
     frames = []
     state, info = env.reset()
     terminated, truncated = False, False
-    while not (terminated or truncated) and len(frames) <= lenght:
+    while not (terminated or truncated) and len(frames) < length:
         frame = env.render()
-        frames.append(Image.fromarray(frame))
+        frames.append(frame)
         action = agent.eval(state, weight)
         state, reward, terminated, truncated, info = env.step(action)
     env.close()
 
-    frames[0].save(
-        fullpath + ".gif",
-        save_all=True,
-        append_images=frames[1:],
-        duration=50,
-        loop=0,
-    )
+    from moviepy.editor import ImageSequenceClip
+
+    clip = ImageSequenceClip(list(frames), fps=fps)
+    clip.write_gif(fullpath + ".gif", fps=fps)
     print("Saved gif at: " + fullpath + ".gif")

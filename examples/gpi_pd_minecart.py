@@ -1,16 +1,16 @@
 import fire
-import gymnasium as gym
 import mo_gymnasium as mo_gym
 import numpy as np
 import wandb as wb
-from gymnasium.wrappers.record_video import RecordVideo
-from mo_gymnasium import MORecordEpisodeStatistics
 from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.utils import extrema_weights, random_weights
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
+
+
+# from gymnasium.wrappers.record_video import RecordVideo
 
 
 def best_vector(values, w):
@@ -55,7 +55,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
             alpha_per=0.6,
             min_priority=0.01,
             per=gpi_pd,
-            gper=gpi_pd,
+            gpi_pd=gpi_pd,
             envelope=False,  # algo != 'ols',
             use_gpi=True,
             gradient_updates=g,
@@ -121,12 +121,6 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
                 w = linear_support.next_weight(algo="ols")
 
             if w is None:
-                for i in range(iter, max_iter + 1):
-                    wb.log({"eval/Mean Utility GPI": mean_gpi_returns_test_tasks, "iteration": i})
-                    wb.log({"eval/Mean Utility No GPI": mean_no_gpi_returns_test_tasks, "iteration": i})
-                    wb.log({"eval/Max Gap GPI": max_gap_gpi, "iteration": i})
-                    wb.log({"eval/Max Gap No GPI": max_gap_no_gpi, "iteration": i})
-                print(f"{algo} finished.")
                 break
         else:
             w = None
@@ -181,7 +175,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         )
         agent.use_gpi = algo != "envelope"
         wb.log({"eval/Mean Utility No GPI": mean_no_gpi_returns_test_tasks, "iteration": iter})
-        
+
         max_gap_no_gpi = max(
             [np.dot(best_vector(ccs, w), w) - np.dot(best_vector(no_gpi_returns_test_tasks, w), w) for w in test_tasks]
         )

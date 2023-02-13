@@ -1,3 +1,4 @@
+"""Tabular dynamics model S_{t+1}, R_t ~ m(.,.|s,a) ."""
 import random
 
 import numpy as np
@@ -6,11 +7,16 @@ from morl_baselines.common.prioritized_buffer import SumTree
 
 
 class TabularModel:
-    """
-    Tabular dynamics model S_{t+1}, R_t ~ m(.,.|s,a)
-    """
+    """Tabular dynamics model S_{t+1}, R_t ~ m(.,.|s,a) ."""
 
     def __init__(self, deterministic: bool = False, prioritize=False, max_size=int(1e5)) -> None:
+        """Initialize the model.
+
+        Args:
+            deterministic: If True, the model is deterministic and the next state and reward are stored directly.
+            prioritize: If True, the transitions are stored in a prioritized buffer.
+            max_size: The maximum size of the buffer.
+        """
         self.deterministic = deterministic
         self.model = dict()
         self.state_actions_pairs = list()
@@ -20,6 +26,7 @@ class TabularModel:
             self.sa_to_ind = dict()
 
     def update(self, state, action, reward, next_state, terminal, priority=None):
+        """Update the model with the given transition."""
         sa = (tuple(state), int(action))
         srt = (tuple(next_state), tuple(reward) if isinstance(reward, np.ndarray) else reward, terminal)
 
@@ -41,6 +48,7 @@ class TabularModel:
                 self.model[sa][srt] = self.model[sa].get(srt, 0) + 1
 
     def predict(self, state, action):
+        """Return the next state, reward, and terminal flag for the given state and action."""
         sa = (tuple(state), int(action))
         if sa not in self.model:
             return None, None, None
@@ -56,6 +64,7 @@ class TabularModel:
         return next_state, reward, terminal
 
     def transitions(self, state, action):
+        """Return the transitions for the given state and action."""
         sa = (tuple(state), int(action))
         if sa not in self.model:
             return [((None, None, None), None)]
@@ -70,6 +79,7 @@ class TabularModel:
             return list(zip(next, probs))
 
     def probs(self, state, action):
+        """Return the probabilities of the transitions for the given state and action."""
         sa = (tuple(state), int(action))
         if self.deterministic or sa not in self.model:
             return [1.0]
@@ -78,6 +88,7 @@ class TabularModel:
         return probs
 
     def random_transition(self):
+        """Sample a random transition from the model."""
         if self.prioritize:
             ind = self.priorities.sample(1)[0]
         else:
@@ -101,6 +112,12 @@ class TabularModel:
                 return sa[0], sa[1], reward, next_state, terminal
 
     def update_priority(self, ind, priority):
+        """Update priority of the transition at index ind.
+
+        Args:
+            ind (int): index of the transition
+            priority (float): new priority
+        """
         self.priorities.set(ind, priority)
         if ind > 0:
             self.priorities.set(ind - 1, max(priority, self.priorities.get_priority(ind - 1)))

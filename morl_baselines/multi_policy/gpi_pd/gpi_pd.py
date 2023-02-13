@@ -1,9 +1,9 @@
+"""GPI-PD algorithm."""
 import os
 import random
 from itertools import chain
 from typing import Callable, List, Optional, Union
 
-import cvxpy as cp
 import gym
 import numpy as np
 import torch as th
@@ -30,25 +30,38 @@ from morl_baselines.multi_policy.gpi_pd.model.probabilistic_ensemble import (
 from morl_baselines.multi_policy.gpi_pd.model.utils import ModelEnv, visualize_eval
 
 
-class Psi(nn.Module):
-    def __init__(self, obs_shape, action_dim, phi_dim, net_arch, drop_rate=0.01, layer_norm=True):
+class QNet(nn.Module):
+    """Conditioned MO Q network."""
+
+    def __init__(self, obs_shape, action_dim, rew_dim, net_arch, drop_rate=0.01, layer_norm=True):
+        """Initialize the net.
+
+        Args:
+            obs_shape: The observation shape.
+            action_dim: The action dimension.
+            rew_dim: The reward dimension.
+            net_arch: The network architecture.
+            drop_rate: The dropout rate.
+            layer_norm: Whether to use layer normalization.
+        """
         super().__init__()
         self.obs_shape = obs_shape
         self.action_dim = action_dim
-        self.phi_dim = phi_dim
+        self.phi_dim = rew_dim
 
-        self.weights_features = mlp(phi_dim, -1, net_arch[:1])
+        self.weights_features = mlp(rew_dim, -1, net_arch[:1])
         if len(obs_shape) == 1:
             self.state_features = mlp(obs_shape[0], -1, net_arch[:1])
         elif len(obs_shape) > 1:  # Image observation
             self.state_features = NatureCNN(self.obs_shape, features_dim=net_arch[0])
         self.net = mlp(
-            net_arch[0], action_dim * phi_dim, net_arch[1:], drop_rate=drop_rate, layer_norm=layer_norm
+            net_arch[0], action_dim * rew_dim, net_arch[1:], drop_rate=drop_rate, layer_norm=layer_norm
         )  # 128/128 256 256 256
 
         self.apply(layer_init)
 
     def forward(self, obs, w):
+        """Forward pass."""
         sf = self.state_features(obs)
         wf = self.weights_features(w)
         q_values = self.net(sf * wf)
@@ -84,7 +97,7 @@ class GPIPD(MOPolicy, MOAgent):
         use_gpi: bool = True,
         dyna: bool = False,
         per: bool = False,
-        gper: bool = False,
+        gpi_pd: bool = False,
         alpha_per: float = 0.6,
         envelope: bool = False,
         min_priority: float = 1.0,
@@ -105,6 +118,48 @@ class GPIPD(MOPolicy, MOAgent):
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
+        """Initialize the GPI-PD algorithm.
+
+        Args:
+            env: The environment to learn from.
+            learning_rate: The learning rate.
+            initial_epsilon: The initial epsilon value.
+            final_epsilon: The final epsilon value.
+            epsilon_decay_steps: The number of steps to decay epsilon.
+            tau: The soft update coefficient.
+            target_net_update_freq: The target network update frequency.
+            buffer_size: The size of the replay buffer.
+            net_arch: The network architecture.
+            num_nets: The number of networks.
+            batch_size: The batch size.
+            learning_starts: The number of steps before learning starts.
+            gradient_updates: The number of gradient updates per step.
+            gamma: The discount factor.
+            max_grad_norm: The maximum gradient norm.
+            use_gpi: Whether to use GPI.
+            dyna: Whether to use Dyna.
+            per: Whether to use PER.
+            gpi_pd: Whether to use GPI-PD.
+            alpha_per: The alpha parameter for PER.
+            envelope: Whether to use the envelope update.
+            min_priority: The minimum priority for PER.
+            drop_rate: The dropout rate.
+            layer_norm: Whether to use layer normalization.
+            dynamics_normalize_inputs: Whether to normalize inputs to the dynamics model.
+            dynamics_uncertainty_threshold: The uncertainty threshold for the dynamics model.
+            dynamics_train_freq: The dynamics model training frequency.
+            dynamics_rollout_len: The rollout length for the dynamics model.
+            dynamics_rollout_starts: The number of steps before the first rollout.
+            dynamics_rollout_freq: The rollout frequency.
+            dynamics_rollout_batch_size: The rollout batch size.
+            dynamics_buffer_size: The size of the dynamics model buffer.
+            dynamics_net_arch: The network architecture for the dynamics model.
+            real_ratio: The ratio of real transitions to sample.
+            project_name: The name of the project.
+            experiment_name: The name of the experiment.
+            log: Whether to log.
+            device: The device to use.
+        """
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
@@ -127,8 +182,8 @@ class GPIPD(MOPolicy, MOAgent):
         self.drop_rate = drop_rate
         self.layer_norm = layer_norm
 
-        self.psi_nets = [
-            Psi(
+        self.q_nets = [
+            QNet(
                 self.observation_shape,
                 self.action_dim,
                 self.reward_dim,
@@ -138,8 +193,8 @@ class GPIPD(MOPolicy, MOAgent):
             ).to(self.device)
             for _ in range(self.num_nets)
         ]
-        self.target_psi_nets = [
-            Psi(
+        self.target_q_nets = [
+            QNet(
                 self.observation_shape,
                 self.action_dim,
                 self.reward_dim,
@@ -149,14 +204,14 @@ class GPIPD(MOPolicy, MOAgent):
             ).to(self.device)
             for _ in range(self.num_nets)
         ]
-        for psi, target_psi in zip(self.psi_nets, self.target_psi_nets):
-            target_psi.load_state_dict(psi.state_dict())
-            for param in target_psi.parameters():
+        for q, target_q in zip(self.q_nets, self.target_q_nets):
+            target_q.load_state_dict(q.state_dict())
+            for param in target_q.parameters():
                 param.requires_grad = False
-        self.psi_optim = optim.Adam(chain(*[net.parameters() for net in self.psi_nets]), lr=self.learning_rate)
+        self.q_optim = optim.Adam(chain(*[net.parameters() for net in self.q_nets]), lr=self.learning_rate)
 
         self.per = per
-        self.gper = gper
+        self.gpi_pd = gpi_pd
         self.envelope = envelope
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
@@ -196,6 +251,7 @@ class GPIPD(MOPolicy, MOAgent):
             self.setup_wandb(project_name, experiment_name)
 
     def get_config(self):
+        """Return the configuration of the agent."""
         return {
             "env_id": self.env.unwrapped.spec.id,
             "learning_rate": self.learning_rate,
@@ -224,12 +280,13 @@ class GPIPD(MOPolicy, MOAgent):
         }
 
     def save(self, save_replay_buffer=True, save_dir="weights/", filename=None):
+        """Save the model parameters and the replay buffer."""
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         saved_params = {}
-        for i, psi_net in enumerate(self.psi_nets):
+        for i, psi_net in enumerate(self.q_nets):
             saved_params[f"psi_net_{i}_state_dict"] = psi_net.state_dict()
-        saved_params["psi_nets_optimizer_state_dict"] = self.psi_optim.state_dict()
+        saved_params["psi_nets_optimizer_state_dict"] = self.q_optim.state_dict()
         saved_params["M"] = self.weight_support
         if self.dyna:
             saved_params["dynamics_state_dict"] = self.dynamics.state_dict()
@@ -240,11 +297,12 @@ class GPIPD(MOPolicy, MOAgent):
         th.save(saved_params, save_dir + "/" + filename + ".tar")
 
     def load(self, path, load_replay_buffer=True):
+        """Load the model parameters and the replay buffer."""
         params = th.load(path, map_location=self.device)
-        for i, (psi_net, target_psi_net) in enumerate(zip(self.psi_nets, self.target_psi_nets)):
+        for i, (psi_net, target_psi_net) in enumerate(zip(self.q_nets, self.target_q_nets)):
             psi_net.load_state_dict(params[f"psi_net_{i}_state_dict"])
             target_psi_net.load_state_dict(params[f"psi_net_{i}_state_dict"])
-        self.psi_optim.load_state_dict(params["psi_nets_optimizer_state_dict"])
+        self.q_optim.load_state_dict(params["psi_nets_optimizer_state_dict"])
         self.weight_support = params["M"]
         if self.dyna:
             self.dynamics.load_state_dict(params["dynamics_state_dict"])
@@ -252,7 +310,7 @@ class GPIPD(MOPolicy, MOAgent):
         if load_replay_buffer and "replay_buffer" in params:
             self.replay_buffer = params["replay_buffer"]
 
-    def sample_batch_experiences(self):
+    def _sample_batch_experiences(self):
         if not self.dyna or self.global_step < self.dynamics_rollout_starts or len(self.dynamics_buffer) == 0:
             return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
         else:
@@ -280,7 +338,7 @@ class GPIPD(MOPolicy, MOAgent):
             return experience_tuples
 
     @th.no_grad()
-    def rollout_dynamics(self, w: th.Tensor):
+    def _rollout_dynamics(self, w: th.Tensor):
         # Dyna Planning
         num_times = int(np.ceil(self.dynamics_rollout_batch_size / 10000))
         batch_size = min(self.dynamics_rollout_batch_size, 10000)
@@ -295,7 +353,7 @@ class GPIPD(MOPolicy, MOAgent):
                 M = M.unsqueeze(0).repeat(len(obs), 1, 1)
                 obs_m = obs.unsqueeze(1).repeat(1, M.size(1), 1)
 
-                psi_values = self.psi_nets[0](obs_m, M)
+                psi_values = self.q_nets[0](obs_m, M)
                 q_values = th.einsum("r,sar->sa", w, psi_values).view(obs.size(0), len(self.weight_support), self.action_dim)
                 max_q, ac = th.max(q_values, dim=2)
                 pi = th.argmax(max_q, dim=1)
@@ -324,12 +382,13 @@ class GPIPD(MOPolicy, MOAgent):
             self.writer.add_scalar("dynamics/imagined_transitions", num_added_imagined_transitions, self.global_step)
 
     def update(self, weight: th.Tensor):
+        """Update the parameters of the networks."""
         critic_losses = []
         for g in range(self.gradient_updates if self.global_step >= self.dynamics_rollout_starts else 1):
             if self.per:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.sample_batch_experiences()
+                s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self._sample_batch_experiences()
             else:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones = self.sample_batch_experiences()
+                s_obs, s_actions, s_rewards, s_next_obs, s_dones = self._sample_batch_experiences()
 
             if len(self.weight_support) > 1:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
@@ -352,7 +411,7 @@ class GPIPD(MOPolicy, MOAgent):
 
             with th.no_grad():
                 if not self.envelope:
-                    psi_values = th.stack([target_psi_net(s_next_obs, w) for target_psi_net in self.target_psi_nets])
+                    psi_values = th.stack([target_psi_net(s_next_obs, w) for target_psi_net in self.target_q_nets])
                     q_values = th.einsum("nsar,sr->nsa", psi_values, w)
                     min_inds = th.argmin(q_values, dim=0)
                     min_inds = min_inds.reshape(1, psi_values.size(1), psi_values.size(2), 1).expand(
@@ -369,21 +428,21 @@ class GPIPD(MOPolicy, MOAgent):
                     target_psi = psi_targets.reshape(-1, self.reward_dim)
                     target_psi = s_rewards + (1 - s_dones) * self.gamma * target_psi
 
-                if self.envelope or self.gper:
-                    target_psi_envelope, next_psi_targets = self.envelope_target(s_next_obs, w, sampled_w)
+                if self.envelope or self.gpi_pd:
+                    target_psi_envelope, next_psi_targets = self._envelope_target(s_next_obs, w, sampled_w)
                     target_psi_envelope = s_rewards + (1 - s_dones) * self.gamma * target_psi_envelope
 
             losses = []
             td_errors = []
             gtd_errors = []
-            for psi_net in self.psi_nets:
+            for psi_net in self.q_nets:
                 psi_value = psi_net(s_obs, w)
                 psi_value = psi_value.gather(
                     1, s_actions.long().reshape(-1, 1, 1).expand(psi_value.size(0), 1, psi_value.size(2))
                 )
                 psi_value = psi_value.reshape(-1, self.reward_dim)
 
-                if self.envelope or self.gper:
+                if self.envelope or self.gpi_pd:
                     gtd_error = psi_value - target_psi_envelope
                 if not self.envelope:
                     td_error = psi_value - target_psi
@@ -393,26 +452,24 @@ class GPIPD(MOPolicy, MOAgent):
                 else:
                     loss = huber(td_error.abs(), min_priority=self.min_priority)
                 losses.append(loss)
-                if self.gper:
+                if self.gpi_pd:
                     gtd_errors.append(gtd_error.abs())
                 if self.per:
                     td_errors.append(td_error.abs())
             critic_loss = (1 / self.num_nets) * sum(losses)
 
-            self.psi_optim.zero_grad()
+            self.q_optim.zero_grad()
             critic_loss.backward()
             if self.log and self.global_step % 100 == 0:
-                self.writer.add_scalar(
-                    "losses/grad_norm", get_grad_norm(self.psi_nets[0].parameters()).item(), self.global_step
-                )
+                self.writer.add_scalar("losses/grad_norm", get_grad_norm(self.q_nets[0].parameters()).item(), self.global_step)
             if self.max_grad_norm is not None:
-                for psi_net in self.psi_nets:
+                for psi_net in self.q_nets:
                     th.nn.utils.clip_grad_norm_(psi_net.parameters(), self.max_grad_norm)
-            self.psi_optim.step()
+            self.q_optim.step()
             critic_losses.append(critic_loss.item())
 
-            if self.per or self.gper:
-                if self.gper:
+            if self.per or self.gpi_pd:
+                if self.gpi_pd:
                     gtd_error = th.max(th.stack(gtd_errors), dim=0)[0]
                     gtd_error = gtd_error[: len(idxes)].detach()
                     gper = th.einsum("sr,sr->s", w[: len(idxes)], gtd_error).abs()
@@ -426,13 +483,13 @@ class GPIPD(MOPolicy, MOAgent):
                     priority = per.cpu().numpy().flatten()
                     priority = priority.clip(min=self.min_priority) ** self.alpha
 
-                if self.gper:
+                if self.gpi_pd:
                     self.replay_buffer.update_priorities(idxes, gpriority)
                 else:
                     self.replay_buffer.update_priorities(idxes, priority)
 
         if self.tau != 1 or self.global_step % self.target_net_update_freq == 0:
-            for psi_net, target_psi_net in zip(self.psi_nets, self.target_psi_nets):
+            for psi_net, target_psi_net in zip(self.q_nets, self.target_q_nets):
                 polyak_update(psi_net.parameters(), target_psi_net.parameters(), self.tau)
 
         if self.epsilon_decay_steps is not None:
@@ -445,7 +502,7 @@ class GPIPD(MOPolicy, MOAgent):
                 self.writer.add_scalar("metrics/mean_priority", np.mean(priority), self.global_step)
                 self.writer.add_scalar("metrics/max_priority", np.max(priority), self.global_step)
                 self.writer.add_scalar("metrics/mean_td_error_w", per.abs().mean().item(), self.global_step)
-            if self.gper:
+            if self.gpi_pd:
                 self.writer.add_scalar("metrics/mean_gpriority", np.mean(gpriority), self.global_step)
                 self.writer.add_scalar("metrics/max_gpriority", np.max(gpriority), self.global_step)
                 self.writer.add_scalar("metrics/mean_gtd_error_w", gper.abs().mean().item(), self.global_step)
@@ -455,13 +512,14 @@ class GPIPD(MOPolicy, MOAgent):
 
     @th.no_grad()
     def gpi_action(self, obs: th.Tensor, w: th.Tensor, return_policy_index=False, include_w=False):
+        """Select an action using GPI."""
         if include_w:
             M = th.stack(self.weight_support + [w])
         else:
             M = th.stack(self.weight_support)
 
         obs_m = obs.repeat(M.size(0), *(1 for _ in range(obs.dim())))
-        psi_values = self.psi_nets[0](obs_m, M)
+        psi_values = self.q_nets[0](obs_m, M)
 
         q_values = th.einsum("r,sar->sa", w, psi_values)  # q(s,a,w_i) = psi(s,a,w_i) . w
         max_q, a = th.max(q_values, dim=1)
@@ -473,6 +531,7 @@ class GPIPD(MOPolicy, MOAgent):
         return action
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
+        """Select an action for the given obs and weight vector."""
         obs = th.as_tensor(obs).float().to(self.device)
         w = th.as_tensor(w).float().to(self.device)
         if self.use_gpi:
@@ -481,7 +540,7 @@ class GPIPD(MOPolicy, MOAgent):
             action = self.max_action(obs, w)
         return action
 
-    def act(self, obs: th.Tensor, w: th.Tensor) -> int:
+    def _act(self, obs: th.Tensor, w: th.Tensor) -> int:
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
@@ -494,14 +553,15 @@ class GPIPD(MOPolicy, MOAgent):
 
     @th.no_grad()
     def max_action(self, obs: th.Tensor, w: th.Tensor) -> int:
-        psi = th.min(th.stack([psi_net(obs, w) for psi_net in self.psi_nets]), dim=0)[0]
+        """Select the greedy action."""
+        psi = th.min(th.stack([psi_net(obs, w) for psi_net in self.q_nets]), dim=0)[0]
         # psi = self.psi_nets[0](obs, w)
         q = th.einsum("r,sar->sa", w, psi)
         max_act = th.argmax(q, dim=1)
         return max_act.detach().item()
 
     @th.no_grad()
-    def reset_priorities(self, w: th.Tensor):
+    def _reset_priorities(self, w: th.Tensor):
         inds = np.arange(self.replay_buffer.size)
         priorities = np.repeat(0.1, self.replay_buffer.size)
         (
@@ -516,18 +576,18 @@ class GPIPD(MOPolicy, MOAgent):
             b = i * 1000
             e = min((i + 1) * 1000, obs_s.size(0))
             obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[b:e], dones_s[b:e]
-            psi = self.psi_nets[0](obs, w.repeat(obs.size(0), 1))
+            psi = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
             psi_a = psi.gather(1, actions.long().reshape(-1, 1, 1).expand(psi.size(0), 1, psi.size(2))).squeeze(
                 1
             )  # psi(s,a,w)
 
-            if self.envelope or self.gper:
-                max_next_psi, _ = self.envelope_target(next_obs, w.repeat(next_obs.size(0), 1), th.stack(self.weight_support))
+            if self.envelope or self.gpi_pd:
+                max_next_psi, _ = self._envelope_target(next_obs, w.repeat(next_obs.size(0), 1), th.stack(self.weight_support))
             else:
-                psi_values = self.psi_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
+                psi_values = self.q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
                 max_psi = th.einsum("r,sar->sa", w, psi_values)
                 max_acts = th.argmax(max_psi, dim=1)
-                psi_targets = self.target_psi_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
+                psi_targets = self.target_q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
                 psi_targets = psi_targets.gather(
                     1, max_acts.long().reshape(-1, 1, 1).expand(psi_targets.size(0), 1, psi_targets.size(2))
                 )
@@ -539,7 +599,7 @@ class GPIPD(MOPolicy, MOAgent):
         self.replay_buffer.update_priorities(inds, priorities)
 
     @th.no_grad()
-    def envelope_target(self, obs: th.Tensor, w: th.Tensor, sampled_w: th.Tensor):
+    def _envelope_target(self, obs: th.Tensor, w: th.Tensor, sampled_w: th.Tensor):
         # There must be a clearer way to write this without all the unsqueeze and expand
         W = sampled_w.unsqueeze(0).repeat(obs.size(0), 1, 1)
         next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
@@ -547,7 +607,7 @@ class GPIPD(MOPolicy, MOAgent):
         next_psi_target = th.stack(
             [
                 target_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.reward_dim)
-                for target_net in self.target_psi_nets
+                for target_net in self.target_q_nets
             ]
         )
 
@@ -572,6 +632,7 @@ class GPIPD(MOPolicy, MOAgent):
         return max_next_psi, next_psi_target
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
+        """Set the weight support set."""
         self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
 
     def learn(
@@ -586,10 +647,23 @@ class GPIPD(MOPolicy, MOAgent):
         eval_freq: int = 1000,
         reset_learning_starts: bool = False,
     ):
+        """Learn method.
+
+        Args:
+            total_timesteps (int): Number of timesteps to train for
+            weight (np.ndarray): Weight vector
+            weight_support (List[np.ndarray]): Weight support set
+            change_w_every_episode (bool): Whether to change the weight vector at the end of each episode
+            total_episodes (Optional[int]): Number of episodes to train for
+            reset_num_timesteps (bool): Whether to reset the number of timesteps
+            eval_env (Optional[gym.Env]): Environment to evaluate on
+            eval_freq (int): Number of timesteps between evaluations
+            reset_learning_starts (bool): Whether to reset the learning starts
+        """
         self.env.w = weight
         self.weight_support = [
             th.tensor(z).float().to(self.device) for z in weight_support
-        ]  ## IMPORTANT: w should be the last element of M !
+        ]  # IMPORTANT: w should be the last element of M !
         tensor_w = th.tensor(weight).float().to(self.device)
 
         self.police_indices = []
@@ -599,7 +673,7 @@ class GPIPD(MOPolicy, MOAgent):
             self.learning_starts = self.global_step
 
         if self.per and len(self.replay_buffer) > 0:
-            self.reset_priorities(tensor_w)
+            self._reset_priorities(tensor_w)
 
         num_episodes = 0
         obs, info = self.env.reset()
@@ -611,7 +685,7 @@ class GPIPD(MOPolicy, MOAgent):
             if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
             else:
-                action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
+                action = self._act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
@@ -632,7 +706,7 @@ class GPIPD(MOPolicy, MOAgent):
                             self.writer.add_scalar("dynamics/mean_holdout_loss", mean_holdout_loss, self.global_step)
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
-                        self.rollout_dynamics(tensor_w)
+                        self._rollout_dynamics(tensor_w)
 
                 self.update(tensor_w)
 

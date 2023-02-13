@@ -5,7 +5,6 @@ from typing import List, Optional
 
 import cdd
 import cvxpy as cp
-import gymnasium as gym
 import numpy as np
 from gymnasium.core import Env
 from mo_gymnasium.evaluation import policy_evaluation_mo
@@ -57,6 +56,7 @@ class LinearSupport:
         self, algo: str = "ols", gpi_agent: Optional[MOPolicy] = None, env: Optional[Env] = None, rep_eval: int = 1
     ) -> np.ndarray:
         """Returns the next weight vector with highest priority.
+
         Args:
             algo (str): Algorithm to use. Either 'ols' or 'gpi-ls'.
             gpi_agent (Optional[MOPolicy]): Agent to use for GPI-LS.

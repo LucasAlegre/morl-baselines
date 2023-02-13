@@ -1,3 +1,4 @@
+"""Utility functions for the model."""
 from typing import Tuple
 
 import matplotlib.pyplot as plt
@@ -5,10 +6,11 @@ import numpy as np
 import seaborn as sns
 import torch as th
 import torch.nn.functional as F
-from gymnasium.spaces import Box, Discrete
+from gymnasium.spaces import Discrete
 
 
 def termination_fn_false(obs, act, next_obs):
+    """Returns a vector of False values of the same length as the batch size."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     done = np.array([False]).repeat(len(obs))
     done = done[:, np.newaxis]
@@ -16,7 +18,8 @@ def termination_fn_false(obs, act, next_obs):
 
 
 def termination_fn_dst(obs, act, next_obs):
-    from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
+    """Termination function of DST."""
+    from mo_gymnasium.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     done = np.array([False]).repeat(len(obs))
@@ -31,6 +34,7 @@ def termination_fn_dst(obs, act, next_obs):
 
 
 def termination_fn_mountaincar(obs, act, next_obs):
+    """Termination function of mountin car."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     position = next_obs[:, 0]
     velocity = next_obs[:, 1]
@@ -40,6 +44,7 @@ def termination_fn_mountaincar(obs, act, next_obs):
 
 
 def termination_fn_minecart(obs, act, next_obs):
+    """Termination function of minecart."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     old_pos = obs[:, 0:2]
     pos = next_obs[:, 0:2]
@@ -52,6 +57,7 @@ def termination_fn_minecart(obs, act, next_obs):
 
 
 def termination_fn_hopper(obs, act, next_obs):
+    """Termination function of hopper."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     height = next_obs[:, 0]
     angle = next_obs[:, 1]
@@ -67,7 +73,16 @@ def termination_fn_hopper(obs, act, next_obs):
 
 
 class ModelEnv:
+    """Wrapper for the model to be used as an environment."""
+
     def __init__(self, model, env_id=None, rew_dim=1):
+        """Initialize the environment.
+
+        Args:
+            model: model to be used as an environment.
+            env_id: environment id.
+            rew_dim: reward dimension.
+        """
         self.model = model
         self.rew_dim = rew_dim
         if env_id == "Hopper-v2" or env_id == "Hopper-v4" or env_id == "mo-hopper-v4":
@@ -93,7 +108,17 @@ class ModelEnv:
 
     def step(
         self, obs: th.Tensor, act: th.Tensor, deterministic: bool = False
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, dict]:
+        """Step the environment.
+
+        Args:
+            obs (th.Tensor): current bservation.
+            act (th.Tensor): current action.
+            deterministic (bool): whether to use deterministic model prediction.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: next observation, reward, terminals, info.
+        """
         assert len(obs.shape) == len(act.shape)
         if len(obs.shape) == 1:
             obs = obs.unsqueeze(0)
@@ -131,6 +156,23 @@ class ModelEnv:
 def visualize_eval(
     agent, env, model=None, w=None, horizon=10, init_obs=None, compound=True, deterministic=False, show=False, filename=None
 ):
+    """Generates a plot of the evolution of the state, reward and model predicitions ove time.
+
+    Args:
+        agent: agent to be evaluated
+        env: environment to be evaluated
+        model: model to be evaluated
+        w: weights to be used for the evaluation
+        horizon: number of time steps
+        init_obs: initial observation
+        compound: whether to use compound model predictions
+        deterministic: whether to use deterministic model predictions
+        show: whether to show the plot
+        filename: filename to save the plot
+
+    Returns:
+        plt: plt object with the figure
+    """
     if init_obs is None:
         init_obs, _ = env.reset()
     obs_dim = env.observation_space.shape[0]
@@ -191,7 +233,7 @@ def visualize_eval(
     axs = np.array(axs).reshape(-1)
     for i in range(num_plots):
         if i == num_plots - 1:
-            axs[i].set_ylabel(f"Action")
+            axs[i].set_ylabel("Action")
             axs[i].grid(alpha=0.25)
             axs[i].plot(x, [actions[step] for step in x], label="Action", color="orange")
         elif i >= obs_dim:

@@ -1,5 +1,5 @@
+"""Probabilistic ensemble of neural networks."""
 import os
-import pickle
 
 import numpy as np
 import torch as th
@@ -8,13 +8,17 @@ from torch.nn import functional as F
 
 
 class EnsembleLayer(nn.Module):
+    """Ensemble layer."""
+
     def __init__(self, ensemble_size, input_dim, output_dim):
+        """Initialize the ensemble layer."""
         super().__init__()
         self.W = nn.Parameter(th.empty((ensemble_size, input_dim, output_dim)), requires_grad=True).float()
         nn.init.orthogonal_(self.W, gain=nn.init.calculate_gain("relu"))
         self.b = nn.Parameter(th.zeros((ensemble_size, 1, output_dim)), requires_grad=True).float()
 
     def forward(self, x):
+        """Forward pass of the ensemble layer."""
         # assumes x is 3D: (ensemble_size, batch_size, dimension)
         return x @ self.W + self.b
 
@@ -34,6 +38,19 @@ class ProbabilisticEnsemble(nn.Module):
         normalize_inputs=True,
         device="auto",
     ):
+        """Initialize the ensemble.
+
+        Args:
+            input_dim (int): dimension of the input
+            output_dim (int): dimension of the output
+            ensemble_size (int): number of networks in the ensemble
+            arch (list): list of hidden layer sizes
+            activation (function): activation function
+            learning_rate (float): learning rate
+            num_elites (int): number of elite networks
+            normalize_inputs (bool): whether to normalize inputs
+            device (str): device to use for training
+        """
         super().__init__()
 
         self.ensemble_size = ensemble_size
@@ -74,6 +91,7 @@ class ProbabilisticEnsemble(nn.Module):
         self.to(self.device)
 
     def forward(self, input, deterministic=False, return_dist=False):
+        """Forward pass through the ensemble."""
         dim = len(input.shape)
         # input normalization
         if self.normalize_inputs:
@@ -117,6 +135,7 @@ class ProbabilisticEnsemble(nn.Module):
                 return samples
 
     def sample(self, input, deterministic=False):
+        """Sample from the ensemble."""
         if not deterministic:
             samples, means, logvar = self.forward(input, deterministic=False, return_dist=True)
             samples = samples.detach().cpu().numpy()
@@ -140,7 +159,7 @@ class ProbabilisticEnsemble(nn.Module):
         else:
             return samples[model_inds, batch_inds], vars[model_inds, batch_inds], uncertainties
 
-    def compute_loss(self, x, y):
+    def _compute_loss(self, x, y):
         mean, logvar = self.forward(x, deterministic=True, return_dist=True)
 
         if len(y.shape) < 3:
@@ -160,7 +179,7 @@ class ProbabilisticEnsemble(nn.Module):
 
         return total_losses
 
-    def compute_mse_losses(self, x, y):
+    def _compute_mse_losses(self, x, y):
         mean = self.forward(x, deterministic=True, return_dist=False)
         if len(y.shape) < 3:
             y = y.unsqueeze(0).repeat(self.ensemble_size, 1, 1)
@@ -168,20 +187,22 @@ class ProbabilisticEnsemble(nn.Module):
         return mse_losses.mean(-1).mean(-1)
 
     def save(self, path):
+        """Saves the model to a file."""
         save_dir = "weights/"
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         th.save({"ensemble_state_dict": self.state_dict()}, path + ".tar")
 
     def load(self, path):
+        """Loads the model from a file."""
         params = th.load(path)
         self.load_state_dict(params["ensemble_state_dict"])
 
-    def fit_input_stats(self, data):
+    def _fit_input_stats(self, data):
         mu = np.mean(data, axis=0, keepdims=True)
         sigma = np.std(data, axis=0, keepdims=True)
         sigma[sigma < 1e-12] = 1.0
-        self.inputs_mu.data = th.tensor(mu).to(self.device).float()  # Can I ommit .data?
+        self.inputs_mu.data = th.tensor(mu).to(self.device).float()
         self.inputs_sigma.data = th.tensor(sigma).to(self.device).float()
 
     def fit(
@@ -194,8 +215,22 @@ class ProbabilisticEnsemble(nn.Module):
         max_epochs_no_improvement=5,
         max_epochs=200,
     ):
+        """Trains the model on the given data.
+
+        Args:
+            X: Input data
+            Y: Output data
+            batch_size: Batch size
+            holdout_ratio: Ratio of data to use for early stopping
+            max_holdout_size: Maximum number of samples to use for early stopping
+            max_epochs_no_improvement: Maximum number of epochs without improvement before early stopping
+            max_epochs: Maximum number of epochs to train for
+
+        Returns:
+            _type_: _description_
+        """
         if self.normalize_inputs:
-            self.fit_input_stats(X)
+            self._fit_input_stats(X)
 
         self.decays = [0.000025, 0.00005, 0.000075, 0.000075, 0.0001]
         self.optim = th.optim.Adam(
@@ -237,7 +272,7 @@ class ProbabilisticEnsemble(nn.Module):
                     th.from_numpy(batch_y).to(self.device).float(),
                 )
 
-                loss = self.compute_loss(batch_x, batch_y)
+                loss = self._compute_loss(batch_x, batch_y)
                 self.optim.zero_grad()
                 loss.backward()
                 self.optim.step()
@@ -246,7 +281,7 @@ class ProbabilisticEnsemble(nn.Module):
 
             self.eval()
             with th.no_grad():
-                holdout_losses = self.compute_mse_losses(holdout_inputs, holdout_targets)
+                holdout_losses = self._compute_mse_losses(holdout_inputs, holdout_targets)
             holdout_losses = [l.item() for l in holdout_losses]
             # print('Epoch:', epoch, 'Holdout losses:', [l.item() for l in holdout_losses])
 
