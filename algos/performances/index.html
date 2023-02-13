@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="MOQ-Learning" href="moq_learning/" /><link rel="prev" title="OLS" href="../multi_policy/ols/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Pareto utils" href="../../features/pareto/" /><link rel="prev" title="EUPG" href="../single_policy/eupg/" />
 
     <!-- Generated with Sphinx 5.3.0 and Furo 2022.12.07 -->
-        <title>Single-policy Algorithms - MORL-Baselines 0.0.1 documentation</title>
+        <title>Performance assessments - MORL-Baselines 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -169,12 +169,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/ols/">OLS</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">Single-policy Algorithms</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="moq_learning/">MOQ-Learning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="eupg/">EUPG</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../single_policy/moq_learning/">MOQ-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../single_policy/eupg/">EUPG</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../performances/">Performance assessments</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Performance assessments</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul>
@@ -209,7 +209,7 @@
         </a>
         <div class="content-icon-container">
           <div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/algos/single_policy.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/algos/performances.md" title="Edit this page">
     <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
@@ -225,16 +225,66 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <section id="single-policy-algorithms">
-<h1>Single-policy Algorithms<a class="headerlink" href="#single-policy-algorithms" title="Permalink to this heading">#</a></h1>
-<div class="toctree-wrapper compound">
-</div>
+          <section id="performance-assessments">
+<h1>Performance assessments<a class="headerlink" href="#performance-assessments" title="Permalink to this heading">#</a></h1>
+<p>:warning: This document is a work in progress.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">#</a></h2>
+<p>To ensure the implementation of the algorithms are correct, we want to test them on various environments. For the sake of reproducibility, we want to run for 10 seeds on various environments. For maintenance purposes and long-term support, these tests will be conducted on environments available in <span class="xref myst">MO-Gymnasium</span>. Hence, we will not be able to test on some environments that were presented in original papers.</p>
+</section>
+<section id="metrics">
+<h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">#</a></h2>
+<p>For single-policy algorithms, the metric used will be the scalarized return of the policy (utility).</p>
+<p>For multi-policy algorithms, we propose to rely on various metrics to assess the quality of the Pareto Fronts (PF). In general, we want to have a metric that is able to assess the convergence of the PF, a metric that is able to assess the diversity of the PF, and a hybrid metric assessing both. The metrics are implemented in <code class="docutils literal notranslate"><span class="pre">common/performance_indicators</span></code>. We propose to use the following metrics:</p>
+<ul class="simple">
+<li><p>(Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1].</p></li>
+<li><p>(Convergence) IGD: a SOTA metric from Multi-Objective Optimization (MOO) literature. It requires a reference PF that we can compute a posteriori. That is, we do a merge of all the PFs found by the method and compute the IGD with respect to this reference PF.</p></li>
+<li><p>(Hybrid) Hypervolume: a SOTA metric from MOO and MORL literature.</p></li>
+</ul>
+<p>Moreover, some metrics relying on assumptions on the utility function of the user are proposed in the literature. These metric allow to have an idea on the true value on the user utility, whereas others such as hypervolume do not [2]. We propose to use the following metrics:</p>
+<ul class="simple">
+<li><p>EUM: Expected Utility Metric. From [3].</p></li>
+<li><p>MUL: Maximum Utility Loss for the problems we know the true CCS/PF. From [3].</p></li>
+</ul>
+</section>
+<section id="storage">
+<h2>Storage<a class="headerlink" href="#storage" title="Permalink to this heading">#</a></h2>
+<p>All the metrics will be reported to wandb to allow for easy manipulation and exporting of the data.</p>
+</section>
+<section id="algorithms">
+<h2>Algorithms<a class="headerlink" href="#algorithms" title="Permalink to this heading">#</a></h2>
+<p>Below are the algorithms that we want to test along with the environments from their original papers which are supported in MO-Gymnasium.</p>
+<section id="single-policy-algorithms">
+<h3>Single-policy algorithms<a class="headerlink" href="#single-policy-algorithms" title="Permalink to this heading">#</a></h3>
+<ul class="simple">
+<li><p>MOQ-Learning (discrete/discrete): DST, MO-MountainCar;</p></li>
+<li><p>EUPG (discrete/discrete): Fishwood;</p></li>
+</ul>
+</section>
+<section id="multi-policy-algorithms">
+<h3>Multi-policy algorithms<a class="headerlink" href="#multi-policy-algorithms" title="Permalink to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Envelope Q-Learning (continuous/discrete): DST, Fruit-tree, Mario;</p></li>
+<li><p>Pareto Q-Learning (discrete/discrete): DST;</p></li>
+<li><p>PGMORL (continuous/continuous): Half-Cheetah, 2-obj Hopper. Note: the original paper tweaked the environments to have positive rewards only. We feel that such a modification is no good practice and we will use the official environments from MO-Gymnasium instead. Hence, our version of PGMORL cannot be compared to the original paper.</p></li>
+<li><p>MPMOQLearning (discrete/discrete): DST, MO-MountainCar;</p></li>
+<li><p>GPI-LS, GPI-PD (<em>/</em>): DST, Minecart, MO-Hopper;</p></li>
+<li><p>OLS - it is a weight generation method, not a full algorithm.</p></li>
+</ul>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading">#</a></h2>
+<p>[1]  J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik, “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,” in Proceedings of the 37th International Conference on Machine Learning, Nov. 2020, pp. 10607–10616. Available: https://proceedings.mlr.press/v119/xu20h.html</p>
+<p>[2] C. Hayes et al., “A practical guide to multi-objective reinforcement learning and planning,” Autonomous Agents and Multi-Agent Systems, vol. 36, Apr. 2022, doi: 10.1007/s10458-022-09552-y.</p>
+<p>[3] L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau, “Quality Assessment of MORL Algorithms: A Utility-Based Approach,” 2015.</p>
+</section>
 </section>
 
         </article>
@@ -242,23 +292,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="moq_learning/">
+          <a class="next-page" href="../../features/pareto/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">MOQ-Learning</div>
+                <div class="title">Pareto utils</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../multi_policy/ols/">
+          <a class="prev-page" href="../single_policy/eupg/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">OLS</div>
+                <div class="title">EUPG</div>
                 
               </div>
             </a>
@@ -280,8 +330,35 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Performance assessments</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#metrics">Metrics</a></li>
+<li><a class="reference internal" href="#storage">Storage</a></li>
+<li><a class="reference internal" href="#algorithms">Algorithms</a><ul>
+<li><a class="reference internal" href="#single-policy-algorithms">Single-policy algorithms</a></li>
+<li><a class="reference internal" href="#multi-policy-algorithms">Multi-policy algorithms</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
