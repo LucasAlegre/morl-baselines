@@ -375,9 +375,7 @@ if __name__ == "__main__":
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
     num_objectives = 3
-    ols = LinearSupport(
-        num_objectives=num_objectives, epsilon=0.0001, verbose=True
-    )
+    ols = LinearSupport(num_objectives=num_objectives, epsilon=0.0001, verbose=True)
     while not ols.ended():
         w = ols.next_weight()
         print("w:", w)

@@ -87,8 +87,8 @@ class GPIPD(MOPolicy, MOAgent):
         tau: float = 1.0,
         target_net_update_freq: int = 1000,  # ignored if tau != 1.0
         buffer_size: int = int(1e6),
-        net_arch: List = [256, 256],
-        num_nets: int = 1,
+        net_arch: List = [256, 256, 256, 256],
+        num_nets: int = 2,
         batch_size: int = 256,
         learning_starts: int = 100,
         gradient_updates: int = 1,
@@ -112,9 +112,11 @@ class GPIPD(MOPolicy, MOAgent):
         dynamics_rollout_batch_size: int = 10000,
         dynamics_buffer_size: int = 400000,
         dynamics_net_arch: List = [200, 200, 200, 200],
+        dynamics_ensemble_size: int = 5,
+        dynamics_num_elites: int = 2,
         real_ratio: float = 0.05,
-        project_name: str = "usfa",
-        experiment_name: str = "usfa",
+        project_name: str = "MORL Baselines",
+        experiment_name: str = "GPi-PD",
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
@@ -154,6 +156,8 @@ class GPIPD(MOPolicy, MOAgent):
             dynamics_rollout_batch_size: The rollout batch size.
             dynamics_buffer_size: The size of the dynamics model buffer.
             dynamics_net_arch: The network architecture for the dynamics model.
+            dynamics_ensemble_size: The ensemble size for the dynamics model.
+            dynamics_num_elites: The number of elites for the dynamics model.
             real_ratio: The ratio of real transitions to sample.
             project_name: The name of the project.
             experiment_name: The name of the experiment.
@@ -231,8 +235,8 @@ class GPIPD(MOPolicy, MOAgent):
                 output_dim=self.observation_dim + self.reward_dim,
                 arch=self.dynamics_net_arch,
                 normalize_inputs=dynamics_normalize_inputs,
-                ensemble_size=5,
-                num_elites=2,
+                ensemble_size=dynamics_ensemble_size,
+                num_elites=dynamics_num_elites,
                 device=self.device,
             )
             self.dynamics_buffer = ReplayBuffer(
@@ -247,7 +251,7 @@ class GPIPD(MOPolicy, MOAgent):
         self.real_ratio = real_ratio
 
         self.log = log
-        if log:
+        if self.log:
             self.setup_wandb(project_name, experiment_name)
 
     def get_config(self):
@@ -398,6 +402,7 @@ class GPIPD(MOPolicy, MOAgent):
                     s_next_obs.repeat(2, 1),
                     s_dones.repeat(2, 1),
                 )
+                # Half of the batch uses the given weight vector, the other half uses weights sampled from the support set
                 w = th.vstack(
                     [weight for _ in range(s_obs.size(0) // 2)] + random.choices(self.weight_support, k=s_obs.size(0) // 2)
                 )
