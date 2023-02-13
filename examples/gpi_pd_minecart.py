@@ -5,7 +5,6 @@ import wandb as wb
 from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.utils import extrema_weights, random_weights
-from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
@@ -38,71 +37,42 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         else:
             return 250
 
-    if algo == "ols" or algo == "gpi-ls":
-        agent = GPIPD(
-            env,
-            num_nets=2,
-            max_grad_norm=None,
-            learning_rate=3e-4,
-            gamma=0.98,
-            batch_size=128,
-            net_arch=[256, 256, 256, 256],
-            buffer_size=int(2e5),
-            initial_epsilon=1.0,
-            final_epsilon=0.05,
-            epsilon_decay_steps=50000,
-            learning_starts=100,
-            alpha_per=0.6,
-            min_priority=0.01,
-            per=gpi_pd,
-            gpi_pd=gpi_pd,
-            envelope=False,  # algo != 'ols',
-            use_gpi=True,
-            gradient_updates=g,
-            target_net_update_freq=200,
-            tau=1,
-            dyna=gpi_pd,
-            dynamics_uncertainty_threshold=1.5,
-            dynamics_net_arch=[256, 256, 256],  # [200, 200, 200, 200],
-            dynamics_buffer_size=int(1e5),
-            dynamics_rollout_batch_size=25000,
-            dynamics_train_freq=model_training_schedule,
-            dynamics_rollout_freq=250,
-            dynamics_rollout_starts=5000,
-            dynamics_rollout_len=1,
-            real_ratio=0.5,
-            log=True,
-            project_name="MORL Baselines - MineCart",
-            experiment_name=f"{algo} + gpid-pd={gpi_pd} g={g}",
-        )
-    elif algo == "envelope":
-        agent = Envelope(
-            env,
-            num_nets=2,
-            max_grad_norm=None,
-            learning_rate=3e-4,
-            gamma=0.98,
-            batch_size=64,
-            n_sample_w=4,
-            net_arch=[256, 256, 256, 256],
-            buffer_size=int(2e5),
-            initial_epsilon=1.0,
-            final_epsilon=0.05,
-            epsilon_decay_steps=50000,
-            learning_starts=100,
-            alpha_per=0.6,
-            min_priority=0.01,
-            per=False,
-            use_gpi=False,
-            dyna=False,
-            envelope=True,
-            gradient_updates=g,
-            target_net_update_freq=200,
-            tau=1,
-            log=True,
-            project_name="MORL Baselines - MineCart",
-            experiment_name=f"{algo} g={g}",
-        )
+    agent = GPIPD(
+        env,
+        num_nets=2,
+        max_grad_norm=None,
+        learning_rate=3e-4,
+        gamma=0.98,
+        batch_size=128,
+        net_arch=[256, 256, 256, 256],
+        buffer_size=int(2e5),
+        initial_epsilon=1.0,
+        final_epsilon=0.05,
+        epsilon_decay_steps=50000,
+        learning_starts=100,
+        alpha_per=0.6,
+        min_priority=0.01,
+        per=gpi_pd,
+        gpi_pd=gpi_pd,
+        envelope=False,  # algo != 'ols',
+        use_gpi=True,
+        gradient_updates=g,
+        target_net_update_freq=200,
+        tau=1,
+        dyna=gpi_pd,
+        dynamics_uncertainty_threshold=1.5,
+        dynamics_net_arch=[256, 256, 256],  # [200, 200, 200, 200],
+        dynamics_buffer_size=int(1e5),
+        dynamics_rollout_batch_size=25000,
+        dynamics_train_freq=model_training_schedule,
+        dynamics_rollout_freq=250,
+        dynamics_rollout_starts=5000,
+        dynamics_rollout_len=1,
+        real_ratio=0.5,
+        log=True,
+        project_name="MORL Baselines - MineCart",
+        experiment_name=f"{algo} + gpid-pd={gpi_pd} g={g}",
+    )
 
     if algo == "ols" or algo == "gpi-ls":
         linear_support = LinearSupport(num_objectives=3, epsilon=0.0 if algo == "ols" else None)
@@ -134,7 +104,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         else:
             M = None
 
-        agent.learn(
+        agent.train(
             total_timesteps=timesteps_per_iter,
             weight=w,
             weight_support=M,

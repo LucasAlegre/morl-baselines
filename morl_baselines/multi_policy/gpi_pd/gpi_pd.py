@@ -640,7 +640,7 @@ class GPIPD(MOPolicy, MOAgent):
         """Set the weight support set."""
         self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
 
-    def learn(
+    def train(
         self,
         total_timesteps: int,
         weight: np.ndarray,
@@ -652,7 +652,7 @@ class GPIPD(MOPolicy, MOAgent):
         eval_freq: int = 1000,
         reset_learning_starts: bool = False,
     ):
-        """Learn method.
+        """Train method.
 
         Args:
             total_timesteps (int): Number of timesteps to train for
