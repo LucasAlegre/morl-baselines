@@ -377,7 +377,7 @@ if __name__ == "__main__":
     num_objectives = 3
     ols = LinearSupport(
         num_objectives=num_objectives, epsilon=0.0001, verbose=True
-    )  # , min_value=0.0, max_value=1 / (1 - 0.95) * 1)
+    )
     while not ols.ended():
         w = ols.next_weight()
         print("w:", w)

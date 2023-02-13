@@ -152,7 +152,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
             elif algo == "gpi-ls":
                 for wcw in M:
                     n_value = policy_evaluation_mo(agent, eval_env, wcw, rep=5)
-                    linear_support.add_solution(n_value, wcw, add_not_improved=False)
+                    linear_support.add_solution(n_value, wcw)
 
         if algo != "envelope":
             gpi_returns_test_tasks = [
