@@ -141,7 +141,7 @@ def test_envelope():
     env = mo_gym.make("minecart-v0")
     eval_env = mo_gym.make("minecart-v0")
 
-    agent = GPIPD(
+    agent = Envelope(
         env,
         log=False,
     )
@@ -165,13 +165,15 @@ def test_gpi_pd():
     env = mo_gym.make("minecart-v0")
     eval_env = mo_gym.make("minecart-v0")
 
-    agent = Envelope(
+    agent = GPIPD(
         env,
         log=False,
     )
 
     agent.train(
         total_timesteps=1000,
+        weight=np.array([1.0, 0.0, 0.0]),
+        weight_support=[np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0])],
         eval_env=eval_env,
         eval_freq=100,
     )
