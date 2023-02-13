@@ -4,7 +4,7 @@ import random
 from itertools import chain
 from typing import Callable, List, Optional, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import torch as th
 import torch.nn as nn
