@@ -1,4 +1,5 @@
 """Pareto Conditioned Network. Code adapted from https://github.com/mathieu-reymond/pareto-conditioned-networks"""
+import os
 import heapq
 from dataclasses import dataclass
 from typing import Optional, Union
@@ -8,9 +9,9 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-from pygmo import hypervolume  # TODO: replace with own implementation
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.performance_indicators import hypervolume
 
 
 def crowding_distance(points):
@@ -54,25 +55,24 @@ def compute_hypervolume(q_set, ref):
     nA = len(q_set)
     q_values = np.zeros(nA)
     for i in range(nA):
-        # pygmo uses hv minimization,
-        # negate rewards to get costs
-        points = np.array(q_set[i]) * -1.0
-        hv = hypervolume(points)
+        points = np.array(q_set[i])
+        hv = hypervolume(ref, points)
         # use negative ref-point for minimization
-        q_values[i] = hv.compute(ref * -1)
+        q_values[i] = hv
     return q_values
 
 
 def run_episode(env, agent, desired_return, desired_horizon, max_return):
     transitions = []
-    obs = env.reset()
+    obs, _ = env.reset()
     done = False
     while not done:
         action = agent.act(obs, desired_return, desired_horizon)
-        n_obs, reward, done, _ = env.step(action)
+        n_obs, reward, terminated, truncated, _ = env.step(action)
+        done = terminated or truncated
 
         transitions.append(
-            Transition(observation=obs, action=action, reward=np.float32(reward).copy(), next_observation=n_obs, terminal=done)
+            Transition(observation=obs, action=action, reward=np.float32(reward).copy(), next_observation=n_obs, terminal=terminated)
         )
 
         obs = n_obs
@@ -134,13 +134,13 @@ def nlargest(n, experience_replay, threshold=0.2):
 
 
 class Model(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_din: int = 64):
+    def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int = 64):
         super().__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.reward_dim = reward_dim
-        self.scaling_factor = nn.Parameter(th.tensor(scaling_factor), requires_grad=False)
-        self.hidden_dim = hidden_din
+        self.scaling_factor = nn.Parameter(th.tensor(scaling_factor).float(), requires_grad=False)
+        self.hidden_dim = hidden_dim
 
         self.s_emb = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim), nn.Sigmoid())
         self.c_emb = nn.Sequential(nn.Linear(self.reward_dim + 1, self.hidden_dim), nn.Sigmoid())
@@ -249,7 +249,7 @@ class PCN(MOAgent, MOPolicy):
 
         return l, log_prob
 
-    def add_epsisode(self, transitions, max_size: int, step: int) -> None:
+    def add_episode(self, transitions, max_size: int, step: int) -> None:
         # compute return
         for i in reversed(range(len(transitions) - 1)):
             transitions[i].reward += self.gamma * transitions[i + 1].reward
@@ -292,6 +292,9 @@ class PCN(MOAgent, MOPolicy):
         action = np.random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
         return action
 
+    def eval(self, obs):
+        pass
+
     def train(
         self,
         env: gym.Env,
@@ -311,7 +314,7 @@ class PCN(MOAgent, MOPolicy):
         self.experience_replay = []
         for _ in range(num_er_episodes):
             transitions = []
-            obs, info = env.reset()
+            obs, _ = env.reset()
             done = False
             while not done:
                 action = env.action_space.sample()
@@ -342,8 +345,8 @@ class PCN(MOAgent, MOPolicy):
                 # if len(self.experience_replay) == max_buffer_size:
                 #    logger.put('train/leaves/r', leaves_r, self.global_step, f'{leaves_r.shape[-1]}d')
                 #    logger.put('train/leaves/h', leaves_h, self.global_step, f'{leaves_h.shape[-1]}d')
-                hv = hypervolume(leaves_r * -1)
-                hv_est = hv.compute(ref_point * -1)
+                hv = hypervolume(ref_point, leaves_r)
+                hv_est = hv
                 self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
             except ValueError:
                 pass
@@ -379,6 +382,8 @@ class PCN(MOAgent, MOPolicy):
             )
 
             if self.global_step >= (n_checkpoints + 1) * total_time_steps / 100:
+                if not os.path.isdir("weights"):
+                    os.makedirs("weights")
                 th.save(self.model, f"weights/model_{n_checkpoints+1}.pt")
                 n_checkpoints += 1
 

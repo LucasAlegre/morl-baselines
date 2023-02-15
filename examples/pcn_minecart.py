@@ -7,8 +7,8 @@ from morl_baselines.multi_policy.pcn.pcn import PCN
 
 def main():
     def make_env():
-        env = mo_gym.make("minecart-v0")
-        env = MORecordEpisodeStatistics(env, gamma=0.98)
+        env = mo_gym.make("minecart-deterministic-v0")
+        env = MORecordEpisodeStatistics(env, gamma=1.0)
         return env
 
     env = make_env()
