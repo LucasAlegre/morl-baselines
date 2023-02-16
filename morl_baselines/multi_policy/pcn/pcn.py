@@ -381,7 +381,7 @@ class PCN(MOAgent, MOPolicy):
                 ent = np.sum(-np.exp(lp) * lp)
                 entropy.append(ent)
 
-            desired_return, desired_horizon = self.choose_commands(num_er_episodes)
+            desired_return, desired_horizon = self._choose_commands(num_er_episodes)
 
             # get all leaves, contain biggest elements, experience_replay got heapified in choose_commands
             leaves_r = np.array([e[2][0].reward for e in self.experience_replay[len(self.experience_replay) // 2 :]])
