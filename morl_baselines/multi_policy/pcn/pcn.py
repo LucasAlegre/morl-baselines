@@ -9,7 +9,6 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-import wandb as wb
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
@@ -420,7 +419,7 @@ class PCN(MOAgent, MOPolicy):
                 self.writer.add_scalar(f"train/mean_return_{i}", np.mean(np.array(returns)[:, i]), self.global_step)
                 self.writer.add_scalar(
                     f"train/mean_return_distance_{i}",
-                    np.linalg.norm(np.mean(np.array(returns)[:, o]) - desired_return[o]),
+                    np.linalg.norm(np.mean(np.array(returns)[:, i]) - desired_return[i]),
                     self.global_step,
                 )
             print(
