@@ -345,12 +345,7 @@ class LinearSupport:
         Returns:
             List of weight vectors.
         """
-        extrema_weights = []
-        for i in range(self.num_objectives):
-            w = np.zeros(self.num_objectives)
-            w[i] = 1.0
-            extrema_weights.append(w)
-        return extrema_weights
+        return list(np.eye(self.num_objectives, dtype=np.float32))
 
     def is_dominated(self, value: np.ndarray) -> bool:
         """Checks if the value is dominated by any of the values in the CCS.
