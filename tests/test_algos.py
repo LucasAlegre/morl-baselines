@@ -137,7 +137,6 @@ def test_ols():
 
 
 def test_envelope():
-
     env = mo_gym.make("minecart-v0")
     eval_env = mo_gym.make("minecart-v0")
 

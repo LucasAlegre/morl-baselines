@@ -1,6 +1,6 @@
-"""Pareto Conditioned Network. Code adapted from https://github.com/mathieu-reymond/pareto-conditioned-networks"""
-import os
+"""Pareto Conditioned Network. Code adapted from https://github.com/mathieu-reymond/pareto-conditioned-networks ."""
 import heapq
+import os
 from dataclasses import dataclass
 from typing import Optional, Union
 
@@ -9,12 +9,14 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+import wandb as wb
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
 
 
 def crowding_distance(points):
+    """Compute the crowding distance of a set of points."""
     # first normalize across dimensions
     points = (points - points.min(axis=0)) / (points.ptp(axis=0) + 1e-8)
     # sort points per dimension
@@ -33,14 +35,17 @@ def crowding_distance(points):
 
 @dataclass
 class Transition:
+    """Transition dataclass."""
+
     observation: np.ndarray
     action: int
-    reward: float
+    reward: np.ndarray
     next_observation: np.ndarray
     terminal: bool
 
 
 def get_non_dominated(solutions):
+    """Returns the non-dominated solutions from a set of solutions."""
     is_efficient = np.ones(solutions.shape[0], dtype=bool)
     for i, c in enumerate(solutions):
         if is_efficient[i]:
@@ -52,6 +57,7 @@ def get_non_dominated(solutions):
 
 
 def compute_hypervolume(q_set, ref):
+    """Computes hypervolume of the q_set."""
     nA = len(q_set)
     q_values = np.zeros(nA)
     for i in range(nA):
@@ -62,79 +68,11 @@ def compute_hypervolume(q_set, ref):
     return q_values
 
 
-def run_episode(env, agent, desired_return, desired_horizon, max_return):
-    transitions = []
-    obs, _ = env.reset()
-    done = False
-    while not done:
-        action = agent.act(obs, desired_return, desired_horizon)
-        n_obs, reward, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
-
-        transitions.append(
-            Transition(observation=obs, action=action, reward=np.float32(reward).copy(), next_observation=n_obs, terminal=terminated)
-        )
-
-        obs = n_obs
-        # clip desired return, to return-upper-bound,
-        # to avoid negative returns giving impossible desired returns
-        desired_return = np.clip(desired_return - reward, None, max_return, dtype=np.float32)
-        # clip desired horizon to avoid negative horizons
-        desired_horizon = np.float32(max(desired_horizon - 1, 1.0))
-    return transitions
-
-
-def evaluate(env, agent, max_return, gamma=1.0, n=10):
-    episodes = nlargest(n, agent.experience_replay)
-    returns, horizons = list(zip(*[(e[2][0].reward, len(e[2])) for e in episodes]))
-    returns = np.float32(returns)
-    horizons = np.float32(horizons)
-    e_returns = []
-    for i in range(n):
-        transitions = run_episode(env, agent, returns[i], np.float32(horizons[i] - 2), max_return)
-        # compute return
-        for i in reversed(range(len(transitions) - 1)):
-            transitions[i].reward += gamma * transitions[i + 1].reward
-        e_returns.append(transitions[0].reward)
-
-    e_returns = np.array(e_returns)
-    distances = np.linalg.norm(np.array(returns) - e_returns, axis=-1)
-    return e_returns, np.array(returns), distances
-
-
-def nlargest(n, experience_replay, threshold=0.2):
-    returns = np.array([e[2][0].reward for e in experience_replay])
-    # crowding distance of each point, check ones that are too close together
-    distances = crowding_distance(returns)
-    sma = np.argwhere(distances <= threshold).flatten()
-
-    non_dominated_i = get_non_dominated(returns)
-    non_dominated = returns[non_dominated_i]
-    # we will compute distance of each point with each non-dominated point,
-    # duplicate each point with number of non_dominated to compute respective distance
-    returns_exp = np.tile(np.expand_dims(returns, 1), (1, len(non_dominated), 1))
-    # distance to closest non_dominated point
-    l2 = np.min(np.linalg.norm(returns_exp - non_dominated, axis=-1), axis=-1) * -1
-    # all points that are too close together (crowding distance < threshold) get a penalty
-    non_dominated_i = np.nonzero(non_dominated_i)[0]
-    _, unique_i = np.unique(non_dominated, axis=0, return_index=True)
-    unique_i = non_dominated_i[unique_i]
-    duplicates = np.ones(len(l2), dtype=bool)
-    duplicates[unique_i] = False
-    l2[duplicates] -= 1e-5
-    l2[sma] *= 2
-
-    sorted_i = np.argsort(l2)
-    largest = [experience_replay[i] for i in sorted_i[-n:]]
-    # before returning largest elements, update all distances in heap
-    for i in range(len(l2)):
-        experience_replay[i] = (l2[i], experience_replay[i][1], experience_replay[i][2])
-    heapq.heapify(experience_replay)
-    return largest
-
-
 class Model(nn.Module):
+    """Model for the PCN."""
+
     def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int = 64):
+        """Initialize the PCN model."""
         super().__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -152,6 +90,7 @@ class Model(nn.Module):
         )
 
     def forward(self, state, desired_return, desired_horizon):
+        """Return log-probabilities of actions."""
         c = th.cat((desired_return, desired_horizon), dim=-1)
         # commands are scaled by a fixed factor
         c = c * self.scaling_factor
@@ -163,7 +102,7 @@ class Model(nn.Module):
 
 
 class PCN(MOAgent, MOPolicy):
-    """Pareto Conditioned Networks (PCN)
+    """Pareto Conditioned Networks (PCN).
 
     Reymond, M., Bargiacchi, E., & Nowé, A. (2022, May). Pareto Conditioned Networks.
     In Proceedings of the 21st International Conference on Autonomous Agents
@@ -189,6 +128,20 @@ class PCN(MOAgent, MOPolicy):
         log: bool = False,
         device: Union[th.device, str] = "auto",
     ) -> None:
+        """Initialize PCN agent.
+
+        Args:
+            env (Optional[gym.Env]): Gym environment.
+            scaling_factor (np.ndarray): Scaling factor for the desired return and horizon used in the model.
+            learning_rate (float, optional): Learning rate. Defaults to 1e-2.
+            gamma (float, optional): Discount factor. Defaults to 1.0.
+            batch_size (int, optional): Batch size. Defaults to 32.
+            hidden_dim (int, optional): Hidden dimension. Defaults to 64.
+            project_name (str, optional): Name of the project for wandb. Defaults to "MORL-Baselines".
+            experiment_name (str, optional): Name of the experiment for wandb. Defaults to "PCN".
+            log (bool, optional): Whether to log to wandb. Defaults to False.
+            device (Union[th.device, str], optional): Device to use. Defaults to "auto".
+        """
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
 
@@ -198,6 +151,8 @@ class PCN(MOAgent, MOPolicy):
         self.learning_rate = learning_rate
         self.hidden_dim = hidden_dim
         self.scaling_factor = scaling_factor
+        self.desired_return = None
+        self.desired_horizon = None
 
         self.model = Model(
             self.observation_dim, self.action_dim, self.reward_dim, self.scaling_factor, hidden_dim=self.hidden_dim
@@ -209,6 +164,7 @@ class PCN(MOAgent, MOPolicy):
             self.setup_wandb(project_name, experiment_name)
 
     def get_config(self) -> dict:
+        """Get configuration of PCN model."""
         return {
             "batch_size": self.batch_size,
             "gamma": self.gamma,
@@ -218,6 +174,7 @@ class PCN(MOAgent, MOPolicy):
         }
 
     def update(self) -> None:
+        """Update PCN model."""
         batch = []
         # randomly choose episodes from experience buffer
         s_i = np.random.choice(np.arange(len(self.experience_replay)), size=self.batch_size, replace=True)
@@ -249,7 +206,7 @@ class PCN(MOAgent, MOPolicy):
 
         return l, log_prob
 
-    def add_episode(self, transitions, max_size: int, step: int) -> None:
+    def _add_episode(self, transitions, max_size: int, step: int) -> None:
         # compute return
         for i in reversed(range(len(transitions) - 1)):
             transitions[i].reward += self.gamma * transitions[i + 1].reward
@@ -261,9 +218,40 @@ class PCN(MOAgent, MOPolicy):
         else:
             heapq.heappush(self.experience_replay, (1, step, transitions))
 
-    def choose_commands(self, num_episodes: int):
+    def _nlargest(self, n, threshold=0.2):
+        """?"""
+        returns = np.array([e[2][0].reward for e in self.experience_replay])
+        # crowding distance of each point, check ones that are too close together
+        distances = crowding_distance(returns)
+        sma = np.argwhere(distances <= threshold).flatten()
+
+        non_dominated_i = get_non_dominated(returns)
+        non_dominated = returns[non_dominated_i]
+        # we will compute distance of each point with each non-dominated point,
+        # duplicate each point with number of non_dominated to compute respective distance
+        returns_exp = np.tile(np.expand_dims(returns, 1), (1, len(non_dominated), 1))
+        # distance to closest non_dominated point
+        l2 = np.min(np.linalg.norm(returns_exp - non_dominated, axis=-1), axis=-1) * -1
+        # all points that are too close together (crowding distance < threshold) get a penalty
+        non_dominated_i = np.nonzero(non_dominated_i)[0]
+        _, unique_i = np.unique(non_dominated, axis=0, return_index=True)
+        unique_i = non_dominated_i[unique_i]
+        duplicates = np.ones(len(l2), dtype=bool)
+        duplicates[unique_i] = False
+        l2[duplicates] -= 1e-5
+        l2[sma] *= 2
+
+        sorted_i = np.argsort(l2)
+        largest = [self.experience_replay[i] for i in sorted_i[-n:]]
+        # before returning largest elements, update all distances in heap
+        for i in range(len(l2)):
+            self.experience_replay[i] = (l2[i], self.experience_replay[i][1], self.experience_replay[i][2])
+        heapq.heapify(self.experience_replay)
+        return largest
+
+    def _choose_commands(self, num_episodes: int):
         # get best episodes, according to their crowding distance
-        episodes = nlargest(num_episodes, self.experience_replay)
+        episodes = self._nlargest(num_episodes)
         returns, horizons = list(zip(*[(e[2][0].reward, len(e[2])) for e in episodes]))
         # keep only non-dominated returns
         nd_i = get_non_dominated(np.array(returns))
@@ -282,7 +270,7 @@ class PCN(MOAgent, MOPolicy):
         desired_return = np.float32(desired_return)
         return desired_return, desired_horizon
 
-    def act(self, obs: np.ndarray, desired_return, desired_horizon) -> int:
+    def _act(self, obs: np.ndarray, desired_return, desired_horizon) -> int:
         log_probs = self.model(
             th.tensor([obs]).to(self.device),
             th.tensor([desired_return]).to(self.device),
@@ -292,8 +280,65 @@ class PCN(MOAgent, MOPolicy):
         action = np.random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
         return action
 
-    def eval(self, obs):
-        pass
+    def _run_episode(self, env, desired_return, desired_horizon, max_return):
+        transitions = []
+        obs, _ = env.reset()
+        done = False
+        while not done:
+            action = self._act(obs, desired_return, desired_horizon)
+            n_obs, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+
+            transitions.append(
+                Transition(
+                    observation=obs,
+                    action=action,
+                    reward=np.float32(reward).copy(),
+                    next_observation=n_obs,
+                    terminal=terminated,
+                )
+            )
+
+            obs = n_obs
+            # clip desired return, to return-upper-bound,
+            # to avoid negative returns giving impossible desired returns
+            desired_return = np.clip(desired_return - reward, None, max_return, dtype=np.float32)
+            # clip desired horizon to avoid negative horizons
+            desired_horizon = np.float32(max(desired_horizon - 1, 1.0))
+        return transitions
+
+    def set_desired_return_and_horizon(self, desired_return: np.ndarray, desired_horizon: int):
+        """Set desired return and horizon for evaluation."""
+        self.desired_return = desired_return
+        self.desired_horizon = desired_horizon
+
+    def eval(self, obs, w=None):
+        """Evaluate policy action for a given observation."""
+        return self._act(obs, self.desired_return, self.desired_horizon)
+
+    def evaluate(self, env, max_return, n=10):
+        """Evaluate policy in the given environment."""
+        episodes = self._nlargest(n)
+        returns, horizons = list(zip(*[(e[2][0].reward, len(e[2])) for e in episodes]))
+        returns = np.float32(returns)
+        horizons = np.float32(horizons)
+        e_returns = []
+        for i in range(n):
+            transitions = self._run_episode(env, returns[i], np.float32(horizons[i] - 2), max_return)
+            # compute return
+            for i in reversed(range(len(transitions) - 1)):
+                transitions[i].reward += self.gamma * transitions[i + 1].reward
+            e_returns.append(transitions[0].reward)
+
+        e_returns = np.array(e_returns)
+        distances = np.linalg.norm(np.array(returns) - e_returns, axis=-1)
+        return e_returns, np.array(returns), distances
+
+    def save(self, filename: str = "PCN_model", savedir: str = "weights"):
+        """Save PCN."""
+        if not os.path.isdir(savedir):
+            os.makedirs(savedir)
+        th.save(self.model, f"{savedir}/{filename}.pt")
 
     def train(
         self,
@@ -306,6 +351,7 @@ class PCN(MOAgent, MOPolicy):
         max_buffer_size: int = 500,
         ref_point: np.ndarray = np.array([0.0, 0.0]),
     ):
+        """Train PCN."""
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0
@@ -324,7 +370,7 @@ class PCN(MOAgent, MOPolicy):
                 obs = n_obs
                 self.global_step += 1
             # add episode in-place
-            self.add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
+            self._add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
 
         while self.global_step < total_time_steps:
             loss = []
@@ -354,9 +400,9 @@ class PCN(MOAgent, MOPolicy):
             returns = []
             horizons = []
             for _ in range(num_step_episodes):
-                transitions = run_episode(env, self, desired_return, desired_horizon, max_return)
+                transitions = self._run_episode(env, desired_return, desired_horizon, max_return)
                 self.global_step += len(transitions)
-                self.add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
+                self._add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
                 returns.append(transitions[0].reward)
                 horizons.append(len(transitions))
 
@@ -364,16 +410,16 @@ class PCN(MOAgent, MOPolicy):
             self.writer.add_scalar("train/episode", total_episodes, self.global_step)
             self.writer.add_scalar("train/loss", np.mean(loss), self.global_step)
             self.writer.add_scalar("train/entropy", np.mean(entropy), self.global_step)
-            self.writer.add_scalar("train/horizon/desired", desired_horizon, self.global_step)
+            self.writer.add_scalar("train/horizon_desired", desired_horizon, self.global_step)
             self.writer.add_scalar(
-                "train/horizon/distance", np.linalg.norm(np.mean(horizons) - desired_horizon), self.global_step
+                "train/mean_horizon_distance", np.linalg.norm(np.mean(horizons) - desired_horizon), self.global_step
             )
 
-            for o in range(len(desired_return)):
-                self.writer.add_scalar(f"train/return/{o}/value", desired_horizon, self.global_step)
-                self.writer.add_scalar(f"train/return/{o}/desired", np.mean(np.array(returns)[:, o]), self.global_step)
+            for i in range(self.reward_dim):
+                self.writer.add_scalar(f"train/desired_return_{i}", desired_return[i], self.global_step)
+                self.writer.add_scalar(f"train/mean_return_{i}", np.mean(np.array(returns)[:, i]), self.global_step)
                 self.writer.add_scalar(
-                    f"train/return/{o}/distance",
+                    f"train/mean_return_distance_{i}",
                     np.linalg.norm(np.mean(np.array(returns)[:, o]) - desired_return[o]),
                     self.global_step,
                 )
@@ -382,17 +428,14 @@ class PCN(MOAgent, MOPolicy):
             )
 
             if self.global_step >= (n_checkpoints + 1) * total_time_steps / 100:
-                if not os.path.isdir("weights"):
-                    os.makedirs("weights")
-                th.save(self.model, f"weights/model_{n_checkpoints+1}.pt")
+                self.save()
                 n_checkpoints += 1
 
-                e_r, e_dr, e_d = evaluate(env, self, max_return, gamma=self.gamma)
-                s = "desired return vs evaluated return\n" + 33 * "=" + "\n"
+                """ e_r, e_dr, e_d = eval(env, model, experience_replay, max_return, gamma=gamma)
+                s = 'desired return vs evaluated return\n'+33*'='+'\n'
                 for i in range(len(e_r)):
-                    s += f"{e_dr[i]}  \t  {e_r[i]}  \n"
-
+                    s += f'{e_dr[i]}  \t  {e_r[i]}  \n'
+                logger.put('eval/return/desired', e_dr, step, f'{len(desired_return)}d')
+                logger.put('eval/return/value', e_r, step, f'{len(desired_return)}d')
                 for o in range(len(desired_return)):
-                    self.writer.add_scalar(f"eval/return/{o}/desired", e_dr[o], self.global_step)
-                    self.writer.add_scalar(f"eval/return/{o}/value", e_r[o], self.global_step)
-                    self.writer.add_scalar(f"eval/return/{o}/distance", e_d[o], self.global_step)
+                    logger.put(f'eval/return/{o}/distance', e_d[o], step, 'scalar') """
