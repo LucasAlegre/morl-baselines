@@ -11,7 +11,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.performance_indicators import hypervolume
+from morl_baselines.common.performance_indicators import (
+    expected_utility,
+    hypervolume,
+    sparsity,
+)
+from morl_baselines.common.utils import random_weights
 
 
 def crowding_distance(points):
@@ -386,15 +391,10 @@ class PCN(MOAgent, MOPolicy):
             # get all leaves, contain biggest elements, experience_replay got heapified in choose_commands
             leaves_r = np.array([e[2][0].reward for e in self.experience_replay[len(self.experience_replay) // 2 :]])
             # leaves_h = np.array([len(e[2]) for e in self.experience_replay[len(self.experience_replay) // 2 :]])
-            try:
-                # if len(self.experience_replay) == max_buffer_size:
-                #    logger.put('train/leaves/r', leaves_r, self.global_step, f'{leaves_r.shape[-1]}d')
-                #    logger.put('train/leaves/h', leaves_h, self.global_step, f'{leaves_h.shape[-1]}d')
-                hv = hypervolume(ref_point, leaves_r)
-                hv_est = hv
-                self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
-            except ValueError:
-                pass
+
+            hv = hypervolume(ref_point, leaves_r)
+            hv_est = hv
+            self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
 
             returns = []
             horizons = []
@@ -429,12 +429,13 @@ class PCN(MOAgent, MOPolicy):
             if self.global_step >= (n_checkpoints + 1) * total_time_steps / 100:
                 self.save()
                 n_checkpoints += 1
+                n_points = 10
+                e_returns, _, _ = self.evaluate(env, max_return, n=n_points)
 
-                """ e_r, e_dr, e_d = eval(env, model, experience_replay, max_return, gamma=gamma)
-                s = 'desired return vs evaluated return\n'+33*'='+'\n'
-                for i in range(len(e_r)):
-                    s += f'{e_dr[i]}  \t  {e_r[i]}  \n'
-                logger.put('eval/return/desired', e_dr, step, f'{len(desired_return)}d')
-                logger.put('eval/return/value', e_r, step, f'{len(desired_return)}d')
-                for o in range(len(desired_return)):
-                    logger.put(f'eval/return/{o}/distance', e_d[o], step, 'scalar') """
+                self.writer.add_scalar("eval/hypervolume", hypervolume(ref_point, e_returns), self.global_step)
+                self.writer.add_scalar("eval/spartsity", sparsity(e_returns), self.global_step)
+                self.writer.add_scalar(
+                    "eval/expected_utility",
+                    expected_utility(e_returns, weights_set=random_weights(dim=self.reward_dim, n=100, dist="dirichlet")),
+                    self.global_step,
+                )
