@@ -11,6 +11,7 @@ from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
+from morl_baselines.common.utils import extrema_weights
 
 
 np.set_printoptions(precision=4)
@@ -49,7 +50,7 @@ class LinearSupport:
         self.queue = []
         self.iteration = 0
         self.verbose = verbose
-        for w in self.extrema_weights():
+        for w in extrema_weights(self.num_objectives):
             self.queue.append((float("inf"), w))
 
     def next_weight(
@@ -338,14 +339,6 @@ class LinearSupport:
             corners.append(v[:-1])
 
         return corners
-
-    def extrema_weights(self) -> List[np.ndarray]:
-        """Returns the weight vectors which have one component equal to 1 and the rest equal to 0.
-
-        Returns:
-            List of weight vectors.
-        """
-        return list(np.eye(self.num_objectives, dtype=np.float32))
 
     def is_dominated(self, value: np.ndarray) -> bool:
         """Checks if the value is dominated by any of the values in the CCS.

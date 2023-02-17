@@ -103,17 +103,12 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
 
 
 def extrema_weights(dim: int) -> List[np.ndarray]:
-    """Generate weight vectors in the extrema of the weight simplex.
+    """Generate weight vectors in the extrema of the weight simplex. That is, one element is 1 and the rest are 0.
 
     Args:
         dim: size of the weight vector
     """
-    extrema_weights = []
-    for i in range(dim):
-        w = np.zeros(dim, dtype=np.float32)
-        w[i] = 1.0
-        extrema_weights.append(w)
-    return extrema_weights
+    return list(np.eye(dim, dtype=np.float32))
 
 
 def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
