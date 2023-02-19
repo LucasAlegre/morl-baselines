@@ -33,6 +33,7 @@ dependencies = [
     "seaborn",
     "tensorboard",
     "cvxpy",
+    "fire",
 ]
 dynamic = ["version"]
 
