@@ -134,3 +134,6 @@ wandb/
 # Pycharm
 .idea/
 .DS_Store
+
+# model saved parameters
+weights/
