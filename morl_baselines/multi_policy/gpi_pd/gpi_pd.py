@@ -594,9 +594,7 @@ class GPIPD(MOPolicy, MOAgent):
             e = min((i + 1) * 1000, obs_s.size(0))
             obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[b:e], dones_s[b:e]
             psi = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
-            psi_a = psi.gather(1, actions.long().reshape(-1, 1, 1).expand(psi.size(0), 1, psi.size(2))).squeeze(
-                1
-            )
+            psi_a = psi.gather(1, actions.long().reshape(-1, 1, 1).expand(psi.size(0), 1, psi.size(2))).squeeze(1)
 
             if self.envelope or self.gpi_pd:
                 max_next_psi, _ = self._envelope_target(next_obs, w.repeat(next_obs.size(0), 1), th.stack(self.weight_support))
@@ -642,9 +640,7 @@ class GPIPD(MOPolicy, MOAgent):
             2,
             ac.unsqueeze(2).unsqueeze(3).expand(next_q_target.size(0), next_q_target.size(1), 1, next_q_target.size(3)),
         ).squeeze(2)
-        max_next_q = max_next_q.gather(
-            1, pi.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))
-        ).squeeze(1)
+        max_next_q = max_next_q.gather(1, pi.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))).squeeze(1)
         return max_next_q, next_q_target
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
@@ -677,9 +673,7 @@ class GPIPD(MOPolicy, MOAgent):
             reset_learning_starts (bool): Whether to reset the learning starts
         """
         self.env.w = weight
-        self.weight_support = [
-            th.tensor(z).float().to(self.device) for z in weight_support
-        ]
+        self.weight_support = [th.tensor(z).float().to(self.device) for z in weight_support]
         tensor_w = th.tensor(weight).float().to(self.device)
 
         self.police_indices = []

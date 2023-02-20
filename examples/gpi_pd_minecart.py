@@ -4,10 +4,14 @@ import numpy as np
 import wandb as wb
 from mo_gymnasium.evaluation import policy_evaluation_mo
 
+from morl_baselines.common.performance_indicators import (
+    expected_utility,
+    maximum_utility_loss,
+)
 from morl_baselines.common.utils import extrema_weights, random_weights
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
-from morl_baselines.common.performance_indicators import expected_utility, maximum_utility_loss
+
 
 # from gymnasium.wrappers.record_video import RecordVideo
 
@@ -63,7 +67,9 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
 
     weight_history = []
 
-    test_tasks = list(random_weights(dim=reward_dim, seed=42, n=10 - reward_dim, dist="dirichlet")) + extrema_weights(reward_dim)
+    test_tasks = list(random_weights(dim=reward_dim, seed=42, n=10 - reward_dim, dist="dirichlet")) + extrema_weights(
+        reward_dim
+    )
     ccs = eval_env.convex_coverage_set(frame_skip=4, discount=0.98, incremental_frame_skip=True, symmetric=True)
     max_iter = 15
     for iter in range(1, max_iter + 1):
@@ -112,7 +118,9 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
             policy_evaluation_mo(agent, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
         ]
         mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
-        wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})  # This is the EU computed in the paper
+        wb.log(
+            {"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}
+        )  # This is the EU computed in the paper
         eu = expected_utility(gpi_returns_test_tasks, test_tasks)
         wb.log({"eval/EU - GPI": eu, "iteration": iter})
 

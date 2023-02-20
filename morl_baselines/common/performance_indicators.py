@@ -72,7 +72,9 @@ def expected_utility(front: List[np.ndarray], weights_set: np.ndarray, utility: 
     return np.mean(np.array(maxs), axis=0)
 
 
-def maximum_utility_loss(front: List[np.ndarray], reference_set: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot) -> float:
+def maximum_utility_loss(
+    front: List[np.ndarray], reference_set: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot
+) -> float:
     """Maximum Utility Loss Metric.
 
     Maximum utility loss of the policies on the PF for various weights.
