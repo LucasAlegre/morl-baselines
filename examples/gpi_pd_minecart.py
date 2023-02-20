@@ -7,17 +7,9 @@ from mo_gymnasium.evaluation import policy_evaluation_mo
 from morl_baselines.common.utils import extrema_weights, random_weights
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
-
+from morl_baselines.common.performance_indicators import expected_utility, maximum_utility_loss
 
 # from gymnasium.wrappers.record_video import RecordVideo
-
-
-def best_vector(values, w):
-    max_v = values[0]
-    for i in range(1, len(values)):
-        if values[i] @ w > max_v @ w:
-            max_v = values[i]
-    return max_v
 
 
 def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed: int = 0):
@@ -28,14 +20,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
 
     env = make_env()
     eval_env = make_env()  # RecordVideo(make_env(), "videos/minecart/", episode_trigger=lambda e: e % 1000 == 0)
-
-    # print(env.convex_coverage_set(frame_skip=4, discount=0.98, incremental_frame_skip=True, symmetric=True))
-
-    def model_training_schedule(timestep):
-        if timestep < 100000:
-            return 250
-        else:
-            return 250
+    reward_dim = env.reward_space.shape[0]
 
     agent = GPIPD(
         env,
@@ -54,32 +39,31 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         min_priority=0.01,
         per=gpi_pd,
         gpi_pd=gpi_pd,
-        envelope=False,  # algo != 'ols',
         use_gpi=True,
         gradient_updates=g,
         target_net_update_freq=200,
         tau=1,
         dyna=gpi_pd,
         dynamics_uncertainty_threshold=1.5,
-        dynamics_net_arch=[256, 256, 256],  # [200, 200, 200, 200],
+        dynamics_net_arch=[256, 256, 256],
         dynamics_buffer_size=int(1e5),
         dynamics_rollout_batch_size=25000,
-        dynamics_train_freq=model_training_schedule,
+        dynamics_train_freq=lambda t: 250,
         dynamics_rollout_freq=250,
         dynamics_rollout_starts=5000,
         dynamics_rollout_len=1,
         real_ratio=0.5,
-        log=True,
+        log=False,
         project_name="MORL Baselines - MineCart",
         experiment_name=f"{algo} + gpid-pd={gpi_pd} g={g}",
     )
 
     if algo == "ols" or algo == "gpi-ls":
-        linear_support = LinearSupport(num_objectives=3, epsilon=0.0 if algo == "ols" else None)
+        linear_support = LinearSupport(num_objectives=reward_dim, epsilon=0.0 if algo == "ols" else None)
 
     weight_history = []
 
-    test_tasks = list(random_weights(dim=3, seed=42, n=100 - 3, dist="dirichlet")) + extrema_weights(3)
+    test_tasks = list(random_weights(dim=reward_dim, seed=42, n=10 - reward_dim, dist="dirichlet")) + extrema_weights(reward_dim)
     ccs = eval_env.convex_coverage_set(frame_skip=4, discount=0.98, incremental_frame_skip=True, symmetric=True)
     max_iter = 15
     for iter in range(1, max_iter + 1):
@@ -93,7 +77,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
             if w is None:
                 break
         else:
-            w = None
+            raise ValueError(f"Unknown algorithm {algo}.")
 
         print("Next weight vector:", w)
         weight_history.append(w)
@@ -115,41 +99,25 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
             reset_learning_starts=False,
         )
 
-        if algo != "envelope":
-            if algo == "ols":
-                value = policy_evaluation_mo(agent, eval_env, w, rep=5)
-                linear_support.add_solution(value, w)
-            elif algo == "gpi-ls":
-                for wcw in M:
-                    n_value = policy_evaluation_mo(agent, eval_env, wcw, rep=5)
-                    linear_support.add_solution(n_value, wcw)
+        if algo == "ols":
+            value = policy_evaluation_mo(agent, eval_env, w, rep=5)
+            linear_support.add_solution(value, w)
+        elif algo == "gpi-ls":
+            for wcw in M:
+                n_value = policy_evaluation_mo(agent, eval_env, wcw, rep=5)
+                linear_support.add_solution(n_value, wcw)
 
-        if algo != "envelope":
-            gpi_returns_test_tasks = [
-                policy_evaluation_mo(agent, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
-            ]
-            mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
-            wb.log({"eval/Mean Utility GPI": mean_gpi_returns_test_tasks, "iteration": iter})
-
-            max_gap_gpi = max(
-                [np.dot(best_vector(ccs, w), w) - np.dot(best_vector(gpi_returns_test_tasks, w), w) for w in test_tasks]
-            )
-            wb.log({"eval/Max Gap GPI": max_gap_gpi, "iteration": iter})
-
-        agent.use_gpi = False
-        no_gpi_returns_test_tasks = [
+        # Evaluation
+        gpi_returns_test_tasks = [
             policy_evaluation_mo(agent, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
         ]
-        mean_no_gpi_returns_test_tasks = np.mean(
-            [np.dot(psi, w) for (psi, w) in zip(no_gpi_returns_test_tasks, test_tasks)], axis=0
-        )
-        agent.use_gpi = algo != "envelope"
-        wb.log({"eval/Mean Utility No GPI": mean_no_gpi_returns_test_tasks, "iteration": iter})
+        mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
+        wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})  # This is the EU computed in the paper
+        eu = expected_utility(gpi_returns_test_tasks, test_tasks)
+        wb.log({"eval/EU - GPI": eu, "iteration": iter})
 
-        max_gap_no_gpi = max(
-            [np.dot(best_vector(ccs, w), w) - np.dot(best_vector(no_gpi_returns_test_tasks, w), w) for w in test_tasks]
-        )
-        wb.log({"eval/Max Gap No GPI": max_gap_no_gpi, "iteration": iter})
+        mul = maximum_utility_loss(gpi_returns_test_tasks, ccs, test_tasks)
+        wb.log({"eval/MUL - GPI": mul, "iteration": iter})
 
         agent.save(filename=f"{algo}-g={g}-gpi-pd={gpi_pd}-it={iter}-seed={seed}-minecart", save_replay_buffer=False)
 
