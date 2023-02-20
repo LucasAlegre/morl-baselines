@@ -99,7 +99,6 @@ class GPIPD(MOPolicy, MOAgent):
         per: bool = True,
         gpi_pd: bool = True,
         alpha_per: float = 0.6,
-        envelope: bool = False,
         min_priority: float = 1.0,
         drop_rate: float = 0.01,
         layer_norm: bool = True,
@@ -143,7 +142,6 @@ class GPIPD(MOPolicy, MOAgent):
             per: Whether to use PER.
             gpi_pd: Whether to use GPI-PD.
             alpha_per: The alpha parameter for PER.
-            envelope: Whether to use the envelope update.
             min_priority: The minimum priority for PER.
             drop_rate: The dropout rate.
             layer_norm: Whether to use layer normalization.
@@ -217,7 +215,6 @@ class GPIPD(MOPolicy, MOAgent):
         # Prioritized experience replay parameters
         self.per = per
         self.gpi_pd = gpi_pd
-        self.envelope = envelope
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
                 self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
@@ -275,7 +272,6 @@ class GPIPD(MOPolicy, MOAgent):
             "target_net_update_freq": self.target_net_update_freq,
             "gamma": self.gamma,
             "net_arch": self.net_arch,
-            "envelope": self.envelope,
             "dynamics_model_arch": self.dynamics_net_arch,
             "gradient_updates": self.gradient_updates,
             "buffer_size": self.buffer_size,
@@ -425,27 +421,26 @@ class GPIPD(MOPolicy, MOAgent):
                 sampled_w = th.stack(self.weight_support)
 
             with th.no_grad():
-                if not self.envelope:
-                    # Compute min_i Q_i(s', a, w) . w
-                    next_q_values = th.stack([target_psi_net(s_next_obs, w) for target_psi_net in self.target_q_nets])
-                    scalarized_next_q_values = th.einsum("nbar,br->nba", next_q_values, w)  # q_i(s', a, w)
-                    min_inds = th.argmin(scalarized_next_q_values, dim=0)
-                    min_inds = min_inds.reshape(1, next_q_values.size(1), next_q_values.size(2), 1).expand(
-                        1, next_q_values.size(1), next_q_values.size(2), next_q_values.size(3)
-                    )
-                    next_q_values = next_q_values.gather(0, min_inds).squeeze(0)
+                # Compute min_i Q_i(s', a, w) . w
+                next_q_values = th.stack([target_psi_net(s_next_obs, w) for target_psi_net in self.target_q_nets])
+                scalarized_next_q_values = th.einsum("nbar,br->nba", next_q_values, w)  # q_i(s', a, w)
+                min_inds = th.argmin(scalarized_next_q_values, dim=0)
+                min_inds = min_inds.reshape(1, next_q_values.size(1), next_q_values.size(2), 1).expand(
+                    1, next_q_values.size(1), next_q_values.size(2), next_q_values.size(3)
+                )
+                next_q_values = next_q_values.gather(0, min_inds).squeeze(0)
 
-                    # Compute max_a Q(s', a, w) . w
-                    max_q = th.einsum("br,bar->ba", w, next_q_values)
-                    max_acts = th.argmax(max_q, dim=1)
+                # Compute max_a Q(s', a, w) . w
+                max_q = th.einsum("br,bar->ba", w, next_q_values)
+                max_acts = th.argmax(max_q, dim=1)
 
-                    q_targets = next_q_values.gather(
-                        1, max_acts.long().reshape(-1, 1, 1).expand(next_q_values.size(0), 1, next_q_values.size(2))
-                    )
-                    target_q = q_targets.reshape(-1, self.reward_dim)
-                    target_q = s_rewards + (1 - s_dones) * self.gamma * target_q
+                q_targets = next_q_values.gather(
+                    1, max_acts.long().reshape(-1, 1, 1).expand(next_q_values.size(0), 1, next_q_values.size(2))
+                )
+                target_q = q_targets.reshape(-1, self.reward_dim)
+                target_q = s_rewards + (1 - s_dones) * self.gamma * target_q
 
-                if self.envelope or self.gpi_pd:
+                if self.gpi_pd:
                     target_q_envelope, _ = self._envelope_target(s_next_obs, w, sampled_w)
                     target_q_envelope = s_rewards + (1 - s_dones) * self.gamma * target_q_envelope
 
@@ -459,15 +454,11 @@ class GPIPD(MOPolicy, MOAgent):
                 )
                 psi_value = psi_value.reshape(-1, self.reward_dim)
 
-                if self.envelope or self.gpi_pd:
+                if self.gpi_pd:
                     gtd_error = psi_value - target_q_envelope
-                if not self.envelope:
-                    td_error = psi_value - target_q
 
-                if self.envelope:
-                    loss = huber(gtd_error.abs(), min_priority=self.min_priority)
-                else:
-                    loss = huber(td_error.abs(), min_priority=self.min_priority)
+                td_error = psi_value - target_q
+                loss = huber(td_error.abs(), min_priority=self.min_priority)
                 losses.append(loss)
                 if self.gpi_pd:
                     gtd_errors.append(gtd_error.abs())
@@ -593,22 +584,22 @@ class GPIPD(MOPolicy, MOAgent):
             b = i * 1000
             e = min((i + 1) * 1000, obs_s.size(0))
             obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[b:e], dones_s[b:e]
-            psi = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
-            psi_a = psi.gather(1, actions.long().reshape(-1, 1, 1).expand(psi.size(0), 1, psi.size(2))).squeeze(1)
+            q_values = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
+            q_a = q_values.gather(1, actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2))).squeeze(1)
 
-            if self.envelope or self.gpi_pd:
-                max_next_psi, _ = self._envelope_target(next_obs, w.repeat(next_obs.size(0), 1), th.stack(self.weight_support))
+            if self.gpi_pd:
+                max_next_q, _ = self._envelope_target(next_obs, w.repeat(next_obs.size(0), 1), th.stack(self.weight_support))
             else:
-                psi_values = self.q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
-                max_psi = th.einsum("r,bar->ba", w, psi_values)
-                max_acts = th.argmax(max_psi, dim=1)
-                psi_targets = self.target_q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
-                psi_targets = psi_targets.gather(
-                    1, max_acts.long().reshape(-1, 1, 1).expand(psi_targets.size(0), 1, psi_targets.size(2))
+                next_q_values = self.q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
+                max_q = th.einsum("r,bar->ba", w, next_q_values)
+                max_acts = th.argmax(max_q, dim=1)
+                q_targets = self.target_q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
+                q_targets = q_targets.gather(
+                    1, max_acts.long().reshape(-1, 1, 1).expand(q_targets.size(0), 1, q_targets.size(2))
                 )
-                max_next_psi = psi_targets.reshape(-1, self.reward_dim)
+                max_next_q = q_targets.reshape(-1, self.reward_dim)
 
-            gtderror = th.einsum("r,br->b", w, (rewards + (1 - dones) * self.gamma * max_next_psi - psi_a)).abs()
+            gtderror = th.einsum("r,br->b", w, (rewards + (1 - dones) * self.gamma * max_next_q - q_a)).abs()
             priorities[b:e] = gtderror.clamp(min=self.min_priority).pow(self.alpha).cpu().detach().numpy().flatten()
 
         self.replay_buffer.update_priorities(inds, priorities)
