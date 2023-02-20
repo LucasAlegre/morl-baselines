@@ -138,7 +138,7 @@ class PCN(MOAgent, MOPolicy):
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
 
-        self.experience_replay = []  # List of (distance, time_step, transtition)
+        self.experience_replay = []  # List of (distance, time_step, transition)
         self.batch_size = batch_size
         self.gamma = gamma
         self.learning_rate = learning_rate
