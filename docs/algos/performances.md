@@ -37,7 +37,7 @@ Below are the algorithms that we want to test along with the environments from t
 * MPMOQLearning (discrete/discrete): DST, MO-MountainCar;
 * GPI-LS, GPI-PD (*/*): DST, Minecart, MO-Hopper;
 * OLS - it is a weight generation method, not a full algorithm.
-
+* PCN (continuous/discrete): DST, MineCart;
 
 ## References
 [1]  J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik, “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,” in Proceedings of the 37th International Conference on Machine Learning, Nov. 2020, pp. 10607–10616. Available: https://proceedings.mlr.press/v119/xu20h.html
