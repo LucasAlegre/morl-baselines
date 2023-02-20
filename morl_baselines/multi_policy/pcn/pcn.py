@@ -49,18 +49,6 @@ class Transition:
     terminal: bool
 
 
-def compute_hypervolume(q_set, ref):
-    """Computes hypervolume of the q_set."""
-    nA = len(q_set)
-    q_values = np.zeros(nA)
-    for i in range(nA):
-        points = np.array(q_set[i])
-        hv = hypervolume(ref, points)
-        # use negative ref-point for minimization
-        q_values[i] = hv
-    return q_values
-
-
 class Model(nn.Module):
     """Model for the PCN."""
 
@@ -212,7 +200,7 @@ class PCN(MOAgent, MOPolicy):
             heapq.heappush(self.experience_replay, (1, step, transitions))
 
     def _nlargest(self, n, threshold=0.2):
-        """?"""
+        """See Section 4.4 of https://arxiv.org/pdf/2204.05036.pdf for details."""
         returns = np.array([e[2][0].reward for e in self.experience_replay])
         # crowding distance of each point, check ones that are too close together
         distances = crowding_distance(returns)
@@ -385,6 +373,8 @@ class PCN(MOAgent, MOPolicy):
                 hv = hypervolume(ref_point, leaves_r)
                 hv_est = hv
                 self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
+                self.writer.add_scalar("train/loss", np.mean(loss), self.global_step)
+                self.writer.add_scalar("train/entropy", np.mean(entropy), self.global_step)
 
             returns = []
             horizons = []
@@ -398,8 +388,6 @@ class PCN(MOAgent, MOPolicy):
             total_episodes += num_step_episodes
             if self.log:
                 self.writer.add_scalar("train/episode", total_episodes, self.global_step)
-                self.writer.add_scalar("train/loss", np.mean(loss), self.global_step)
-                self.writer.add_scalar("train/entropy", np.mean(entropy), self.global_step)
                 self.writer.add_scalar("train/horizon_desired", desired_horizon, self.global_step)
                 self.writer.add_scalar(
                     "train/mean_horizon_distance", np.linalg.norm(np.mean(horizons) - desired_horizon), self.global_step
