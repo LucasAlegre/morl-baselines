@@ -2,7 +2,7 @@
 import heapq
 import os
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import gymnasium as gym
 import numpy as np
@@ -149,7 +149,7 @@ class PCN(MOAgent, MOPolicy):
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
 
-        self.experience_replay = []
+        self.experience_replay = []  # List of (distance, time_step, transtition)
         self.batch_size = batch_size
         self.gamma = gamma
         self.learning_rate = learning_rate
@@ -210,7 +210,7 @@ class PCN(MOAgent, MOPolicy):
 
         return l, log_prob
 
-    def _add_episode(self, transitions, max_size: int, step: int) -> None:
+    def _add_episode(self, transitions: List[Transition], max_size: int, step: int) -> None:
         # compute return
         for i in reversed(range(len(transitions) - 1)):
             transitions[i].reward += self.gamma * transitions[i + 1].reward

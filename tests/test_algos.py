@@ -12,8 +12,8 @@ from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning impor
 )
 from morl_baselines.multi_policy.ols.ols import OLS
 from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
-from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.multi_policy.pcn.pcn import PCN
+from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mo_ppo import make_env
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
