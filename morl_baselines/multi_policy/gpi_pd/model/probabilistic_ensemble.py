@@ -77,13 +77,6 @@ class ProbabilisticEnsemble(nn.Module):
         self.max_logvar = nn.Parameter(th.ones(1, output_dim, dtype=th.float32) / 2.0)
         self.min_logvar = nn.Parameter(-th.ones(1, output_dim, dtype=th.float32) * 10.0)
 
-        """ self.decays = [0.000025, 0.00005, 0.000075, 0.000075, 0.0001]
-        self.optim = th.optim.Adam(
-            [{"params": self.layers[i].parameters(), "weight_decay": self.decays[i]} for i in range(len(self.layers))]
-            + [{"params": self.max_logvar}, {"params": self.min_logvar}],
-            lr=self.learning_rate,
-        ) """
-
         if device == "auto":
             self.device = th.device("cuda") if th.cuda.is_available() else th.device("cpu")
         else:
@@ -168,12 +161,6 @@ class ProbabilisticEnsemble(nn.Module):
         var = th.exp(logvar)
         total_losses = F.gaussian_nll_loss(mean, y, var, reduction="none")
         total_losses = total_losses.mean()
-        # total_losses = -D.Normal(mean, th.exp(0.5*logvar)).log_prob(y).mean()
-
-        # inv_var = th.exp(-logvar)
-        """ mse_losses = (th.square(mean - y) * inv_var).mean(-1).mean(-1)
-        var_losses = logvar.mean(-1).mean(-1)
-        total_losses = (mse_losses + var_losses).sum() """
 
         total_losses += 0.01 * self.max_logvar.sum() - 0.01 * self.min_logvar.sum()
 
