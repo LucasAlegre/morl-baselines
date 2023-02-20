@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.pareto import get_non_dominated_inds
 from morl_baselines.common.performance_indicators import (
     expected_utility,
     hypervolume,
@@ -46,18 +47,6 @@ class Transition:
     reward: np.ndarray
     next_observation: np.ndarray
     terminal: bool
-
-
-def get_non_dominated(solutions):
-    """Returns the non-dominated solutions from a set of solutions."""
-    is_efficient = np.ones(solutions.shape[0], dtype=bool)
-    for i, c in enumerate(solutions):
-        if is_efficient[i]:
-            # Remove dominated points, will also remove itself
-            is_efficient[is_efficient] = np.any(solutions[is_efficient] > c, axis=1)
-            # keep this solution as non-dominated
-            is_efficient[i] = 1
-    return is_efficient
 
 
 def compute_hypervolume(q_set, ref):
@@ -229,7 +218,7 @@ class PCN(MOAgent, MOPolicy):
         distances = crowding_distance(returns)
         sma = np.argwhere(distances <= threshold).flatten()
 
-        non_dominated_i = get_non_dominated(returns)
+        non_dominated_i = get_non_dominated_inds(returns)
         non_dominated = returns[non_dominated_i]
         # we will compute distance of each point with each non-dominated point,
         # duplicate each point with number of non_dominated to compute respective distance
@@ -258,7 +247,7 @@ class PCN(MOAgent, MOPolicy):
         episodes = self._nlargest(num_episodes)
         returns, horizons = list(zip(*[(e[2][0].reward, len(e[2])) for e in episodes]))
         # keep only non-dominated returns
-        nd_i = get_non_dominated(np.array(returns))
+        nd_i = get_non_dominated_inds(np.array(returns))
         returns = np.array(returns)[nd_i]
         horizons = np.array(horizons)[nd_i]
         # pick random return from random best episode
