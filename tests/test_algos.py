@@ -211,7 +211,7 @@ def test_pcn():
 
     agent.set_desired_return_and_horizon(np.array([1.5, 1.5, -0.0]), 100)
     scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
-        agent, env=env, w=np.array([0.5, 0.5, 0.0]), render=False
+        agent, env=env, w=np.array([0.4, 0.4, 0.2]), render=False
     )
     assert scalar_return != 0
     assert scalarized_disc_return != 0
