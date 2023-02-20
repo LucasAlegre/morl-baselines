@@ -19,8 +19,8 @@ def main():
         scaling_factor=np.array([1, 1, 0.1, 0.1]),
         learning_rate=1e-3,
         batch_size=256,
-        project_name="MORL Baselines - Minecart",
-        experiment_name="PCN",
+        project_name="MORL Baselines",
+        experiment_name="PCN - Minecart",
         log=True,
     )
 
