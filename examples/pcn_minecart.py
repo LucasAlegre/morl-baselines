@@ -12,7 +12,6 @@ def main():
         return env
 
     env = make_env()
-    # eval_env = make_env()
 
     agent = PCN(
         env,

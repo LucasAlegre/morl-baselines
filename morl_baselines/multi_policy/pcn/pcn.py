@@ -276,9 +276,9 @@ class PCN(MOAgent, MOPolicy):
 
     def _act(self, obs: np.ndarray, desired_return, desired_horizon) -> int:
         log_probs = self.model(
-            th.tensor([obs]).to(self.device),
-            th.tensor([desired_return]).to(self.device),
-            th.tensor([desired_horizon]).unsqueeze(1).to(self.device),
+            th.tensor([obs]).float().to(self.device),
+            th.tensor([desired_return]).float().to(self.device),
+            th.tensor([desired_horizon]).unsqueeze(1).float().to(self.device),
         )
         log_probs = log_probs.detach().cpu().numpy()[0]
         action = np.random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
@@ -392,9 +392,10 @@ class PCN(MOAgent, MOPolicy):
             leaves_r = np.array([e[2][0].reward for e in self.experience_replay[len(self.experience_replay) // 2 :]])
             # leaves_h = np.array([len(e[2]) for e in self.experience_replay[len(self.experience_replay) // 2 :]])
 
-            hv = hypervolume(ref_point, leaves_r)
-            hv_est = hv
-            self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
+            if self.log:
+                hv = hypervolume(ref_point, leaves_r)
+                hv_est = hv
+                self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
 
             returns = []
             horizons = []
@@ -406,22 +407,23 @@ class PCN(MOAgent, MOPolicy):
                 horizons.append(len(transitions))
 
             total_episodes += num_step_episodes
-            self.writer.add_scalar("train/episode", total_episodes, self.global_step)
-            self.writer.add_scalar("train/loss", np.mean(loss), self.global_step)
-            self.writer.add_scalar("train/entropy", np.mean(entropy), self.global_step)
-            self.writer.add_scalar("train/horizon_desired", desired_horizon, self.global_step)
-            self.writer.add_scalar(
-                "train/mean_horizon_distance", np.linalg.norm(np.mean(horizons) - desired_horizon), self.global_step
-            )
-
-            for i in range(self.reward_dim):
-                self.writer.add_scalar(f"train/desired_return_{i}", desired_return[i], self.global_step)
-                self.writer.add_scalar(f"train/mean_return_{i}", np.mean(np.array(returns)[:, i]), self.global_step)
+            if self.log:
+                self.writer.add_scalar("train/episode", total_episodes, self.global_step)
+                self.writer.add_scalar("train/loss", np.mean(loss), self.global_step)
+                self.writer.add_scalar("train/entropy", np.mean(entropy), self.global_step)
+                self.writer.add_scalar("train/horizon_desired", desired_horizon, self.global_step)
                 self.writer.add_scalar(
-                    f"train/mean_return_distance_{i}",
-                    np.linalg.norm(np.mean(np.array(returns)[:, i]) - desired_return[i]),
-                    self.global_step,
+                    "train/mean_horizon_distance", np.linalg.norm(np.mean(horizons) - desired_horizon), self.global_step
                 )
+
+                for i in range(self.reward_dim):
+                    self.writer.add_scalar(f"train/desired_return_{i}", desired_return[i], self.global_step)
+                    self.writer.add_scalar(f"train/mean_return_{i}", np.mean(np.array(returns)[:, i]), self.global_step)
+                    self.writer.add_scalar(
+                        f"train/mean_return_distance_{i}",
+                        np.linalg.norm(np.mean(np.array(returns)[:, i]) - desired_return[i]),
+                        self.global_step,
+                    )
             print(
                 f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"
             )
@@ -432,10 +434,11 @@ class PCN(MOAgent, MOPolicy):
                 n_points = 10
                 e_returns, _, _ = self.evaluate(env, max_return, n=n_points)
 
-                self.writer.add_scalar("eval/hypervolume", hypervolume(ref_point, e_returns), self.global_step)
-                self.writer.add_scalar("eval/spartsity", sparsity(e_returns), self.global_step)
-                self.writer.add_scalar(
-                    "eval/expected_utility",
-                    expected_utility(e_returns, weights_set=random_weights(dim=self.reward_dim, n=100, dist="dirichlet")),
-                    self.global_step,
-                )
+                if self.log:
+                    self.writer.add_scalar("eval/hypervolume", hypervolume(ref_point, e_returns), self.global_step)
+                    self.writer.add_scalar("eval/spartsity", sparsity(e_returns), self.global_step)
+                    self.writer.add_scalar(
+                        "eval/expected_utility",
+                        expected_utility(e_returns, weights_set=random_weights(dim=self.reward_dim, n=100, dist="dirichlet")),
+                        self.global_step,
+                    )
