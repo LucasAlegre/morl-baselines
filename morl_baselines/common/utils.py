@@ -5,6 +5,7 @@ import numpy as np
 import torch as th
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
+from pymoo.util.ref_dirs import get_reference_directions
 
 
 @th.no_grad()
@@ -109,6 +110,18 @@ def extrema_weights(dim: int) -> List[np.ndarray]:
         dim: size of the weight vector
     """
     return list(np.eye(dim, dtype=np.float32))
+
+
+def equally_spaced_weights(dim: int, n: int, seed: Optional[int] = None) -> List[np.ndarray]:
+    """Generate weight vectors that are equally spaced in the weight simplex.
+    Uses the Riesz s-Energy method from pymoo: https://pymoo.org/misc/reference_directions.html
+
+    Args:
+        dim: size of the weight vector
+        n: number of weight vectors to generate
+        seed: random seed
+    """
+    return list(get_reference_directions("energy", dim, n, seed=seed))
 
 
 def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
