@@ -3,9 +3,9 @@ from typing import Iterable, List, Optional
 
 import numpy as np
 import torch as th
+from pymoo.util.ref_dirs import get_reference_directions
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
-from pymoo.util.ref_dirs import get_reference_directions
 
 
 @th.no_grad()
@@ -114,7 +114,8 @@ def extrema_weights(dim: int) -> List[np.ndarray]:
 
 def equally_spaced_weights(dim: int, n: int, seed: Optional[int] = None) -> List[np.ndarray]:
     """Generate weight vectors that are equally spaced in the weight simplex.
-    Uses the Riesz s-Energy method from pymoo: https://pymoo.org/misc/reference_directions.html
+
+    It uses the Riesz s-Energy method from pymoo: https://pymoo.org/misc/reference_directions.html
 
     Args:
         dim: size of the weight vector
