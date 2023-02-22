@@ -1,22 +1,32 @@
-"""OLS implementation."""
+"""Linear Support implementation."""
+import random
 from copy import deepcopy
 from typing import List, Optional
 
 import cdd
 import cvxpy as cp
 import numpy as np
+from gymnasium.core import Env
+from mo_gymnasium.evaluation import policy_evaluation_mo
 
+from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
+from morl_baselines.common.utils import extrema_weights
 
 
 np.set_printoptions(precision=4)
 
 
-class OLS:
-    """Optimistic Linear Support.
+class LinearSupport:
+    """Linear Support for computing corner weights when using linear utility functions.
 
-    Outer loop method to select next weight vector.
+    Implements both
+
+    Optimistic Linear Support (OLS) algorithm:
     Paper: (Section 3.3 of http://roijers.info/pub/thesis.pdf).
+
+    Generalized Policy Improvement Linear Support (GPI-LS) algorithm:
+    Paper: https://arxiv.org/abs/2301.07784
     """
 
     def __init__(
@@ -25,7 +35,7 @@ class OLS:
         epsilon: float = 0.0,
         verbose: bool = False,
     ):
-        """Initialize OLS.
+        """Initialize LS.
 
         Args:
             num_objectives (int): Number of objectives
@@ -36,29 +46,71 @@ class OLS:
         self.epsilon = epsilon
         self.visited_weights = []  # List of already tested weight vectors
         self.ccs = []
-        self.ccs_weights = []  # List of weight vectors for each value vector in the CCS
+        self.weight_support = []  # List of weight vectors for each value vector in the CCS
         self.queue = []
         self.iteration = 0
         self.verbose = verbose
-        for w in self.extrema_weights():
+        for w in extrema_weights(self.num_objectives):
             self.queue.append((float("inf"), w))
 
-    def next_weight(self) -> np.ndarray:
+    def next_weight(
+        self, algo: str = "ols", gpi_agent: Optional[MOPolicy] = None, env: Optional[Env] = None, rep_eval: int = 1
+    ) -> np.ndarray:
         """Returns the next weight vector with highest priority.
+
+        Args:
+            algo (str): Algorithm to use. Either 'ols' or 'gpi-ls'.
+            gpi_agent (Optional[MOPolicy]): Agent to use for GPI-LS.
+            env (Optional[Env]): Environment to use for GPI-LS.
+            rep_eval (int): Number of times to evaluate the agent in GPI-LS.
 
         Returns:
             np.ndarray: Next weight vector
         """
-        return self.queue.pop(0)[1]
+        if len(self.ccs) > 0:
+            W_corner = self.compute_corner_weights()
+            if self.verbose:
+                print("W_corner:", W_corner, "W_corner size:", len(W_corner))
 
-    def get_ccs_weights(self) -> List[np.ndarray]:
-        """Returns the weights in the CCS.
+            self.queue = []
+            for wc in W_corner:
+                if algo == "ols":
+                    priority = self.ols_priority(wc)
+
+                elif algo == "gpi-ls":
+                    if gpi_agent is None:
+                        raise ValueError("GPI-LS requires passing a GPI agent.")
+                    gpi_expanded_set = [policy_evaluation_mo(gpi_agent, env, wc, rep=rep_eval) for wc in W_corner]
+                    priority = self.gpi_ls_priority(wc, gpi_expanded_set)
+
+                if self.epsilon is None or priority >= self.epsilon:
+                    # OLS does not try the same weight vector twice
+                    if not (algo == "ols" and any([np.allclose(wc, w) for (p, w) in self.visited_weights])):
+                        self.queue.append((priority, wc))
+
+            if len(self.queue) > 0:
+                # Sort in descending order of priority
+                self.queue.sort(key=lambda t: t[0], reverse=True)
+                # If all priorities are 0, shuffle the queue to avoid repearting weights every iteration
+                if self.queue[0][0] == 0.0:
+                    random.shuffle(self.queue)
+
+        if self.verbose:
+            print("CCS:", self.ccs, "CCS size:", len(self.ccs))
+
+        if len(self.queue) == 0:
+            return None
+        else:
+            return self.queue.pop(0)[1]
+
+    def get_weight_support(self) -> List[np.ndarray]:
+        """Returns the weight support of the CCS.
 
         Returns:
-            List[np.ndarray]: List of weight vectors in the CCS
+            List[np.ndarray]: List of weight vectors of the CCS
 
         """
-        return deepcopy(self.ccs_weights)
+        return deepcopy(self.weight_support)
 
     def get_corner_weights(self, top_k: Optional[int] = None) -> List[np.ndarray]:
         """Returns the corner weights of the current CCS.
@@ -94,38 +146,21 @@ class OLS:
 
         self.iteration += 1
         self.visited_weights.append(w)
+
         if self.is_dominated(value):
             if self.verbose:
                 print("Value is dominated. Discarding.")
             return [len(self.ccs)]
 
-        W_del = self.remove_obsolete_weights(new_value=value)
-        W_del.append(w)
-
         removed_indx = self.remove_obsolete_values(value)
 
         self.ccs.append(value)
-        self.ccs_weights.append(w)
-
-        W_corner = self.compute_corner_weights()
-
-        self.queue.clear()
-        for wc in W_corner:
-            priority = self.get_priority(wc)
-            if priority > self.epsilon:
-                if self.verbose:
-                    print(f"Adding weight: {wc} to queue with priority {priority}.")
-                self.queue.append((priority, wc))
-        self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
-
-        if self.verbose:
-            print(f"CCS: {self.ccs}")
-            print(f"CCS size: {len(self.ccs)}")
+        self.weight_support.append(w)
 
         return removed_indx
 
-    def get_priority(self, w: np.ndarray) -> float:
-        """Get the priority of a weight vector.
+    def ols_priority(self, w: np.ndarray) -> float:
+        """Get the priority of a weight vector for OLS.
 
         Args:
             w: Weight vector
@@ -133,9 +168,33 @@ class OLS:
         Returns:
             Priority of the weight vector.
         """
-        max_optimistic_value = self.max_value_lp(w)
         max_value_ccs = self.max_scalarized_value(w)
-        priority = max_optimistic_value - max_value_ccs  # / abs(max_optimistic_value)
+        max_optimistic_value = self.max_value_lp(w)
+        priority = max_optimistic_value - max_value_ccs
+        return priority
+
+    def gpi_ls_priority(self, w: np.ndarray, gpi_expanded_set: List[np.ndarray]) -> float:
+        """Get the priority of a weight vector for GPI-LS.
+
+        Args:
+            w: Weight vector
+
+        Returns:
+            Priority of the weight vector.
+        """
+
+        def best_vector(values, w):
+            max_v = values[0]
+            for i in range(1, len(values)):
+                if values[i] @ w > max_v @ w:
+                    max_v = values[i]
+            return max_v
+
+        max_value_ccs = self.max_scalarized_value(w)
+        max_value_gpi = best_vector(gpi_expanded_set, w)
+        max_value_gpi = np.dot(max_value_gpi, w)
+        priority = max_value_gpi - max_value_ccs
+
         return priority
 
     def max_scalarized_value(self, w: np.ndarray) -> Optional[float]:
@@ -147,7 +206,7 @@ class OLS:
         Returns:
             Maximum scalarized value for weight vector w.
         """
-        if not self.ccs:
+        if len(self.ccs) == 0:
             return None
         return np.max([np.dot(v, w) for v in self.ccs])
 
@@ -193,7 +252,7 @@ class OLS:
             if best_in_all:
                 removed_indx.append(i)
                 self.ccs.pop(i)
-                self.ccs_weights.pop(i)
+                self.weight_support.pop(i)
 
         return removed_indx
 
@@ -279,25 +338,7 @@ class OLS:
         for v in vertices:
             corners.append(v[:-1])
 
-        # Do not include corner weights already in visited weights
-        def predicate(wc):
-            return (wc is not None) and (not any([np.allclose(wc, w_old) for w_old in self.visited_weights]))
-
-        corners = list(filter(predicate, corners))
         return corners
-
-    def extrema_weights(self) -> List[np.ndarray]:
-        """Returns the weight vectors which have one component equal to 1 and the rest equal to 0.
-
-        Returns:
-            List of weight vectors.
-        """
-        extrema_weights = []
-        for i in range(self.num_objectives):
-            w = np.zeros(self.num_objectives)
-            w[i] = 1.0
-            extrema_weights.append(w)
-        return extrema_weights
 
     def is_dominated(self, value: np.ndarray) -> bool:
         """Checks if the value is dominated by any of the values in the CCS.
@@ -322,7 +363,7 @@ if __name__ == "__main__":
         return np.array(list(map(float, input().split())), dtype=np.float32)
 
     num_objectives = 3
-    ols = OLS(num_objectives=num_objectives, epsilon=0.0001, verbose=True)  # , min_value=0.0, max_value=1 / (1 - 0.95) * 1)
+    ols = LinearSupport(num_objectives=num_objectives, epsilon=0.0001, verbose=True)
     while not ols.ended():
         w = ols.next_weight()
         print("w:", w)

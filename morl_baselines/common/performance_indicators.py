@@ -70,3 +70,26 @@ def expected_utility(front: List[np.ndarray], weights_set: np.ndarray, utility: 
         maxs.append(np.max(scalarized_front))
 
     return np.mean(np.array(maxs), axis=0)
+
+
+def maximum_utility_loss(
+    front: List[np.ndarray], reference_set: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot
+) -> float:
+    """Maximum Utility Loss Metric.
+
+    Maximum utility loss of the policies on the PF for various weights.
+    Paper: L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau, “Quality Assessment of MORL Algorithms: A Utility-Based Approach,” 2015.
+
+    Args:
+        front: current pareto front to compute the mul on
+        reference_set: reference set (e.g. true Pareto front) to compute the mul on
+        weights_set: weights to use for the utility computation
+        utility: utility function to use (default: dot product)
+
+    Returns:
+        float: mul metric
+    """
+    max_scalarized_values_ref = [np.max([utility(weight, point) for point in reference_set]) for weight in weights_set]
+    max_scalarized_values = [np.max([utility(weight, point) for point in front]) for weight in weights_set]
+    utility_losses = [max_scalarized_values_ref[i] - max_scalarized_values[i] for i in range(len(max_scalarized_values))]
+    return np.max(utility_losses)

@@ -7,10 +7,11 @@ from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.envelope.envelope import Envelope
+from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
+from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
-from morl_baselines.multi_policy.ols.ols import OLS
 from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.esr.eupg import EUPG
@@ -110,7 +111,7 @@ def test_mp_moql():
 def test_ols():
     env = mo_gym.make("deep-sea-treasure-v0")
 
-    ols = OLS(num_objectives=2, epsilon=0.1, verbose=False)
+    ols = LinearSupport(num_objectives=2, epsilon=0.1, verbose=False)
     policies = []
     while not ols.ended():
         w = ols.next_weight()
@@ -137,7 +138,6 @@ def test_ols():
 
 
 def test_envelope():
-
     env = mo_gym.make("minecart-v0")
     eval_env = mo_gym.make("minecart-v0")
 
@@ -148,6 +148,32 @@ def test_envelope():
 
     agent.train(
         total_timesteps=1000,
+        eval_env=eval_env,
+        eval_freq=100,
+    )
+
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
+        agent, env=eval_env, w=np.array([0.5, 0.4, 0.1])
+    )
+    assert scalar_return != 0
+    assert scalarized_disc_return != 0
+    assert len(vec_ret) == 3
+    assert len(vec_disc_ret) == 3
+
+
+def test_gpi_pd():
+    env = mo_gym.make("minecart-v0")
+    eval_env = mo_gym.make("minecart-v0")
+
+    agent = GPIPD(
+        env,
+        log=False,
+    )
+
+    agent.train(
+        total_timesteps=1000,
+        weight=np.array([1.0, 0.0, 0.0]),
+        weight_support=[np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0])],
         eval_env=eval_env,
         eval_freq=100,
     )
