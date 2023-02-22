@@ -2,9 +2,8 @@
 import os
 import random
 from itertools import chain
-from typing import Callable, List, Optional, Union
+from typing import List, Union
 
-import gymnasium as gym
 import numpy as np
 import torch as th
 import torch.nn as nn
@@ -14,15 +13,9 @@ import wandb as wb
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.networks import NatureCNN, mlp
+from morl_baselines.common.networks import mlp
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.utils import (
-    get_grad_norm,
-    huber,
-    layer_init,
-    log_episode_info,
-    polyak_update,
-)
+from morl_baselines.common.utils import layer_init, log_episode_info, polyak_update
 from morl_baselines.multi_policy.gpi_pd.model.probabilistic_ensemble import (
     ProbabilisticEnsemble,
 )
@@ -31,19 +24,17 @@ from morl_baselines.multi_policy.gpi_pd.model.utils import ModelEnv, visualize_e
 
 class Policy(nn.Module):
     """Policy network."""
+
     def __init__(self, obs_dim, rew_dim, output_dim, action_space, net_arch=[256, 256]):
-        super(Policy, self).__init__()
+        """Initialize the policy network."""
+        super().__init__()
         self.action_space = action_space
         self.latent_pi = mlp(obs_dim + rew_dim, -1, net_arch)
         self.mean = nn.Linear(net_arch[-1], output_dim)
 
         # action rescaling
-        self.register_buffer(
-            "action_scale", th.tensor((action_space.high - action_space.low) / 2.0, dtype=th.float32)
-        )
-        self.register_buffer(
-            "action_bias", th.tensor((action_space.high + action_space.low) / 2.0, dtype=th.float32)
-        )
+        self.register_buffer("action_scale", th.tensor((action_space.high - action_space.low) / 2.0, dtype=th.float32))
+        self.register_buffer("action_bias", th.tensor((action_space.high + action_space.low) / 2.0, dtype=th.float32))
 
         self.apply(layer_init)
 
@@ -60,9 +51,11 @@ class Policy(nn.Module):
 
 class QNetwork(nn.Module):
     """Q-network S x Ax W -> R^reward_dim."""
+
     def __init__(self, obs_dim, action_dim, rew_dim, net_arch=[256, 256], layer_norm=True, drop_rate=0.01):
-        super(QNetwork, self).__init__()
-        self.net = mlp(obs_dim+action_dim+rew_dim, rew_dim, net_arch, drop_rate=drop_rate, layer_norm=layer_norm)
+        """Initialize the Q-network."""
+        super().__init__()
+        self.net = mlp(obs_dim + action_dim + rew_dim, rew_dim, net_arch, drop_rate=drop_rate, layer_norm=layer_norm)
         self.apply(layer_init)
 
     def forward(self, obs, action, w):
@@ -73,23 +66,24 @@ class QNetwork(nn.Module):
 
 class GPIPDContinuousAction(MOAgent, MOPolicy):
     """GPI-PD algorithm with continuous actions.
-    
+
     Sample-Efficient Multi-Objective Learning via Generalized Policy Improvement Prioritization
     Lucas N. Alegre, Ana L. C. Bazzan, Diederik M. Roijers, Ann Nowé, Bruno C. da Silva
     AAMAS 2023
     Paper: https://arxiv.org/abs/2301.07784
     See Appendix for Continuous Action details.
     """
+
     def __init__(
         self,
         env,
         learning_rate: float = 3e-4,
         gamma: float = 0.99,
         tau: float = 0.005,
-        buffer_size: int = int(1e6),
+        buffer_size: int = int(4e5),
         net_arch: List = [256, 256],
         dynamics_net_arch: List = [200, 200, 200, 200],
-        batch_size: int = 256,
+        batch_size: int = 128,
         num_q_nets: int = 2,
         delay_policy_update: int = 2,
         learning_starts: int = 100,
@@ -101,13 +95,13 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         min_priority: float = 0.1,
         alpha: float = 0.6,
         dyna: bool = False,
-        dynamics_train_freq: int = 1000,
-        dynamics_rollout_len: int = 1,
-        dynamics_rollout_starts: int = 5000,
+        dynamics_train_freq: int = 250,
+        dynamics_rollout_len: int = 5,
+        dynamics_rollout_starts: int = 1000,
         dynamics_rollout_freq: int = 250,
         dynamics_rollout_batch_size: int = 10000,
-        dynamics_buffer_size: int = 400000,
-        dynamics_min_uncertainty: float = 1.0,
+        dynamics_buffer_size: int = 200000,
+        dynamics_min_uncertainty: float = 2.0,
         dynamics_real_ratio: float = 0.1,
         project_name: str = "MORL Baselines",
         experiment_name: str = "GPI-PD Continuous Action",
@@ -169,19 +163,33 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         self.min_priority = min_priority
         self.alpha = alpha
         if self.per:
-            self.replay_buffer = PrioritizedReplayBuffer(self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size)
+            self.replay_buffer = PrioritizedReplayBuffer(
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size
+            )
         else:
-            self.replay_buffer = ReplayBuffer(self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size)
+            self.replay_buffer = ReplayBuffer(
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size
+            )
 
-        self.q_nets = [QNetwork(self.observation_dim, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device) for _ in range(num_q_nets)]
-        self.target_q_nets = [QNetwork(self.observation_dim, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device) for _ in range(num_q_nets)]
+        self.q_nets = [
+            QNetwork(self.observation_dim, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
+            for _ in range(num_q_nets)
+        ]
+        self.target_q_nets = [
+            QNetwork(self.observation_dim, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
+            for _ in range(num_q_nets)
+        ]
         for q_net, target_q_net in zip(self.q_nets, self.target_q_nets):
             target_q_net.load_state_dict(q_net.state_dict())
             for param in target_q_net.parameters():
                 param.requires_grad = False
 
-        self.policy = Policy(self.observation_dim, self.reward_dim, self.action_dim, self.env.action_space, net_arch=net_arch).to(self.device)
-        self.target_policy = Policy(self.observation_dim, self.reward_dim, self.action_dim, self.env.action_space, net_arch=net_arch).to(self.device)
+        self.policy = Policy(
+            self.observation_dim, self.reward_dim, self.action_dim, self.env.action_space, net_arch=net_arch
+        ).to(self.device)
+        self.target_policy = Policy(
+            self.observation_dim, self.reward_dim, self.action_dim, self.env.action_space, net_arch=net_arch
+        ).to(self.device)
         self.target_policy.load_state_dict(self.policy.state_dict())
         for param in self.target_policy.parameters():
             param.requires_grad = False
@@ -195,8 +203,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 input_dim=self.observation_dim + self.action_dim,
                 output_dim=self.observation_dim + self.reward_dim,
                 arch=self.dynamics_net_arch,
-                device=self.device)
-            self.dynamics_buffer = ReplayBuffer(self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size)
+                device=self.device,
+            )
+            self.dynamics_buffer = ReplayBuffer(
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size
+            )
         self.dynamics_train_freq = dynamics_train_freq
         self.dynamics_rollout_len = dynamics_rollout_len
         self.dynamics_rollout_starts = dynamics_rollout_starts
@@ -206,6 +217,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         self.dynamics_real_ratio = dynamics_real_ratio
 
         self.weight_support = []
+        self.stacked_weight_support = []
 
         self._n_updates = 0
 
@@ -235,16 +247,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             "dynamics_net_arch": self.dynamics_net_arch,
             "dynamics_rollout_len": self.dynamics_rollout_len,
             "dynamics_min_uncertainty": self.dynamics_min_uncertainty,
-            "dynamics_real_ratio": self.dynamics_real_ratio
+            "dynamics_real_ratio": self.dynamics_real_ratio,
         }
 
-    def save(self, save_dir="weights/", save_replay_buffer=True, filename=None):
+    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
+        """Save the agent's weights and replay buffer."""
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
 
         saved_params = {
             "policy_state_dict": self.policy.state_dict(),
-            "policy_optimizer_state_dict": self.policy_optim.state_dict()
+            "policy_optimizer_state_dict": self.policy_optim.state_dict(),
         }
         for i, (q_net, target_q_net) in enumerate(zip(self.q_nets, self.target_q_nets)):
             saved_params["q_net_" + str(i) + "_state_dict"] = q_net.state_dict()
@@ -259,9 +272,10 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         th.save(saved_params, save_dir + "/" + filename + ".tar")
 
     def load(self, path, load_replay_buffer=True):
+        """Load the agent weights from a file."""
         params = th.load(path, map_location=self.device)
         self.weight_support = params["M"]
-        self.stacked_M = th.stack(self.weight_support)
+        self.stacked_weight_support = th.stack(self.weight_support)
         self.policy.load_state_dict(params["policy_state_dict"])
         self.policy_optim.load_state_dict(params["policy_optimizer_state_dict"])
         for i, (q_net, target_q_net) in enumerate(zip(self.q_nets, self.target_q_nets)):
@@ -273,7 +287,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         if load_replay_buffer and "replay_buffer" in params:
             self.replay_buffer = params["replay_buffer"]
 
-    def sample_batch_experiences(self, deactivate_per=False):
+    def _sample_batch_experiences(self, deactivate_per=False):
         if not self.dyna or self.global_step < self.dynamics_rollout_starts or len(self.dynamics_buffer) == 0:
             if deactivate_per:
                 return self.replay_buffer.sample_uniform(self.batch_size, to_tensor=True, device=self.device)
@@ -281,10 +295,16 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         else:
             num_real_samples = int(self.batch_size * self.dynamics_real_ratio)  # % of real world data
             if self.per and not deactivate_per:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(num_real_samples, to_tensor=True, device=self.device)
+                s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(
+                    num_real_samples, to_tensor=True, device=self.device
+                )
             else:
-                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample_uniform(num_real_samples, to_tensor=True, device=self.device)
-            (m_obs, m_actions, m_rewards, m_next_obs, m_dones) = self.dynamics_buffer.sample(self.batch_size - num_real_samples, to_tensor=True, device=self.device)
+                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample_uniform(
+                    num_real_samples, to_tensor=True, device=self.device
+                )
+            (m_obs, m_actions, m_rewards, m_next_obs, m_dones) = self.dynamics_buffer.sample(
+                self.batch_size - num_real_samples, to_tensor=True, device=self.device
+            )
             experience_tuples = (
                 th.cat([s_obs, m_obs], dim=0),
                 th.cat([s_actions, m_actions], dim=0),
@@ -297,7 +317,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             return experience_tuples
 
     @th.no_grad()
-    def rollout_dynamics(self, weight: th.Tensor):
+    def _rollout_dynamics(self, weight: th.Tensor):
         # Dyna Planning
         num_times = int(np.ceil(self.dynamics_rollout_batch_size / 10000))
         batch_size = min(self.dynamics_rollout_batch_size, 10000)
@@ -312,7 +332,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 next_obs_pred, r_pred, dones, info = model_env.step(obs, actions)
                 obs, actions = (obs.detach().cpu().numpy(), actions.detach().cpu().numpy())
 
-                uncertainties = info['uncertainty']
+                uncertainties = info["uncertainty"]
                 for i in range(len(obs)):
                     if uncertainties[i] < self.dynamics_min_uncertainty:
                         self.dynamics_buffer.add(obs[i], actions[i], r_pred[i], next_obs_pred[i], dones[i])
@@ -329,17 +349,24 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             self.writer.add_scalar("dynamics/uncertainty_min", uncertainties.min(), self.global_step)
 
     def update(self, weight: th.Tensor):
+        """Update the policy and the Q-nets."""
         for _ in range(self.gradient_updates):
-            self._n_updates += 1
-
             if self.per:
-                (s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes) = self.sample_batch_experiences()
+                (s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes) = self._sample_batch_experiences()
             else:
-                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.sample_batch_experiences()
+                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self._sample_batch_experiences()
 
             if len(self.weight_support) > 1:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones = s_obs.repeat(2, 1), s_actions.repeat(2, 1), s_rewards.repeat(2, 1), s_next_obs.repeat(2, 1), s_dones.repeat(2, 1)
-                w = th.vstack([weight for _ in range(s_obs.size(0) // 2)] + random.choices(self.weight_support, k=s_obs.size(0) // 2))
+                s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
+                    s_obs.repeat(2, 1),
+                    s_actions.repeat(2, 1),
+                    s_rewards.repeat(2, 1),
+                    s_next_obs.repeat(2, 1),
+                    s_dones.repeat(2, 1),
+                )
+                w = th.vstack(
+                    [weight for _ in range(s_obs.size(0) // 2)] + random.choices(self.weight_support, k=s_obs.size(0) // 2)
+                )
             else:
                 w = weight.repeat(s_obs.size(0), 1)
 
@@ -348,9 +375,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 q_targets = th.stack([q_target(s_next_obs, next_actions, w) for q_target in self.target_q_nets])
                 scalarized_q_targets = th.einsum("nbr,br->nb", q_targets, w)
                 inds = th.argmin(scalarized_q_targets, dim=0, keepdim=True)
-                inds = inds.reshape(1,-1,1).expand(1, q_targets.size(1), q_targets.size(2))
+                inds = inds.reshape(1, -1, 1).expand(1, q_targets.size(1), q_targets.size(2))
                 target_q = q_targets.gather(0, inds).squeeze(0)
-                
+
                 target_q = (s_rewards + (1 - s_dones) * self.gamma * target_q).detach()
 
             q_values = [q_net(s_obs, s_actions, w) for q_net in self.q_nets]
@@ -364,17 +391,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 per = (q_values[0] - target_q)[: len(idxes)].detach().abs() * 0.05
                 per = th.einsum("br,br->b", per, w[: len(idxes)])
                 priority = per.cpu().numpy().flatten()
-                priority = priority.clip(min=self.min_priority)**self.alpha
+                priority = priority.clip(min=self.min_priority) ** self.alpha
                 self.replay_buffer.update_priorities(idxes, priority)
-            
+
             for q_net, target_q_net in zip(self.q_nets, self.target_q_nets):
                 polyak_update(q_net.parameters(), target_q_net.parameters(), self.tau)
 
             if self._n_updates % self.delay_policy_update == 0:
                 # Policy update
                 actions = self.policy(s_obs, w)
-                q_values_pi = (1/self.num_q_nets) * sum(q_net(s_obs, actions, w) for q_net in self.q_nets)
-                policy_loss = -th.einsum('br,br->b', q_values_pi, w).mean()
+                q_values_pi = (1 / self.num_q_nets) * sum(q_net(s_obs, actions, w) for q_net in self.q_nets)
+                policy_loss = -th.einsum("br,br->b", q_values_pi, w).mean()
 
                 self.policy_optim.zero_grad()
                 policy_loss.backward()
@@ -382,7 +409,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
                 polyak_update(self.policy.parameters(), self.target_policy.parameters(), self.tau)
 
-        # Log losses
+            self._n_updates += 1
+
         if self.log and self.global_step % 100 == 0:
             if self.per:
                 self.writer.add_scalar("metrics/mean_priority", np.mean(priority), self.global_step)
@@ -392,18 +420,23 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             self.writer.add_scalar("losses/policy_loss", policy_loss.item(), self.global_step)
 
     @th.no_grad()
-    def eval(self, obs: Union[np.ndarray, th.Tensor], w: Union[np.ndarray, th.Tensor], torch_action=False) -> Union[np.ndarray, th.Tensor]:
+    def eval(
+        self, obs: Union[np.ndarray, th.Tensor], w: Union[np.ndarray, th.Tensor], torch_action=False
+    ) -> Union[np.ndarray, th.Tensor]:
+        """Evaluate the policy action for the given observation and weight vector."""
         if isinstance(obs, np.ndarray):
             obs = th.tensor(obs).float().to(self.device)
             w = th.tensor(w).float().to(self.device)
-        
+
         if self.use_gpi:
             obs = obs.repeat(len(self.weight_support), 1)
-            actions_original = self.policy(obs, self.stacked_M)
-    
+            actions_original = self.policy(obs, self.stacked_weight_support)
+
             obs = obs.repeat(len(self.weight_support), 1, 1)
             actions = actions_original.repeat(len(self.weight_support), 1, 1)
-            stackedM = self.stacked_M.repeat_interleave(len(self.weight_support), dim=0).view(len(self.weight_support), len(self.weight_support), self.reward_dim)
+            stackedM = self.stacked_weight_support.repeat_interleave(len(self.weight_support), dim=0).view(
+                len(self.weight_support), len(self.weight_support), self.reward_dim
+            )
             values = self.q_nets[0](obs, actions, stackedM)
 
             scalar_values = th.einsum("par,r->pa", values, w)
@@ -425,21 +458,30 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         if len(self.weight_support) > 0:
             self.stacked_weight_support = th.stack(self.weight_support)
 
-    def train(self, total_timesteps: int, w: np.ndarray, weight_support: List[np.ndarray], change_w_each_episode: bool = False, eval_env=None, eval_freq:int = 1000, reset_num_timesteps: bool = False):
+    def train(
+        self,
+        total_timesteps: int,
+        weight: np.ndarray,
+        weight_support: List[np.ndarray],
+        change_weight_every_episode: bool = False,
+        eval_env=None,
+        eval_freq: int = 1000,
+        reset_num_timesteps: bool = False,
+    ):
         """Train the agent.
-        
+
         Args:
             total_timesteps (int): Total number of timesteps to train the agent for.
-            w (np.ndarray): Initial weight vector.
+            weight (np.ndarray): Initial weight vector.
             weight_support (List[np.ndarray]): List of weight vectors to use for the weight support set.
-            change_w_each_episode (bool): Whether to change the weight vector at the end of each episode.
+            change_weight_every_episode (bool): Whether to change the weight vector at the end of each episode.
             eval_env (Optional[gym.Env]): Environment to use for evaluation.
             eval_freq (int): Number of timesteps between evaluations.
             reset_num_timesteps (bool): Whether to reset the number of timesteps.
         """
         self.weight_support = [th.tensor(m).float().to(self.device) for m in weight_support]
         self.stacked_weight_support = th.stack(self.weight_support)
-        tensor_w = th.tensor(w).float().to(self.device)
+        tensor_w = th.tensor(weight).float().to(self.device)
 
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
@@ -452,7 +494,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 action = self.env.action_space.sample()
             else:
                 with th.no_grad():
-                    action = self.policy(th.tensor(obs).float().to(self.device), tensor_w, noise=self.policy_noise, noise_clip=self.noise_clip).detach().cpu().numpy()
+                    action = (
+                        self.policy(
+                            th.tensor(obs).float().to(self.device),
+                            tensor_w,
+                            noise=self.policy_noise,
+                            noise_clip=self.noise_clip,
+                        )
+                        .detach()
+                        .cpu()
+                        .numpy()
+                    )
 
             action_env = action
 
@@ -469,15 +521,15 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                         mean_holdout_loss = self.dynamics.fit(X, Y)
                         if self.log:
                             self.writer.add_scalar("dynamics/mean_holdout_loss", mean_holdout_loss, self.global_step)
-                            
+
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
-                        self.rollout_dynamics(tensor_w)
+                        self._rollout_dynamics(tensor_w)
 
                 self.update(tensor_w)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=w, writer=self.writer)
-                plot = visualize_eval(self, eval_env, self.dynamics, w=w, compound=False, horizon=1000)
+                self.policy_eval(eval_env, weights=weight, writer=self.writer)
+                plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
                 wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
                 plot.close()
 
@@ -486,10 +538,10 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step, writer=self.writer)
+                    log_episode_info(info["episode"], np.dot, weight, self.global_step, writer=self.writer)
 
-                if change_w_each_episode:
-                    w = random.choice(self.weight_support)
-                    tensor_w = th.tensor(w).float().to(self.device)
+                if change_weight_every_episode:
+                    weight = random.choice(self.weight_support)
+                    tensor_w = th.tensor(weight).float().to(self.device)
             else:
                 obs = next_obs
