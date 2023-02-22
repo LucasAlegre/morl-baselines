@@ -255,7 +255,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.get_non_dominated">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated" title="Permalink to this definition">#</a></dt>
 <dd><p>This function returns the non-dominated subset of elements.</p>
 <p>Source: <a class="reference external" href="https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python">https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python</a>
 The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.</p>
@@ -267,6 +267,12 @@ The code provided in all the stackoverflow answers is wrong. Important changes h
 <dd class="field-even"><p><strong>The non-dominated subset of this input set.</strong></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.pareto.get_non_dominated_inds">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated_inds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solutions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated_inds" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a boolean array indicating which points are non-dominated.</p>
 </dd></dl>
 
 </section>
@@ -332,6 +338,7 @@ The code provided in all the stackoverflow answers is wrong. Important changes h
 </ul>
 </li>
 <li><a class="reference internal" href="#morl_baselines.common.pareto.get_non_dominated"><code class="docutils literal notranslate"><span class="pre">get_non_dominated()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.pareto.get_non_dominated_inds"><code class="docutils literal notranslate"><span class="pre">get_non_dominated_inds()</span></code></a></li>
 </ul>
 </li>
 </ul>
