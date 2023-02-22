@@ -115,7 +115,7 @@ class GPIPD(MOPolicy, MOAgent):
         dynamics_num_elites: int = 2,
         real_ratio: float = 0.05,
         project_name: str = "MORL Baselines",
-        experiment_name: str = "GPi-PD",
+        experiment_name: str = "GPI-PD",
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
@@ -644,7 +644,6 @@ class GPIPD(MOPolicy, MOAgent):
         weight: np.ndarray,
         weight_support: List[np.ndarray],
         change_w_every_episode: bool = True,
-        total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
         eval_freq: int = 1000,
@@ -663,7 +662,6 @@ class GPIPD(MOPolicy, MOAgent):
             eval_freq (int): Number of timesteps between evaluations
             reset_learning_starts (bool): Whether to reset the learning starts
         """
-        self.env.w = weight
         self.weight_support = [th.tensor(z).float().to(self.device) for z in weight_support]
         tensor_w = th.tensor(weight).float().to(self.device)
 
@@ -676,11 +674,8 @@ class GPIPD(MOPolicy, MOAgent):
         if self.per and len(self.replay_buffer) > 0:
             self._reset_priorities(tensor_w)
 
-        num_episodes = 0
         obs, info = self.env.reset()
         for _ in range(1, total_timesteps + 1):
-            if total_episodes is not None and num_episodes == total_episodes:
-                break
             self.global_step += 1
 
             if self.global_step < self.learning_starts:
@@ -719,7 +714,6 @@ class GPIPD(MOPolicy, MOAgent):
 
             if terminated or truncated:
                 obs, _ = self.env.reset()
-                num_episodes += 1
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
@@ -730,6 +724,5 @@ class GPIPD(MOPolicy, MOAgent):
                 if change_w_every_episode:
                     weight = random.choice(weight_support)
                     tensor_w = th.tensor(weight).float().to(self.device)
-                    self.env.w = weight
             else:
                 obs = next_obs
