@@ -6,7 +6,9 @@ from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.performance_indicators import expected_utility
 from morl_baselines.common.utils import equally_spaced_weights
-from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import GPIPDContinuousAction
+from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
+    GPIPDContinuousAction,
+)
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
@@ -14,7 +16,6 @@ from morl_baselines.multi_policy.linear_support.linear_support import LinearSupp
 
 
 def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed: int = 0):
-
     def make_env():
         env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
         env = mo_gym.MORecordEpisodeStatistics(env, gamma=0.99)
