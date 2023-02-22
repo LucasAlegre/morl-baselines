@@ -1,5 +1,5 @@
 """General utils for the MORL baselines."""
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 import numpy as np
 import torch as th
@@ -102,6 +102,15 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
     return value
 
 
+def extrema_weights(dim: int) -> List[np.ndarray]:
+    """Generate weight vectors in the extrema of the weight simplex. That is, one element is 1 and the rest are 0.
+
+    Args:
+        dim: size of the weight vector
+    """
+    return list(np.eye(dim, dtype=np.float32))
+
+
 def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
     """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1.
 
@@ -188,3 +197,24 @@ def log_episode_info(
                 disc_episode_return[i],
                 global_timestep,
             )
+
+
+def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, length: int = 300):
+    """Render an episode and save it as a gif."""
+    assert "rgb_array" in env.metadata["render_modes"], "Environment does not have rgb_array rendering."
+
+    frames = []
+    state, info = env.reset()
+    terminated, truncated = False, False
+    while not (terminated or truncated) and len(frames) < length:
+        frame = env.render()
+        frames.append(frame)
+        action = agent.eval(state, weight)
+        state, reward, terminated, truncated, info = env.step(action)
+    env.close()
+
+    from moviepy.editor import ImageSequenceClip
+
+    clip = ImageSequenceClip(list(frames), fps=fps)
+    clip.write_gif(fullpath + ".gif", fps=fps)
+    print("Saved gif at: " + fullpath + ".gif")

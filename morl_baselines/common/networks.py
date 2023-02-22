@@ -12,6 +12,8 @@ def mlp(
     output_dim: int,
     net_arch: List[int],
     activation_fn: Type[nn.Module] = nn.ReLU,
+    drop_rate: float = 0.0,
+    layer_norm: bool = False,
 ) -> nn.Sequential:
     """Create a multi layer perceptron (MLP), which is a collection of fully-connected layers each followed by an activation function.
 
@@ -20,12 +22,23 @@ def mlp(
         output_dim: Dimension of the output vector
         net_arch: Architecture of the neural net. It represents the number of units per layer. The length of this list is the number of layers.
         activation_fn: The activation function to use after each layer.
+        drop_rate: Dropout rate
+        layer_norm: Whether to use layer normalization
     """
     assert len(net_arch) > 0
-    modules = [nn.Linear(input_dim, net_arch[0]), activation_fn()]
+    modules = [nn.Linear(input_dim, net_arch[0])]
+    if drop_rate > 0.0:
+        modules.append(nn.Dropout(p=drop_rate))
+    if layer_norm:
+        modules.append(nn.LayerNorm(net_arch[0]))
+    modules.append(activation_fn())
 
     for idx in range(len(net_arch) - 1):
         modules.append(nn.Linear(net_arch[idx], net_arch[idx + 1]))
+        if drop_rate > 0.0:
+            modules.append(nn.Dropout(p=drop_rate))
+        if layer_norm:
+            modules.append(nn.LayerNorm(net_arch[idx + 1]))
         modules.append(activation_fn())
 
     if output_dim > 0:
