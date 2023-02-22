@@ -166,7 +166,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pgmorl/">PGMORL</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/ols/">OLS</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../algos/single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -274,6 +273,27 @@ Paper: L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.performance_indicators.maximum_utility_loss">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.performance_indicators.</span></span><span class="sig-name descname"><span class="pre">maximum_utility_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">front:</span> <span class="pre">~typing.List[~numpy.ndarray],</span> <span class="pre">reference_set:</span> <span class="pre">~typing.List[~numpy.ndarray],</span> <span class="pre">weights_set:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">utility:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">dot&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.performance_indicators.maximum_utility_loss" title="Permalink to this definition">#</a></dt>
+<dd><p>Maximum Utility Loss Metric.</p>
+<p>Maximum utility loss of the policies on the PF for various weights.
+Paper: L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau, “Quality Assessment of MORL Algorithms: A Utility-Based Approach,” 2015.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>front</strong> – current pareto front to compute the mul on</p></li>
+<li><p><strong>reference_set</strong> – reference set (e.g. true Pareto front) to compute the mul on</p></li>
+<li><p><strong>weights_set</strong> – weights to use for the utility computation</p></li>
+<li><p><strong>utility</strong> – utility function to use (default: dot product)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>float</strong> – mul metric</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.performance_indicators.sparsity">
 <span class="sig-prename descclassname"><span class="pre">morl_baselines.common.performance_indicators.</span></span><span class="sig-name descname"><span class="pre">sparsity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.performance_indicators.sparsity" title="Permalink to this definition">#</a></dt>
 <dd><p>Sparsity metric from PGMORL.</p>
@@ -348,6 +368,7 @@ Paper: L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau
 <li><a class="reference internal" href="#">Performance indicators</a><ul>
 <li><a class="reference internal" href="#morl_baselines.common.performance_indicators.expected_utility"><code class="docutils literal notranslate"><span class="pre">expected_utility()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.performance_indicators.hypervolume"><code class="docutils literal notranslate"><span class="pre">hypervolume()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.performance_indicators.maximum_utility_loss"><code class="docutils literal notranslate"><span class="pre">maximum_utility_loss()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.performance_indicators.sparsity"><code class="docutils literal notranslate"><span class="pre">sparsity()</span></code></a></li>
 </ul>
 </li>

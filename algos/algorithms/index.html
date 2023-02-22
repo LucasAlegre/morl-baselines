@@ -166,7 +166,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/pgmorl/">PGMORL</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../multi_policy/ols/">OLS</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -246,49 +245,56 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/envelope/envelope.py">Envelope Q-Learning</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/gpi_pd/gpi_pd.py">GPI-PD</a></p></td>
+<td><p>Multi</p></td>
+<td><p>SER</p></td>
+<td><p>Continuous</p></td>
+<td><p>Discrete</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2301.07784">Paper</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/envelope/envelope.py">Envelope Q-Learning</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1908.08342.pdf">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pgmorl/pgmorl.py">PGMORL</a> *</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pgmorl/pgmorl.py">PGMORL</a> *</p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Continuous</p></td>
 <td><p><a class="reference external" href="https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf">Paper</a> / <a class="reference external" href="https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf">Supplementary materials</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pareto_q_learning/pql.py">Pareto Q-Learning</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pareto_q_learning/pql.py">Pareto Q-Learning</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Discrete</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/mo_q_learning.py">MO Q learning</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/mo_q_learning.py">MO Q learning</a></p></td>
 <td><p>Single</p></td>
 <td><p>SER</p></td>
 <td><p>Discrete</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques">Paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/multi_policy_moqlearning/mp_mo_q_learning.py">MPMOQLearning</a>  (outer loop MOQL)</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/multi_policy_moqlearning/mp_mo_q_learning.py">MPMOQLearning</a>  (outer loop MOQL)</p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Discrete</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py">Optimistic Linear Support (OLS)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py">Optimistic Linear Support (OLS)</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>/</p></td>
 <td><p>/</p></td>
 <td><p>Section 3.3 of the <a class="reference external" href="http://roijers.info/pub/thesis.pdf">thesis</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py">Expected Utility Policy Gradient (EUPG)</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py">Expected Utility Policy Gradient (EUPG)</a></p></td>
 <td><p>Single</p></td>
 <td><p>ESR</p></td>
 <td><p>Discrete</p></td>
