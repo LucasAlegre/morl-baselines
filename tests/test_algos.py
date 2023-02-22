@@ -13,6 +13,7 @@ from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning impor
     MPMOQLearning,
 )
 from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
+from morl_baselines.multi_policy.pcn.pcn import PCN
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mo_ppo import make_env
@@ -212,3 +213,34 @@ def test_pgmorl():
         assert discounted_scalarized != 0
         assert len(reward) == 2
         assert len(discounted_reward) == 2
+
+
+def test_pcn():
+    env = mo_gym.make("minecart-deterministic-v0")
+
+    agent = PCN(
+        env,
+        scaling_factor=np.array([1, 1, 0.1, 0.1]),
+        learning_rate=1e-3,
+        batch_size=256,
+        log=False,
+    )
+
+    agent.train(
+        env,
+        num_er_episodes=1,
+        max_buffer_size=50,
+        num_model_updates=50,
+        total_time_steps=10,
+        max_return=np.array([1.5, 1.5, -0.0]),
+        ref_point=np.array([0, 0, -200.0]),
+    )
+
+    agent.set_desired_return_and_horizon(np.array([1.5, 1.5, -0.0]), 100)
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
+        agent, env=env, w=np.array([0.4, 0.4, 0.2]), render=False
+    )
+    assert scalar_return != 0
+    assert scalarized_disc_return != 0
+    assert len(vec_ret) == 3
+    assert len(vec_disc_ret) == 3

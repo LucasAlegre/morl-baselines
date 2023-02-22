@@ -43,18 +43,24 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 
 <!-- start algos-list -->
 
-| Algo                                                                                                                                                                 | Single/Multi-policy | ESR/SER | Observation space | Action space | Paper                                                                                                                       |
+| **Name**                                                                                                                                                                 | Single/Multi-policy | ESR/SER | Observation space | Action space | Paper                                                                                                                       |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|---------|------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------|
-| [GPI-PD](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/gpi_pd/gpi_pd.py)                                      | Multi               | SER     | Continuous       | Discrete     | [Paper](https://arxiv.org/abs/2301.07784)
+| [GPI-LS + GPI-PD](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/gpi_pd/gpi_pd.py)                                      | Multi               | SER     | Continuous       | Discrete     | [Paper](https://arxiv.org/abs/2301.07784)
 | [Envelope Q-Learning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/envelope/envelope.py)                                      | Multi               | SER     | Continuous       | Discrete     | [Paper](https://arxiv.org/pdf/1908.08342.pdf)                                                                                        |
-| [PGMORL](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pgmorl/pgmorl.py) *                                                     | Multi               | SER     | Continuous       | Continuous   | [Paper](https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf) / [Supplementary materials](https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf)        |
+| [PGMORL](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pgmorl/pgmorl.py) <sup>[1](#f1)</sup>                                                     | Multi               | SER     | Continuous       | Continuous   | [Paper](https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf) / [Supplementary materials](https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf)        |
+| [Pareto Conditioned Networks (PCN)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pcn/pcn.py)                                      | Multi               | SER/ESR <sup>[2](#f2)</sup>      | Continuous       | Discrete     | [Paper](https://www.ifaamas.org/Proceedings/aamas2022/pdfs/p1110.pdf)                                                          |
 | [Pareto Q-Learning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pareto_q_learning/pql.py)                                    | Multi               | SER     | Discrete         | Discrete     | [Paper](https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf)                                                          |
 | [MO Q learning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/mo_q_learning.py)                                           | Single              | SER     | Discrete         | Discrete     | [Paper](https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques)                                                                                                                             |
 | [MPMOQLearning](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/multi_policy_moqlearning/mp_mo_q_learning.py)  (outer loop MOQL) | Multi               | SER     | Discrete         | Discrete     | [Paper](https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques) |
 | [Optimistic Linear Support (OLS)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py)                                    | Multi               | SER     | /                | /            | Section 3.3 of the [thesis](http://roijers.info/pub/thesis.pdf)     |
 | [Expected Utility Policy Gradient (EUPG)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py)                          | Single              | ESR     | Discrete         | Discrete     |   [Paper](https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return)                                                   |
 
-:warning: The algorithms have not been benchmarked yet, and some of them have limited features. For example, PGMORL is limited to 2-objectives.
+:warning: The algorithms have not been benchmarked yet, and some of them have limited features.
+
+<b id="f1">1</b>: Currently, PGMORL is limited to environments with 2 objectives.
+
+<b id="f2">2</b>: PCN assumes environments with deterministic transitions.
+
 <!-- end algos-list -->
 
 ## Structure

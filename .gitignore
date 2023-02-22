@@ -135,5 +135,5 @@ wandb/
 .idea/
 .DS_Store
 
-# model saved parameters
+# Saved weights
 weights/
