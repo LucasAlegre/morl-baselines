@@ -1,11 +1,12 @@
 """Pareto Q-Learning."""
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 import numpy as np
 
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
 from morl_baselines.common.performance_indicators import hypervolume
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 
 
 class PQL(MOAgent):
@@ -19,6 +20,7 @@ class PQL(MOAgent):
         self,
         env,
         ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         gamma: float = 0.8,
         initial_epsilon: float = 1.0,
         epsilon_decay: float = 0.99,
@@ -33,6 +35,7 @@ class PQL(MOAgent):
         Args:
             env: The environment.
             ref_point: The reference point for the hypervolume metric.
+            known_pareto_front: The known pareto front on the env, if any.
             gamma: The discount factor.
             initial_epsilon: The initial epsilon value.
             epsilon_decay: The epsilon decay rate.
@@ -54,6 +57,7 @@ class PQL(MOAgent):
         self.seed = seed
         self.rng = np.random.default_rng(seed)
         self.ref_point = ref_point
+        self.known_pareto_front = known_pareto_front
 
         self.num_actions = self.env.action_space.n
         low_bound = self.env.observation_space.low
@@ -199,6 +203,7 @@ class PQL(MOAgent):
             while not (terminated or truncated):
                 action = self.select_action(state, score_func)
                 next_state, reward, terminated, truncated, _ = self.env.step(action)
+                self.global_step += 1
                 next_state = int(np.ravel_multi_index(next_state, self.env_shape))
 
                 self.counts[state, action] += 1
@@ -209,10 +214,18 @@ class PQL(MOAgent):
             self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
 
             if self.log and episode % log_every == 0:
+                self.writer.add_scalar("global_step", self.global_step, self.global_step)
                 pf = self.get_local_pcs(state=0)
-                value = hypervolume(self.ref_point, list(pf))
-                print(f"Hypervolume in episode {episode}: {value}")
-                self.writer.add_scalar("train/hypervolume", value, episode)
+                # PF is a set of tuples, convert to list of np arrays
+                pf = [np.array(t) for t in pf]
+                log_all_multi_policy_metrics(
+                    current_front=pf,
+                    hv_ref_point=self.ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=self.known_pareto_front,
+                )
 
         return self.get_local_pcs(state=0)
 

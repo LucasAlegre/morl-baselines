@@ -1,12 +1,13 @@
 """Outer-loop MOQ-learning algorithm (uses multiple weights)."""
 import time
+from typing import List, Optional
 from typing_extensions import override
 
 import numpy as np
 
 from morl_baselines.common.morl_algorithm import MOAgent
-from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.scalarization import weighted_sum
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
 
@@ -20,6 +21,7 @@ class MPMOQLearning(MOAgent):
         self,
         env,
         ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         weights_step_size: float = 0.1,
         scalarization=weighted_sum,
         learning_rate: float = 0.1,
@@ -39,6 +41,7 @@ class MPMOQLearning(MOAgent):
         Args:
             env: The environment to learn from.
             ref_point: The reference point for the hypervolume calculation.
+            known_pareto_front: The known pareto front, if any.
             weights_step_size: The step size for the weights creation.
             scalarization: The scalarization function to use.
             learning_rate: The learning rate.
@@ -68,6 +71,7 @@ class MPMOQLearning(MOAgent):
 
         # Logging
         self.ref_point = ref_point
+        self.known_pareto_front = known_pareto_front
         self.project_name = project_name
         self.experiment_name = experiment_name
         self.log = log
@@ -124,7 +128,9 @@ class MPMOQLearning(MOAgent):
         discounted_rewards = []
         rewards = []
         for a in self.agents:
-            _, _, vec, discounted_vec = a.policy_eval(eval_env=self.env, weights=a.weights, writer=self.writer)
+            _, _, vec, discounted_vec = a.policy_eval(
+                eval_env=self.env, scalarization=self.scalarization, weights=a.weights, writer=self.writer
+            )
             discounted_rewards.append(discounted_vec)
             rewards.append(vec)
         if self.log:
@@ -146,9 +152,16 @@ class MPMOQLearning(MOAgent):
                 )
             self.global_step += len(self.agents) * self.eval_freq
             rewards, disc_rewards = self.eval_all_agents()
-            hv = hypervolume(self.ref_point, rewards)
             if self.log:
-                self.writer.add_scalar("metrics/hypervolume", hv, self.global_step)
+                self.writer.add_scalar("global_step", self.global_step, self.global_step)
+                log_all_multi_policy_metrics(
+                    current_front=disc_rewards,
+                    hv_ref_point=self.ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=self.known_pareto_front,
+                )
 
         if self.writer is not None:
             self.writer.close()

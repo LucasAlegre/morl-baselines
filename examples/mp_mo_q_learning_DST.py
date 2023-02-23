@@ -21,6 +21,7 @@ if __name__ == "__main__":
     agent = MPMOQLearning(
         env,
         ref_point=np.array([0.0, -25.0]),
+        known_pareto_front=env.unwrapped.pareto_front,
         scalarization=scalarization,
         num_timesteps=int(1e5),
         weights_step_size=0.1,

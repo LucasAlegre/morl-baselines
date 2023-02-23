@@ -13,6 +13,7 @@ if __name__ == "__main__":
     agent = PQL(
         env,
         ref_point,
+        known_pareto_front=env.pareto_front,
         gamma=1.0,
         initial_epsilon=1.0,
         epsilon_decay=0.997,
@@ -20,7 +21,7 @@ if __name__ == "__main__":
         seed=1,
         project_name="MORL-baselines",
         experiment_name="Pareto Q-Learning",
-        log=False,
+        log=True,
     )
 
     num_episodes = 10000

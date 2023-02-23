@@ -183,7 +183,7 @@ class MOQLearning(MOPolicy, MOAgent):
             self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=self.weights, writer=self.writer)
+                self.policy_eval(eval_env, scalarization=self.scalarization, weights=self.weights, writer=self.writer)
 
             if self.terminated or self.truncated:
                 self.obs, _ = self.env.reset()

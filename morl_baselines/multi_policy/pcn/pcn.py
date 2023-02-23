@@ -12,12 +12,8 @@ import torch.nn.functional as F
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import get_non_dominated_inds
-from morl_baselines.common.performance_indicators import (
-    expected_utility,
-    hypervolume,
-    sparsity,
-)
-from morl_baselines.common.utils import random_weights
+from morl_baselines.common.performance_indicators import hypervolume
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 
 
 def crowding_distance(points):
@@ -154,7 +150,7 @@ class PCN(MOAgent, MOPolicy):
             "scaling_factor": self.scaling_factor,
         }
 
-    def update(self) -> None:
+    def update(self):
         """Update PCN model."""
         batch = []
         # randomly choose episodes from experience buffer
@@ -311,8 +307,7 @@ class PCN(MOAgent, MOPolicy):
                 transitions[i].reward += self.gamma * transitions[i + 1].reward
             e_returns.append(transitions[0].reward)
 
-        e_returns = np.array(e_returns)
-        distances = np.linalg.norm(np.array(returns) - e_returns, axis=-1)
+        distances = np.linalg.norm(np.array(returns) - np.array(e_returns), axis=-1)
         return e_returns, np.array(returns), distances
 
     def save(self, filename: str = "PCN_model", savedir: str = "weights"):
@@ -331,8 +326,21 @@ class PCN(MOAgent, MOPolicy):
         max_return: float = 250.0,
         max_buffer_size: int = 500,
         ref_point: np.ndarray = np.array([0.0, 0.0]),
+        known_pareto_front: Optional[List[np.ndarray]] = None,
     ):
-        """Train PCN."""
+        """Train PCN.
+
+        Args:
+            env: environment
+            num_er_episodes: number of episodes to fill experience replay buffer
+            total_time_steps: total number of time steps to train for
+            num_step_episodes: number of steps per episode
+            num_model_updates: number of model updates per episode
+            max_return: maximum return for clipping desired return
+            max_buffer_size: maximum buffer size
+            ref_point: reference point for hypervolume calculation
+            known_pareto_front: known pareto front for metrics calculation
+        """
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0
@@ -412,10 +420,11 @@ class PCN(MOAgent, MOPolicy):
                 e_returns, _, _ = self.evaluate(env, max_return, n=n_points)
 
                 if self.log:
-                    self.writer.add_scalar("eval/hypervolume", hypervolume(ref_point, e_returns), self.global_step)
-                    self.writer.add_scalar("eval/spartsity", sparsity(e_returns), self.global_step)
-                    self.writer.add_scalar(
-                        "eval/expected_utility",
-                        expected_utility(e_returns, weights_set=random_weights(dim=self.reward_dim, n=100, dist="dirichlet")),
-                        self.global_step,
+                    log_all_multi_policy_metrics(
+                        current_front=e_returns,
+                        hv_ref_point=ref_point,
+                        reward_dim=self.reward_dim,
+                        global_step=self.global_step,
+                        writer=self.writer,
+                        ref_front=known_pareto_front,
                     )

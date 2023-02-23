@@ -19,6 +19,7 @@ from scipy.optimize import least_squares
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.common.performance_indicators import hypervolume, sparsity
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 from morl_baselines.single_policy.ser.mo_ppo import MOPPO, MOPPONet, make_env
 
 
@@ -291,6 +292,7 @@ class PGMORL(MOAgent):
         self,
         env_id: str = "mo-halfcheetah-v4",
         ref_point: np.ndarray = np.array([0.0, -5.0]),
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         num_envs: int = 4,
         pop_size: int = 6,
         warmup_iterations: int = 80,
@@ -331,6 +333,7 @@ class PGMORL(MOAgent):
         Args:
             env_id: environment id
             ref_point: reference point for the hypervolume calculation
+            known_pareto_front: known pareto front, if available
             num_envs: number of environments to use (VectorizedEnvs)
             pop_size: population size
             warmup_iterations: number of warmup iterations
@@ -376,6 +379,7 @@ class PGMORL(MOAgent):
         self.tmp_env.close()
         self.gamma = gamma
         self.ref_point = ref_point
+        self.known_pareto_front = known_pareto_front
 
         # EA parameters
         self.pop_size = pop_size
@@ -540,10 +544,14 @@ class PGMORL(MOAgent):
         if self.log:
             print("Current pareto archive:")
             print(self.archive.evaluations)
-            hv = hypervolume(self.ref_point, self.archive.evaluations)
-            sp = sparsity(self.archive.evaluations)
-            self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
-            self.writer.add_scalar("charts/sparsity", sp, self.iteration)
+            log_all_multi_policy_metrics(
+                current_front=self.archive.evaluations,
+                hv_ref_point=self.ref_point,
+                reward_dim=self.reward_dim,
+                global_step=self.global_step,
+                writer=self.writer,
+                ref_front=self.known_pareto_front,
+            )
 
     def __task_weight_selection(self):
         """Chooses agents and weights to train at the next iteration based on the current population and prediction model."""

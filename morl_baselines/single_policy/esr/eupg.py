@@ -233,10 +233,10 @@ class EUPG(MOPolicy, MOAgent):
                 if self.log and "episode" in info.keys():
                     log_episode_info(
                         info["episode"],
-                        self.scalarization,
-                        None,
-                        self.global_step,
-                        self.writer,
+                        scalarization=self.scalarization,
+                        weights=None,
+                        global_timestep=self.global_step,
+                        writer=self.writer,
                     )
 
             else:
