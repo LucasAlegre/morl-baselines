@@ -174,7 +174,7 @@ def test_gpi_pd():
         log=False,
     )
 
-    agent.train(
+    agent.train_iteration(
         total_timesteps=1000,
         weight=np.array([1.0, 0.0, 0.0]),
         weight_support=[np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0])],
@@ -200,7 +200,7 @@ def test_gpi_pd_continuous_action():
         log=False,
     )
 
-    agent.train(
+    agent.train_iteration(
         total_timesteps=1000,
         weight=np.array([1.0, 0.0]),
         weight_support=[np.array([0.0, 1.0])],
