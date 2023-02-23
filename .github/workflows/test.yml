@@ -23,6 +23,7 @@ jobs:
         pip install pytest
         pip install mujoco
         sudo apt-get install libgmp-dev
+        pip install imageio
         pip install -e .[all]
     - name: Full Python tests
       run: |
