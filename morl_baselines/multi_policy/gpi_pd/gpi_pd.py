@@ -16,9 +16,9 @@ from mo_gymnasium.evaluation import policy_evaluation_mo
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.performance_indicators import ( 
-    maximum_utility_loss,
+from morl_baselines.common.performance_indicators import (
     expected_utility,
+    maximum_utility_loss,
 )
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
@@ -733,7 +733,14 @@ class GPIPD(MOPolicy, MOAgent):
             else:
                 obs = next_obs
 
-    def train(self, eval_env, timesteps_per_iter: int = 10000, max_iter: int = 15, weight_selection_algo: str = "gpi-ls", ref_front: Optional[List[np.ndarray]] = None):
+    def train(
+        self,
+        eval_env,
+        timesteps_per_iter: int = 10000,
+        max_iter: int = 15,
+        weight_selection_algo: str = "gpi-ls",
+        ref_front: Optional[List[np.ndarray]] = None,
+    ):
         """Train agent.
 
         Args:
