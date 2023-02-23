@@ -548,7 +548,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     log_episode_info(info["episode"], np.dot, weight, self.global_step, writer=self.writer)
 
                 if change_weight_every_episode:
-                    weight = random.choice(self.weight_support)
+                    weight = random.choice(weight_support)
                     tensor_w = th.tensor(weight).float().to(self.device)
             else:
                 obs = next_obs
