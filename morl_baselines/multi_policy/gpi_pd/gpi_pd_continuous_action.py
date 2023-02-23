@@ -331,7 +331,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         batch_size = min(self.dynamics_rollout_batch_size, 10000)
         for _ in range(num_times):
             obs = self.replay_buffer.sample_obs(batch_size, to_tensor=False)
-            model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=self.rew_dim)
+            model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=self.reward_dim)
             for plan_step in range(self.dynamics_rollout_len):
                 obs = th.tensor(obs).to(self.device)
                 w = weight.repeat(obs.shape[0], 1)
