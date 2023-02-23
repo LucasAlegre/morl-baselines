@@ -10,16 +10,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import wandb as wb
+from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import mlp
+from morl_baselines.common.performance_indicators import expected_utility
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.utils import layer_init, log_episode_info, polyak_update
+from morl_baselines.common.utils import (
+    equally_spaced_weights,
+    layer_init,
+    log_episode_info,
+    polyak_update,
+)
 from morl_baselines.multi_policy.gpi_pd.model.probabilistic_ensemble import (
     ProbabilisticEnsemble,
 )
 from morl_baselines.multi_policy.gpi_pd.model.utils import ModelEnv, visualize_eval
+from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
 class Policy(nn.Module):
@@ -458,7 +466,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         if len(self.weight_support) > 0:
             self.stacked_weight_support = th.stack(self.weight_support)
 
-    def train(
+    def train_iteration(
         self,
         total_timesteps: int,
         weight: np.ndarray,
@@ -479,8 +487,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             eval_freq (int): Number of timesteps between evaluations.
             reset_num_timesteps (bool): Whether to reset the number of timesteps.
         """
-        self.weight_support = [th.tensor(m).float().to(self.device) for m in weight_support]
-        self.stacked_weight_support = th.stack(self.weight_support)
+        self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
 
         self.global_step = 0 if reset_num_timesteps else self.global_step
@@ -545,3 +552,79 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     tensor_w = th.tensor(weight).float().to(self.device)
             else:
                 obs = next_obs
+
+    def train(
+        self,
+        eval_env,
+        weight_selection_algo: str = "gpi-ls",
+        timesteps_per_iter: int = 10000,
+        max_iter: int = 10,
+        eval_freq: int = 1000,
+    ):
+        """Train the agent.
+
+        Args:
+            eval_env (gym.Env): Environment to use for evaluation.
+            weight_selection_algo (str): Weight selection algorithm to use.
+            timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
+            max_iter (int): Maximum number of iterations to train the agent for.
+            eval_freq (int): Number of timesteps between evaluations during an iteration.
+        """
+        linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
+
+        test_tasks = equally_spaced_weights(self.reward_dim, n=100, seed=42)
+
+        for iter in range(1, max_iter + 1):
+            if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
+                if weight_selection_algo == "gpi-ls":
+                    self.set_weight_support(linear_support.get_weight_support())
+                    self.use_gpi = True
+                    w = linear_support.next_weight(algo="gpi-ls", gpi_agent=self, env=eval_env)
+                    self.use_gpi = False
+                else:
+                    w = linear_support.next_weight(algo="ols")
+
+                if w is None:
+                    break
+            else:
+                raise ValueError(f"Unknown algorithm {weight_selection_algo}.")
+
+            print("Next weight vector:", w)
+            if weight_selection_algo == "gpi-ls":
+                M = linear_support.get_weight_support() + linear_support.get_corner_weights(top_k=4) + [w]
+            elif weight_selection_algo == "ols":
+                M = linear_support.get_weight_support() + [w]
+            else:
+                M = None
+
+            self.train_iteration(
+                total_timesteps=timesteps_per_iter,
+                weight=w,
+                weight_support=M,
+                change_weight_every_episode=weight_selection_algo == "gpi-ls",
+                eval_env=eval_env,
+                eval_freq=eval_freq,
+            )
+
+            if weight_selection_algo == "ols":
+                value = policy_evaluation_mo(self, eval_env, w, rep=5)
+                linear_support.add_solution(value, w)
+            elif weight_selection_algo == "gpi-ls":
+                for wcw in M:
+                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)
+                    linear_support.add_solution(n_value, wcw)
+
+            # Evaluation
+            gpi_returns_test_tasks = [
+                policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
+            ]
+            mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
+            wb.log(
+                {"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}
+            )  # This is the EU computed in the paper
+            eu = expected_utility(gpi_returns_test_tasks, test_tasks)
+            wb.log({"eval/EU - GPI": eu, "iteration": iter})
+
+            self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
+
+        self.close_wandb()
