@@ -118,6 +118,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
     ):
         """GPI-PD algorithm with continuous actions.
 
+        It extends the TD3 algorithm to multi-objective RL.
+        It learns the policy and Q-networks conditioned on the weight vector.
+
         Args:
             env (gym.Env): The environment to train on.
             learning_rate (float, optional): The learning rate. Defaults to 3e-4.
