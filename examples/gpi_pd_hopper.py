@@ -9,7 +9,7 @@ from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
 # from gymnasium.wrappers.record_video import RecordVideo
 
 
-def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000):
+def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 15000):
     def make_env(record_episode_statistics: bool = False):
         env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
         if record_episode_statistics:
