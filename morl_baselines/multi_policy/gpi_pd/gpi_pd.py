@@ -16,7 +16,8 @@ from mo_gymnasium.evaluation import policy_evaluation_mo
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.performance_indicators import (  # maximum_utility_loss,
+from morl_baselines.common.performance_indicators import ( 
+    maximum_utility_loss,
     expected_utility,
 )
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
@@ -662,7 +663,6 @@ class GPIPD(MOPolicy, MOAgent):
             weight (np.ndarray): Weight vector
             weight_support (List[np.ndarray]): Weight support set
             change_w_every_episode (bool): Whether to change the weight vector at the end of each episode
-            total_episodes (Optional[int]): Number of episodes to train for
             reset_num_timesteps (bool): Whether to reset the number of timesteps
             eval_env (Optional[gym.Env]): Environment to evaluate on
             eval_freq (int): Number of timesteps between evaluations
@@ -733,7 +733,7 @@ class GPIPD(MOPolicy, MOAgent):
             else:
                 obs = next_obs
 
-    def train(self, eval_env, timesteps_per_iter: int = 10000, max_iter: int = 15, weight_selection_algo: str = "gpi-ls"):
+    def train(self, eval_env, timesteps_per_iter: int = 10000, max_iter: int = 15, weight_selection_algo: str = "gpi-ls", ref_front: Optional[List[np.ndarray]] = None):
         """Train agent.
 
         Args:
@@ -741,13 +741,13 @@ class GPIPD(MOPolicy, MOAgent):
             timesteps_per_iter (int): Number of timesteps to train for per iteration
             max_iter (int): Number of iterations to train for
             weight_selection_algo (str): Weight selection algorithm to use
+            ref_front (Optional[List[np.ndarray]]): Reference front for computing maximum utiltiy loss
         """
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
         weight_history = []
 
         test_tasks = equally_spaced_weights(self.reward_dim, 100, seed=42)
-        # ccs = eval_env.convex_coverage_set(frame_skip=4, discount=0.98, incremental_frame_skip=True, symmetric=True)
 
         for iter in range(1, max_iter + 1):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
@@ -801,8 +801,9 @@ class GPIPD(MOPolicy, MOAgent):
             eu = expected_utility(gpi_returns_test_tasks, test_tasks)
             wb.log({"eval/EU - GPI": eu, "iteration": iter})
 
-            # mul = maximum_utility_loss(gpi_returns_test_tasks, ccs, test_tasks)
-            # wb.log({"eval/MUL - GPI": mul, "iteration": iter})
+            if ref_front is not None:
+                mul = maximum_utility_loss(gpi_returns_test_tasks, ref_front, test_tasks)
+                wb.log({"eval/MUL - GPI": mul, "iteration": iter})
 
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 

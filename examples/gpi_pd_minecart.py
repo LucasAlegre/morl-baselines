@@ -48,8 +48,8 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         dynamics_rollout_len=1,
         real_ratio=0.5,
         log=True,
-        project_name="MORL Baselines - MineCart",
-        experiment_name=f"{algo} + gpid-pd={gpi_pd} g={g}",
+        project_name="MORL Baselines",
+        experiment_name="GPI-PD - Minecart",
     )
 
     agent.train(
