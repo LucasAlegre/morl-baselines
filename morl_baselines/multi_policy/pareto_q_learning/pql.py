@@ -215,9 +215,7 @@ class PQL(MOAgent):
 
             if self.log and episode % log_every == 0:
                 self.writer.add_scalar("global_step", self.global_step, self.global_step)
-                pf = self.get_local_pcs(state=0)
-                # PF is a set of tuples, convert to list of np arrays
-                pf = [np.array(t) for t in pf]
+                pf = self._eval_all_policies()
                 log_all_multi_policy_metrics(
                     current_front=pf,
                     hv_ref_point=self.ref_point,
@@ -228,6 +226,14 @@ class PQL(MOAgent):
                 )
 
         return self.get_local_pcs(state=0)
+
+    def _eval_all_policies(self) -> List[np.ndarray]:
+        """Evaluate all learned policies by tracking them."""
+        pf = []
+        for vec in self.get_local_pcs(state=0):
+            pf.append(self.track_policy(vec))
+
+        return pf
 
     def track_policy(self, vec):
         """Track a policy from its return vector.
@@ -240,6 +246,7 @@ class PQL(MOAgent):
         terminated = False
         truncated = False
         total_rew = np.zeros(self.num_objectives)
+        current_gamma = 1.0
 
         while not (terminated or truncated):
             state = np.ravel_multi_index(state, self.env_shape)
@@ -250,9 +257,10 @@ class PQL(MOAgent):
                 non_dominated_set = self.non_dominated[state][action]
                 for q in non_dominated_set:
                     q = np.array(q)
-                    if np.all(self.gamma * q + im_rew == target):
+                    if np.allclose(self.gamma * q + im_rew, target, atol=1e-3):
                         state, reward, terminated, truncated, _ = self.env.step(action)
-                        total_rew += reward
+                        total_rew += current_gamma * reward
+                        current_gamma *= self.gamma
                         target = q
                         new_target = True
                         break
