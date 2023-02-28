@@ -1,6 +1,6 @@
-import mo_gym
+import mo_gymnasium as mo_gym
 import numpy as np
-from mo_gym.utils import MORecordEpisodeStatistics
+from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.single_policy.esr.eupg import EUPG
 

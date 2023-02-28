@@ -1,6 +1,6 @@
-import mo_gym
+import mo_gymnasium as mo_gym
 import numpy as np
-from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
+from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
 from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
 

@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 
-def get_non_dominated(candidates: set):
+def get_non_dominated(candidates: set) -> set:
     """This function returns the non-dominated subset of elements.
 
     Source: https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
@@ -35,6 +35,18 @@ def get_non_dominated(candidates: set):
         non_dominated.add(tuple(candidate))  # Add the non dominated vectors to a set again.
 
     return non_dominated
+
+
+def get_non_dominated_inds(solutions: np.ndarray) -> np.ndarray:
+    """Returns a boolean array indicating which points are non-dominated."""
+    is_efficient = np.ones(solutions.shape[0], dtype=bool)
+    for i, c in enumerate(solutions):
+        if is_efficient[i]:
+            # Remove dominated points, will also remove itself
+            is_efficient[is_efficient] = np.any(solutions[is_efficient] > c, axis=1)
+            # keep this solution as non-dominated
+            is_efficient[i] = 1
+    return is_efficient
 
 
 class ParetoArchive:

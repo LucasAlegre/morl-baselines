@@ -15,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.common.performance_indicators import hypervolume, igd, sparsity, eum
+from morl_baselines.common.performance_indicators import eum, hypervolume, igd, sparsity
 from morl_baselines.common.scalarization import tchebicheff, weighted_sum
 from morl_baselines.common.utils import nearest_neighbors, polyak_update, random_weights
 

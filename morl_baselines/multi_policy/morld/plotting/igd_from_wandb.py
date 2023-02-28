@@ -1,11 +1,11 @@
+import json
 from typing import List
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import wandb
-import json
 
 from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.common.performance_indicators import igd
@@ -13,7 +13,7 @@ from morl_baselines.common.performance_indicators import igd
 
 def read_table_file(filename):
     """Reads a table from wandb as json and return a 2D list containing a pareto front."""
-    with open(filename, "r") as f:
+    with open(filename) as f:
         data = json.load(f)
     return data["data"]
 

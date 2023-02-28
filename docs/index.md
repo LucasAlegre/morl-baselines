@@ -43,6 +43,7 @@ quickstart/overview
 algos/algorithms
 algos/multi_policy
 algos/single_policy
+algos/performances
 ```
 
 ```{toctree}
@@ -59,13 +60,8 @@ features/misc
 
 ```{toctree}
 :hidden:
-:caption: Community
-community/community
-```
-
-```{toctree}
-:hidden:
 :caption: Development
 
+community/community
 Github <https://github.com/LucasAlegre/MORL-baselines>
 ```

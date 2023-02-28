@@ -2,12 +2,12 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import torch as th
 import torch.nn
-from gym import spaces
-from mo_gym import eval_mo, eval_mo_reward_conditioned
+from gymnasium import spaces
+from mo_gymnasium import eval_mo, eval_mo_reward_conditioned
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -200,27 +200,20 @@ class MOAgent(ABC):
         # So env can be None. It is the responsibility of the implemented MORLAlgorithm to call this method in those cases
         if env is not None:
             self.env = env
-            # Vectorized envs
-            if isinstance(self.env, gym.vector.VectorEnv):
-                self.observation_space = self.env.single_observation_space
-                self.action_space = self.env.single_action_space
-            else:
-                self.observation_space = self.env.observation_space
-                self.action_space = self.env.action_space
-
-            if isinstance(self.observation_space, spaces.Discrete):
+            if isinstance(self.env.observation_space, spaces.Discrete):
                 self.observation_shape = (1,)
-                self.observation_dim = self.observation_space.n
+                self.observation_dim = self.env.observation_space.n
             else:
-                self.observation_shape = self.observation_space.shape
-                self.observation_dim = self.observation_space.shape[0]
+                self.observation_shape = self.env.observation_space.shape
+                self.observation_dim = self.env.observation_space.shape[0]
 
-            if isinstance(self.action_space, (spaces.Discrete, spaces.MultiBinary)):
+            self.action_space = env.action_space
+            if isinstance(self.env.action_space, (spaces.Discrete, spaces.MultiBinary)):
                 self.action_shape = (1,)
-                self.action_dim = self.action_space.n
+                self.action_dim = self.env.action_space.n
             else:
-                self.action_shape = self.action_space.shape
-                self.action_dim = self.action_space.shape[0]
+                self.action_shape = self.env.action_space.shape
+                self.action_dim = self.env.action_space.shape[0]
             self.reward_dim = self.env.reward_space.shape[0]
 
     @abstractmethod

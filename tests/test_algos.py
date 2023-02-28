@@ -1,17 +1,22 @@
 """Mostly tests to make sure the algorithms are able to run."""
 import time
 
-import mo_gym
+import mo_gymnasium as mo_gym
 import numpy as np
-from mo_gym.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
+from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.envelope.envelope import Envelope
+from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
+from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
+    GPIPDContinuousAction,
+)
+from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
-from morl_baselines.multi_policy.ols.ols import OLS
 from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
+from morl_baselines.multi_policy.pcn.pcn import PCN
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mo_ppo import make_env
@@ -110,7 +115,7 @@ def test_mp_moql():
 def test_ols():
     env = mo_gym.make("deep-sea-treasure-v0")
 
-    ols = OLS(num_objectives=2, epsilon=0.1, verbose=False)
+    ols = LinearSupport(num_objectives=2, epsilon=0.1, verbose=False)
     policies = []
     while not ols.ended():
         w = ols.next_weight()
@@ -137,7 +142,6 @@ def test_ols():
 
 
 def test_envelope():
-
     env = mo_gym.make("minecart-v0")
     eval_env = mo_gym.make("minecart-v0")
 
@@ -161,13 +165,63 @@ def test_envelope():
     assert len(vec_disc_ret) == 3
 
 
+def test_gpi_pd():
+    env = mo_gym.make("minecart-v0")
+    eval_env = mo_gym.make("minecart-v0")
+
+    agent = GPIPD(
+        env,
+        log=False,
+    )
+
+    agent.train_iteration(
+        total_timesteps=1000,
+        weight=np.array([1.0, 0.0, 0.0]),
+        weight_support=[np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0])],
+        eval_env=eval_env,
+        eval_freq=100,
+    )
+
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
+        agent, env=eval_env, w=np.array([0.5, 0.4, 0.1])
+    )
+    assert scalar_return != 0
+    assert scalarized_disc_return != 0
+    assert len(vec_ret) == 3
+    assert len(vec_disc_ret) == 3
+
+
+def test_gpi_pd_continuous_action():
+    env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+    eval_env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+
+    agent = GPIPDContinuousAction(
+        env,
+        log=False,
+    )
+
+    agent.train_iteration(
+        total_timesteps=1000,
+        weight=np.array([1.0, 0.0]),
+        weight_support=[np.array([0.0, 1.0])],
+        eval_env=eval_env,
+        eval_freq=100,
+    )
+
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(agent, env=eval_env, w=np.array([0.5, 0.5]))
+    assert scalar_return != 0
+    assert scalarized_disc_return != 0
+    assert len(vec_ret) == 2
+    assert len(vec_disc_ret) == 2
+
+
 # This test is a bit long to execute, idk what to do with it.
 def test_pgmorl():
-    env_id = "mo-MountainCarContinuous-v0"
+    env_id = "mo-mountaincarcontinuous-v0"
     algo = PGMORL(
         env_id=env_id,
         num_envs=4,
-        pop_size=3,
+        pop_size=6,
         warmup_iterations=2,
         evolutionary_iterations=2,
         num_weight_candidates=5,
@@ -186,3 +240,34 @@ def test_pgmorl():
         assert discounted_scalarized != 0
         assert len(reward) == 2
         assert len(discounted_reward) == 2
+
+
+def test_pcn():
+    env = mo_gym.make("minecart-deterministic-v0")
+
+    agent = PCN(
+        env,
+        scaling_factor=np.array([1, 1, 0.1, 0.1]),
+        learning_rate=1e-3,
+        batch_size=256,
+        log=False,
+    )
+
+    agent.train(
+        env,
+        num_er_episodes=1,
+        max_buffer_size=50,
+        num_model_updates=50,
+        total_time_steps=10,
+        max_return=np.array([1.5, 1.5, -0.0]),
+        ref_point=np.array([0, 0, -200.0]),
+    )
+
+    agent.set_desired_return_and_horizon(np.array([1.5, 1.5, -0.0]), 100)
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
+        agent, env=env, w=np.array([0.4, 0.4, 0.2]), render=False
+    )
+    assert scalar_return != 0
+    assert scalarized_disc_return != 0
+    assert len(vec_ret) == 3
+    assert len(vec_disc_ret) == 3

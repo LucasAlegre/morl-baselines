@@ -1,6 +1,6 @@
-import mo_gym
+import mo_gymnasium as mo_gym
 
-from morl_baselines.multi_policy.ols.ols import OLS
+from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
 
@@ -9,7 +9,7 @@ def main():
     GAMMA = 0.99
     env = mo_gym.MORecordEpisodeStatistics(mo_gym.make("deep-sea-treasure-v0"), gamma=GAMMA)
 
-    ols = OLS(num_objectives=2, epsilon=0.0, verbose=True)
+    ols = LinearSupport(num_objectives=2, epsilon=0.0, verbose=True)
     policies = []
     while not ols.ended():
         w = ols.next_weight()
