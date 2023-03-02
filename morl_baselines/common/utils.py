@@ -125,14 +125,14 @@ def equally_spaced_weights(dim: int, n: int, seed: Optional[int] = None) -> List
     return list(get_reference_directions("energy", dim, n, seed=seed))
 
 
-def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
+def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "dirichlet") -> np.ndarray:
     """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1.
 
     Args:
         dim: size of the weight vector
         seed: random seed
         n : number of weight vectors to generate
-        dist: distribution to use, either 'gaussian' or 'dirichlet'
+        dist: distribution to use, either 'gaussian' or 'dirichlet'. Default is 'dirichlet' as it is equivalent to sampling uniformly from the weight simplex.
     """
     if seed is not None:
         rng = np.random.default_rng(seed)
