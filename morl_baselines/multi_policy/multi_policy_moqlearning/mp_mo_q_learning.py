@@ -155,10 +155,13 @@ class MPMOQLearning(MOAgent, MOPolicy):
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
             reuse_q_table: Whether to reuse a Q-table from a previous learned policy when initializing a new policy.
         """
-        self.linear_support = LinearSupport(num_objectives=self.env.reward_dim, epsilon=epsilon_linear_support)
+        if eval_env is None:
+            eval_env = deepcopy(self.env)
+
+        self.linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=epsilon_linear_support)
 
         if test_weights is None:
-            test_weights = equally_spaced_weights(self.env.reward_dim, n=64)
+            test_weights = equally_spaced_weights(self.reward_dim, n=64)
 
         for iter in range(num_iterations):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
@@ -169,7 +172,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
                     rep_eval=num_episodes_eval,
                 )
             elif weight_selection_algo == "random":
-                w = random_weights(self.env.reward_dim)
+                w = random_weights(self.reward_dim)
             else:
                 raise ValueError(f"Unknown weight selection algorithm: {weight_selection_algo}.")
 
