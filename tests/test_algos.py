@@ -8,6 +8,9 @@ from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
+from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
+    GPIPDContinuousAction,
+)
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
@@ -171,7 +174,7 @@ def test_gpi_pd():
         log=False,
     )
 
-    agent.train(
+    agent.train_iteration(
         total_timesteps=1000,
         weight=np.array([1.0, 0.0, 0.0]),
         weight_support=[np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0])],
@@ -186,6 +189,30 @@ def test_gpi_pd():
     assert scalarized_disc_return != 0
     assert len(vec_ret) == 3
     assert len(vec_disc_ret) == 3
+
+
+def test_gpi_pd_continuous_action():
+    env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+    eval_env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+
+    agent = GPIPDContinuousAction(
+        env,
+        log=False,
+    )
+
+    agent.train_iteration(
+        total_timesteps=1000,
+        weight=np.array([1.0, 0.0]),
+        weight_support=[np.array([0.0, 1.0])],
+        eval_env=eval_env,
+        eval_freq=100,
+    )
+
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(agent, env=eval_env, w=np.array([0.5, 0.5]))
+    assert scalar_return != 0
+    assert scalarized_disc_return != 0
+    assert len(vec_ret) == 2
+    assert len(vec_disc_ret) == 2
 
 
 # This test is a bit long to execute, idk what to do with it.

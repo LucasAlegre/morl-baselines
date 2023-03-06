@@ -1,11 +1,7 @@
-import gymnasium as gym
+import mo_gymnasium as mo_gym
 import numpy as np
 from matplotlib import pyplot as plt
 from mo_gymnasium import MORecordEpisodeStatistics
-from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import (
-    DEFAULT_MAP,
-    DeepSeaTreasure,
-)
 
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
@@ -14,14 +10,14 @@ from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning impor
 
 
 if __name__ == "__main__":
-    env = MORecordEpisodeStatistics(DeepSeaTreasure(dst_map=DEFAULT_MAP), gamma=0.9)
-    eval_env = gym.wrappers.TimeLimit(DeepSeaTreasure(dst_map=DEFAULT_MAP), 500)
+    env = MORecordEpisodeStatistics(mo_gym.make("deep-sea-treasure-concave-v0"), gamma=0.99)
+    eval_env = mo_gym.make("deep-sea-treasure-concave-v0")
     scalarization = tchebicheff(tau=4.0, reward_dim=2)
 
     agent = MPMOQLearning(
         env,
         ref_point=np.array([0.0, -25.0]),
-        known_pareto_front=env.unwrapped.pareto_front,
+        known_pareto_front=env.unwrapped.pareto_front(gamma=0.99),
         scalarization=scalarization,
         num_timesteps=int(1e5),
         weights_step_size=0.1,
