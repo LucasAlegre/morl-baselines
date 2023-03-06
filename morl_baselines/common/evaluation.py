@@ -8,9 +8,11 @@ from pymoo.indicators.hv import HV
 
 def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
     """Computes the hypervolume metric for a set of points (value vectors) and a reference point.
+
     Args:
         ref_point (np.ndarray): Reference point
         points (List[np.ndarray]): List of value vectors
+
     Returns:
         float: Hypervolume metric
     """
@@ -25,12 +27,14 @@ def eval_mo(
     render: bool = False,
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates one episode of the agent in the environment.
+
     Args:
         agent: Agent
         env: MO-Gymnasium environment with LinearReward wrapper
         scalarization: scalarization function, taking weights and reward as parameters
         w (np.ndarray): Weight vector
         render (bool, optional): Whether to render the environment. Defaults to False.
+
     Returns:
         (float, float, np.ndarray, np.ndarray): Scalarized total reward, scalarized return, vectorized total reward, vectorized return
     """
@@ -70,12 +74,14 @@ def eval_mo_reward_conditioned(
     render: bool = False,
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates one episode of the agent in the environment. This makes the assumption that the agent is conditioned on the accrued reward i.e. for ESR agent.
+
     Args:
         agent: Agent
         env: MO-Gymnasium environment
         scalarization: scalarization function, taking weights and reward as parameters
         w: weight vector
         render (bool, optional): Whether to render the environment. Defaults to False.
+
     Returns:
         (float, float, np.ndarray, np.ndarray): Scalarized total reward, scalarized return, vectorized total reward, vectorized return
     """
@@ -110,12 +116,14 @@ def policy_evaluation_mo(
     agent, env, w: np.ndarray, rep: int = 5, return_scalarized_value: bool = False
 ) -> Union[np.ndarray, float]:
     """Evaluates the value of a policy by running the policy for multiple episodes.
+
     Args:
         agent: Agent
         env: MO-Gymnasium environment with LinearReward wrapper
         w (np.ndarray): Weight vector
         rep (int, optional): Number of episodes for averaging. Defaults to 5.
         return_scalarized_value (bool, optional): Whether to return scalarized value. Defaults to False.
+
     Returns:
         np.ndarray: Value of the policy
     """
