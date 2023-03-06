@@ -37,7 +37,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
         weight_selection_algo: str = "random",
         epsilon_ols: Optional[float] = None,
         use_gpi: bool = False,
-        reuse_q_table: bool = True,
+        transfer_q_table: bool = True,
         dyna: bool = False,
         dyna_updates: int = 5,
         project_name: str = "MORL Baselines",
@@ -57,7 +57,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
             weight_selection_algo: The algorithm to use for weight selection. Options: "random", "ols", "gpi-ls"
             epsilon_ols: The epsilon value for the optimistic linear support.
             use_gpi: Whether to use the Generalized Policy Improvement (GPI) or not.
-            reuse_q_table: Whether to reuse a Q-table from a previous learned policy when initializing a new policy.
+            transfer_q_table: Whether to reuse a Q-table from a previous learned policy when initializing a new policy.
             dyna: Whether to use Dyna-Q or not.
             dyna_updates: The number of Dyna-Q updates to perform.
             project_name: The name of the project for logging.
@@ -76,7 +76,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
         self.use_gpi = use_gpi
         self.dyna = dyna
         self.dyna_updates = dyna_updates
-        self.reuse_q_table = reuse_q_table
+        self.transfer_q_table = transfer_q_table
         # Linear support
         self.policies = []
         self.weight_selection_algo = weight_selection_algo
@@ -110,7 +110,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
             "use_gpi": self.use_gpi,
             "weight_selection_algo": self.weight_selection_algo,
             "epsilon_ols": self.epsilon_ols,
-            "reuse_q_table": self.reuse_q_table,
+            "transfer_q_table": self.transfer_q_table,
             "dyna": self.dyna,
             "dyna_updates": self.dyna_updates,
         }
@@ -202,7 +202,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
                 log=self.log,
                 parent_writer=self.writer,
             )
-            if self.reuse_q_table and len(self.policies) > 0:
+            if self.transfer_q_table and len(self.policies) > 0:
                 reuse_ind = np.argmax([np.dot(w, v) for v in self.linear_support.ccs])
                 new_agent.q_table = deepcopy(self.policies[reuse_ind].q_table)
             self.policies.append(new_agent)
