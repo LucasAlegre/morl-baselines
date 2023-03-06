@@ -7,8 +7,8 @@ import cdd
 import cvxpy as cp
 import numpy as np
 from gymnasium.core import Env
-from mo_gymnasium.evaluation import policy_evaluation_mo
 
+from morl_baselines.common.evaluation import policy_evaluation_mo
 from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.utils import extrema_weights
