@@ -7,7 +7,7 @@ from typing_extensions import override
 import numpy as np
 from mo_gymnasium import policy_evaluation_mo
 
-from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.performance_indicators import (
     expected_utility,
     hypervolume,
@@ -19,7 +19,7 @@ from morl_baselines.multi_policy.linear_support.linear_support import LinearSupp
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
 
-class MPMOQLearning(MOAgent, MOPolicy):
+class MPMOQLearning(MOAgent):
     """Multi-policy MOQ-Learning: Outer loop version of mo_q_learning.
 
     Paper: Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.
@@ -36,7 +36,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
         epsilon_decay_steps: int = None,
         weight_selection_algo: str = "random",
         epsilon_ols: Optional[float] = None,
-        use_gpi: bool = False,
+        use_gpi_policy: bool = False,
         transfer_q_table: bool = True,
         dyna: bool = False,
         dyna_updates: int = 5,
@@ -56,7 +56,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
             epsilon_decay_steps: The number of steps for epsilon decay.
             weight_selection_algo: The algorithm to use for weight selection. Options: "random", "ols", "gpi-ls"
             epsilon_ols: The epsilon value for the optimistic linear support.
-            use_gpi: Whether to use the Generalized Policy Improvement (GPI) or not.
+            use_gpi_policy: Whether to use the Generalized Policy Improvement (GPI) or not.
             transfer_q_table: Whether to reuse a Q-table from a previous learned policy when initializing a new policy.
             dyna: Whether to use Dyna-Q or not.
             dyna_updates: The number of Dyna-Q updates to perform.
@@ -65,7 +65,6 @@ class MPMOQLearning(MOAgent, MOPolicy):
             log: Whether to log or not.
         """
         MOAgent.__init__(self, env)
-        MOPolicy.__init__(self)
         # Learning
         self.scalarization = scalarization
         self.learning_rate = learning_rate
@@ -73,7 +72,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
         self.initial_epsilon = initial_epsilon
         self.final_epsilon = final_epsilon
         self.epsilon_decay_steps = epsilon_decay_steps
-        self.use_gpi = use_gpi
+        self.use_gpi_policy = use_gpi_policy
         self.dyna = dyna
         self.dyna_updates = dyna_updates
         self.transfer_q_table = transfer_q_table
@@ -107,7 +106,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
             "final_epsilon": self.final_epsilon,
             "epsilon_decay_steps": self.epsilon_decay_steps,
             "scalarization": self.scalarization.__name__,
-            "use_gpi": self.use_gpi,
+            "use_gpi_policy": self.use_gpi_policy,
             "weight_selection_algo": self.weight_selection_algo,
             "epsilon_ols": self.epsilon_ols,
             "transfer_q_table": self.transfer_q_table,
@@ -135,13 +134,13 @@ class MPMOQLearning(MOAgent, MOPolicy):
         _, action = np.unravel_index(np.argmax(q_vals), q_vals.shape)
         return int(action)
 
-    @override
-    def eval(self, obs: np.array, w: Optional[np.ndarray] = None, policy_ind: Optional[int] = None) -> int:
+    def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
         """If use_gpi is True, return the action given by the GPI policy. Otherwise, return the action given by the policy with the given index."""
-        if self.use_gpi:
+        if self.use_gpi_policy:
             return self._gpi_action(obs, w)
         else:
-            return self.policies[policy_ind].eval(obs, w)
+            best_policy = np.argmax([np.dot(w, v) for v in self.linear_support.ccs])
+            return self.policies[best_policy].eval(obs, w)
 
     def delete_policies(self, delete_indx: List[int]):
         """Delete the policies with the given indices."""
@@ -230,7 +229,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
                     maximum_utility_loss(front, eval_env.pareto_front(gamma=self.gamma), test_weights),
                     self.global_step,
                 )
-                if self.use_gpi:
+                if self.use_gpi_policy:
                     front_gpi = [
                         policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_episodes_eval) for w in test_weights
                     ]
@@ -242,7 +241,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
                     )
                 if ref_point is not None:
                     self.writer.add_scalar("metrics/hv", hypervolume(ref_point, front), self.global_step)
-                    if self.use_gpi:
+                    if self.use_gpi_policy:
                         self.writer.add_scalar("metrics/hv_gpi", hypervolume(ref_point, front_gpi), self.global_step)
 
         if self.writer is not None:
