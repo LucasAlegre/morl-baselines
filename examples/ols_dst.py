@@ -1,7 +1,6 @@
 import mo_gymnasium as mo_gym
 import numpy as np
 
-
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
@@ -35,6 +34,7 @@ def main():
         eval_env=eval_env,
         ref_point=np.array([0.0, -25.0]),
     )
+
 
 if __name__ == "__main__":
     main()
