@@ -147,6 +147,7 @@ def test_envelope():
 
     agent = Envelope(
         env,
+        ref_point=np.array([0.0, 0.0, -200.0]),
         log=False,
     )
 
@@ -171,6 +172,7 @@ def test_gpi_pd():
 
     agent = GPIPD(
         env,
+        ref_point=np.array([0.0, 0.0, -200.0]),
         log=False,
     )
 
@@ -197,6 +199,7 @@ def test_gpi_pd_continuous_action():
 
     agent = GPIPDContinuousAction(
         env,
+        ref_point=np.array([-100.0, -100.0]),
         log=False,
     )
 
@@ -220,6 +223,7 @@ def test_pgmorl():
     env_id = "mo-mountaincarcontinuous-v0"
     algo = PGMORL(
         env_id=env_id,
+        ref_point=np.array([0.0, 0.0]),
         num_envs=4,
         pop_size=6,
         warmup_iterations=2,
