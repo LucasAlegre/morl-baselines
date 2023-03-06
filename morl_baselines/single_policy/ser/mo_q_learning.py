@@ -132,7 +132,7 @@ class MOQLearning(MOPolicy, MOAgent):
 
         # Dyna updates
         if self.dyna:
-            self.model.update(obs, self.action, next_obs, self.reward, self.terminated)
+            self.model.update(obs, self.action, self.reward, next_obs, self.terminated)
             for _ in range(self.dyna_updates):
                 s, a, r, next_s, terminal = self.model.random_transition()
                 if s not in self.q_table:
