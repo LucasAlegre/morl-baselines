@@ -34,7 +34,10 @@ class MPMOQLearning(MOAgent, MOPolicy):
         initial_epsilon: float = 0.1,
         final_epsilon: float = 0.1,
         epsilon_decay_steps: int = None,
+        weight_selection_algo: str = "random",
+        epsilon_ols: Optional[float] = None,
         use_gpi: bool = False,
+        reuse_q_table: bool = True,
         dyna: bool = False,
         dyna_updates: int = 5,
         project_name: str = "MORL Baselines",
@@ -51,7 +54,10 @@ class MPMOQLearning(MOAgent, MOPolicy):
             initial_epsilon: The initial epsilon value.
             final_epsilon: The final epsilon value.
             epsilon_decay_steps: The number of steps for epsilon decay.
+            weight_selection_algo: The algorithm to use for weight selection. Options: "random", "ols", "gpi-ls"
+            epsilon_ols: The epsilon value for the optimistic linear support.
             use_gpi: Whether to use the Generalized Policy Improvement (GPI) or not.
+            reuse_q_table: Whether to reuse a Q-table from a previous learned policy when initializing a new policy.
             dyna: Whether to use Dyna-Q or not.
             dyna_updates: The number of Dyna-Q updates to perform.
             project_name: The name of the project for logging.
@@ -70,6 +76,17 @@ class MPMOQLearning(MOAgent, MOPolicy):
         self.use_gpi = use_gpi
         self.dyna = dyna
         self.dyna_updates = dyna_updates
+        self.reuse_q_table = reuse_q_table
+        # Linear support
+        self.policies = []
+        self.weight_selection_algo = weight_selection_algo
+        self.epsilon_ols = epsilon_ols
+        assert self.weight_selection_algo in [
+            "random",
+            "ols",
+            "gpi-ls",
+        ], f"Unknown weight selection algorithm: {self.weight_selection_algo}."
+        self.linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=epsilon_ols)
 
         # Logging
         self.project_name = project_name
@@ -81,9 +98,6 @@ class MPMOQLearning(MOAgent, MOPolicy):
         else:
             self.writer = None
 
-        self.policies = []
-        self.linear_support = None
-
     @override
     def get_config(self) -> dict:
         return {
@@ -93,6 +107,12 @@ class MPMOQLearning(MOAgent, MOPolicy):
             "final_epsilon": self.final_epsilon,
             "epsilon_decay_steps": self.epsilon_decay_steps,
             "scalarization": self.scalarization.__name__,
+            "use_gpi": self.use_gpi,
+            "weight_selection_algo": self.weight_selection_algo,
+            "epsilon_ols": self.epsilon_ols,
+            "reuse_q_table": self.reuse_q_table,
+            "dyna": self.dyna,
+            "dyna_updates": self.dyna_updates,
         }
 
     def update(self) -> None:
@@ -132,49 +152,40 @@ class MPMOQLearning(MOAgent, MOPolicy):
         self,
         num_iterations: int,
         timesteps_per_iteration: int,
-        weight_selection_algo: str = "random",
         eval_freq: int = 1000,
         eval_env=None,
         ref_point: Optional[np.ndarray] = None,
         test_weights: Optional[np.ndarray] = None,
-        epsilon_linear_support: Optional[float] = None,
         num_episodes_eval: int = 10,
-        reuse_q_table: bool = True,
     ):
         """Learn a set of policies.
 
         Args:
             num_iterations: The number of iterations/policies to train.
             timesteps_per_iteration: The number of timesteps per iteration.
-            weight_selection_algo: The algorithm to use for weight selection. Options: "random", "ols", "gpi-ls"
             eval_freq: The frequency of evaluation.
             eval_env: The environment to use for evaluation.
             ref_point: The reference point for the hypervolume calculation.
             test_weights: The weight vectors to use for evaluation (e.g. for expected utility).
             epsilon_linear_support: The epsilon value for the linear support algorithm.
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
-            reuse_q_table: Whether to reuse a Q-table from a previous learned policy when initializing a new policy.
         """
         if eval_env is None:
             eval_env = deepcopy(self.env)
-
-        self.linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=epsilon_linear_support)
 
         if test_weights is None:
             test_weights = equally_spaced_weights(self.reward_dim, n=64)
 
         for iter in range(num_iterations):
-            if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
+            if self.weight_selection_algo == "ols" or self.weight_selection_algo == "gpi-ls":
                 w = self.linear_support.next_weight(
-                    algo=weight_selection_algo,
-                    gpi_agent=self if weight_selection_algo == "gpi-ls" else None,
-                    env=eval_env if weight_selection_algo == "gpi-ls" else None,
+                    algo=self.weight_selection_algo,
+                    gpi_agent=self if self.weight_selection_algo == "gpi-ls" else None,
+                    env=eval_env if self.weight_selection_algo == "gpi-ls" else None,
                     rep_eval=num_episodes_eval,
                 )
-            elif weight_selection_algo == "random":
+            elif self.weight_selection_algo == "random":
                 w = random_weights(self.reward_dim)
-            else:
-                raise ValueError(f"Unknown weight selection algorithm: {weight_selection_algo}.")
 
             new_agent = MOQLearning(
                 env=self.env,
@@ -191,7 +202,7 @@ class MPMOQLearning(MOAgent, MOPolicy):
                 log=self.log,
                 parent_writer=self.writer,
             )
-            if reuse_q_table and len(self.policies) > 0:
+            if self.reuse_q_table and len(self.policies) > 0:
                 reuse_ind = np.argmax([np.dot(w, v) for v in self.linear_support.ccs])
                 new_agent.q_table = deepcopy(self.policies[reuse_ind].q_table)
             self.policies.append(new_agent)

@@ -22,14 +22,14 @@ def main():
         initial_epsilon=1,
         final_epsilon=0.01,
         epsilon_decay_steps=int(2e5),
+        weight_selection_algo="gpi-ls",
+        epsilon_ols=None,
     )
     mp_moql.train(
         num_iterations=15,
         timesteps_per_iteration=int(2e5),
         eval_freq=100,
         num_episodes_eval=1,
-        weight_selection_algo="ols",
-        epsilon_linear_support=0.0,
         eval_env=eval_env,
         ref_point=np.array([0.0, -17.383]),
     )
