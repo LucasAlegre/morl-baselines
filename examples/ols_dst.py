@@ -31,7 +31,7 @@ def main():
         eval_freq=100,
         num_episodes_eval=1,
         eval_env=eval_env,
-        ref_point=np.array([0.0, -17.383]),
+        ref_point=np.array([0.0, -25.0]),
     )
 
 
