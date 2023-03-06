@@ -2,7 +2,7 @@
 import os
 import random
 from itertools import chain
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import torch as th
@@ -15,11 +15,11 @@ from mo_gymnasium.evaluation import policy_evaluation_mo
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import mlp
-from morl_baselines.common.performance_indicators import expected_utility
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
     equally_spaced_weights,
     layer_init,
+    log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
 )
@@ -85,6 +85,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
     def __init__(
         self,
         env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         learning_rate: float = 3e-4,
         gamma: float = 0.99,
         tau: float = 0.005,
@@ -111,7 +113,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         dynamics_buffer_size: int = 200000,
         dynamics_min_uncertainty: float = 2.0,
         dynamics_real_ratio: float = 0.1,
-        project_name: str = "MORL Baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD Continuous Action",
         log: bool = True,
         device: Union[th.device, str] = "auto",
@@ -123,6 +125,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
         Args:
             env (gym.Env): The environment to train on.
+            ref_point (np.ndarray): The reference point for the hypervolume calculation.
+            known_pareto_front (Optional[List[np.ndarray]], optional): The known Pareto front. Defaults to None.
             learning_rate (float, optional): The learning rate. Defaults to 3e-4.
             gamma (float, optional): The discount factor. Defaults to 0.99.
             tau (float, optional): The soft update coefficient. Defaults to 0.005.
@@ -156,6 +160,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         """
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
+        self.ref_point = ref_point
+        self.known_pareto_front = known_pareto_front
         self.learning_rate = learning_rate
         self.tau = tau
         self.gamma = gamma
@@ -617,17 +623,27 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)
                     linear_support.add_solution(n_value, wcw)
 
-            # Evaluation
-            gpi_returns_test_tasks = [
-                policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
-            ]
-            mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
-            wb.log(
-                {"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}
-            )  # This is the EU computed in the paper
-            eu = expected_utility(gpi_returns_test_tasks, test_tasks)
-            wb.log({"eval/EU - GPI": eu, "iteration": iter})
+            if self.log:
+                # Evaluation
+                gpi_returns_test_tasks = [
+                    policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
+                ]
+                log_all_multi_policy_metrics(
+                    current_front=gpi_returns_test_tasks,
+                    hv_ref_point=self.ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=self.known_pareto_front,
+                    n_sample_weights=100,
+                )
+                # This is the EU computed in the paper
+                mean_gpi_returns_test_tasks = np.mean(
+                    [np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0
+                )
+                wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
+            # Checkpoint
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()

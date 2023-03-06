@@ -143,6 +143,7 @@ class PCN(MOAgent, MOPolicy):
     def get_config(self) -> dict:
         """Get configuration of PCN model."""
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "batch_size": self.batch_size,
             "gamma": self.gamma,
             "learning_rate": self.learning_rate,
@@ -323,7 +324,7 @@ class PCN(MOAgent, MOPolicy):
         total_time_steps: int = 1e7,
         num_step_episodes: int = 10,
         num_model_updates: int = 100,
-        max_return: float = 250.0,
+        max_return: np.ndarray = 250.0,
         max_buffer_size: int = 500,
         ref_point: np.ndarray = np.array([0.0, 0.0]),
         known_pareto_front: Optional[List[np.ndarray]] = None,

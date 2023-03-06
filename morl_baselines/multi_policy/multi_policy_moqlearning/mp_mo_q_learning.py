@@ -32,7 +32,7 @@ class MPMOQLearning(MOAgent):
         learning_starts: int = 0,
         num_timesteps: int = int(5e5),
         eval_freq: int = 1000,
-        project_name: str = "MORL-baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "MultiPolicy MO Q-Learning",
         log: bool = True,
     ):
@@ -106,6 +106,7 @@ class MPMOQLearning(MOAgent):
     @override
     def get_config(self) -> dict:
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "alpha": self.learning_rate,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,

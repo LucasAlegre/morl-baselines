@@ -18,6 +18,7 @@ from morl_baselines.common.utils import (
     get_grad_norm,
     layer_init,
     linearly_decaying_value,
+    log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
     random_weights,
@@ -80,6 +81,8 @@ class Envelope(MOPolicy, MOAgent):
     def __init__(
         self,
         env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         learning_rate: float = 3e-4,
         initial_epsilon: float = 0.01,
         final_epsilon: float = 0.01,
@@ -109,6 +112,8 @@ class Envelope(MOPolicy, MOAgent):
 
         Args:
             env: The environment to learn from.
+            ref_point: The reference point for the hypervolume calculation.
+            known_pareto_front: The known discounted pareto front of the environment if known.
             learning_rate: The learning rate (alpha).
             initial_epsilon: The initial epsilon value for epsilon-greedy exploration.
             final_epsilon: The final epsilon value for epsilon-greedy exploration.
@@ -136,6 +141,8 @@ class Envelope(MOPolicy, MOAgent):
         """
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
+        self.ref_point = ref_point
+        self.known_pareto_front = known_pareto_front
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -497,6 +504,17 @@ class Envelope(MOPolicy, MOAgent):
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
+                eval_weights = list(random_weights(dim=self.reward_dim, n=100))
+                current_front = [self.policy_eval(eval_env, weights=ew, writer=None)[3] for ew in eval_weights]
+                log_all_multi_policy_metrics(
+                    current_front=current_front,
+                    hv_ref_point=self.ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=self.known_pareto_front,
+                    n_sample_weights=100,
+                )
                 self.policy_eval(eval_env, weights=w, writer=self.writer)
 
             if terminated or truncated:

@@ -17,7 +17,7 @@ if __name__ == "__main__":
         epsilon_decay=0.997,
         final_epsilon=0.2,
         seed=1,
-        project_name="MORL-baselines",
+        project_name="MORL-Baselines",
         experiment_name="Pareto Q-Learning",
         log=True,
     )

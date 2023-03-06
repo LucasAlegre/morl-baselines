@@ -32,7 +32,7 @@ class MOQLearning(MOPolicy, MOAgent):
         epsilon_decay_steps: int = None,
         learning_starts: int = 0,
         project_name: str = "MORL-baselines",
-        experiment_name: str = "MO-Q-Learning",
+        experiment_name: str = "MO Q-Learning",
         log: bool = True,
         parent_writer: Optional[SummaryWriter] = None,
     ):
@@ -136,6 +136,7 @@ class MOQLearning(MOPolicy, MOAgent):
     @override
     def get_config(self) -> dict:
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "alpha": self.learning_rate,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,

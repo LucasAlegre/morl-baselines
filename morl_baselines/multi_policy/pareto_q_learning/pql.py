@@ -26,7 +26,7 @@ class PQL(MOAgent):
         epsilon_decay: float = 0.99,
         final_epsilon: float = 0.1,
         seed: int = None,
-        project_name: str = "MORL-baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "Pareto Q-Learning",
         log: bool = True,
     ):
@@ -86,6 +86,7 @@ class PQL(MOAgent):
             Dict: A dictionary of parameters and values.
         """
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "ref_point": list(self.ref_point),
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,

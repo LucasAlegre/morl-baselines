@@ -9,6 +9,8 @@ if __name__ == "__main__":
     env_id = "mo-halfcheetah-v4"
     algo = PGMORL(
         env_id=env_id,
+        ref_point=np.array([0.0, -5.0]),
+        known_pareto_front=None,
         num_envs=4,
         pop_size=6,
         warmup_iterations=80,

@@ -245,7 +245,7 @@ class EUPG(MOPolicy, MOAgent):
     @override
     def get_config(self) -> dict:
         return {
-            # "env_id": self.env.unwrapped.spec.id,
+            "env_id": self.env.unwrapped.spec.id,
             "learning_rate": self.learning_rate,
             "buffer_size": self.buffer_size,
             "gamma": self.gamma,

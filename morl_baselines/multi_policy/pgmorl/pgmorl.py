@@ -290,8 +290,8 @@ class PGMORL(MOAgent):
 
     def __init__(
         self,
-        env_id: str = "mo-halfcheetah-v4",
-        ref_point: np.ndarray = np.array([0.0, -5.0]),
+        env_id: str,
+        ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         num_envs: int = 4,
         pop_size: int = 6,
