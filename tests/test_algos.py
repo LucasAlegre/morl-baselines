@@ -97,7 +97,6 @@ def test_mp_moql():
 
     agent = MPMOQLearning(
         env,
-        ref_point=np.array([0.0, -25.0]),
         scalarization=scalarization,
         num_timesteps=int(1e4),
         weights_step_size=0.3,

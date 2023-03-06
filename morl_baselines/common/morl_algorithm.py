@@ -227,5 +227,6 @@ class MOAgent(ABC):
     def close_wandb(self) -> None:
         """Closes the wandb writer and finishes the run."""
         import wandb
+
         self.writer.close()
         wandb.finish()

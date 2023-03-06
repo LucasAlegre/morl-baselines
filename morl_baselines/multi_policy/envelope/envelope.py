@@ -271,7 +271,7 @@ class Envelope(MOPolicy, MOAgent):
                 ) = self.__sample_batch_experiences()
 
             sampled_w = (
-                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w, dist='gaussian')).float().to(self.device)
+                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w, dist="gaussian")).float().to(self.device)
             )  # sample num_sample_w random weights
             w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = (

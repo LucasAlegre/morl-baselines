@@ -88,6 +88,13 @@ class MOQLearning(MOPolicy, MOAgent):
         else:
             return self.eval(obs)
 
+    def scalarized_q_values(self, obs, w: np.ndarray) -> np.ndarray:
+        """Returns the scalarized Q values for each action, given observation and weights."""
+        t_obs = tuple(obs)
+        if t_obs not in self.q_table:
+            return np.zeros(self.action_dim)
+        return np.array([self.scalarization(state_action_value, w) for state_action_value in self.q_table[t_obs]])
+
     @override
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
         """Greedily chooses best action using the scalarization method"""
@@ -205,6 +212,7 @@ class MOQLearning(MOPolicy, MOAgent):
                             self.global_step,
                             self.id,
                             self.writer,
+                            verbose=False,
                         )
             else:
                 self.obs = self.next_obs
