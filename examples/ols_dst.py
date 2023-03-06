@@ -22,8 +22,8 @@ def main():
         initial_epsilon=1,
         final_epsilon=0.01,
         epsilon_decay_steps=int(2e5),
-        weight_selection_algo="gpi-ls",
-        epsilon_ols=None,
+        weight_selection_algo="ols",
+        epsilon_ols=0.0,
     )
     mp_moql.train(
         num_iterations=15,
