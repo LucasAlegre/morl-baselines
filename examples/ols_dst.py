@@ -17,6 +17,8 @@ def main():
         learning_rate=0.3,
         gamma=GAMMA,
         use_gpi=True,
+        dyna=True,
+        dyna_updates=5,
         initial_epsilon=1,
         final_epsilon=0.01,
         epsilon_decay_steps=int(2e5),

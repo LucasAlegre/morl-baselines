@@ -7,6 +7,7 @@ import gymnasium as gym
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
+from morl_baselines.common.model_based.tabular_model import TabularModel
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.scalarization import weighted_sum
 from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
@@ -31,6 +32,8 @@ class MOQLearning(MOPolicy, MOAgent):
         final_epsilon: float = 0.1,
         epsilon_decay_steps: int = None,
         learning_starts: int = 0,
+        dyna: bool = False,
+        dyna_updates: int = 5,
         project_name: str = "MORL-baselines",
         experiment_name: str = "MO-Q-Learning",
         log: bool = True,
@@ -49,6 +52,8 @@ class MOQLearning(MOPolicy, MOAgent):
             final_epsilon: The final epsilon value
             epsilon_decay_steps: The number of steps to decay epsilon over
             learning_starts: The number of steps to wait before starting to learn
+            dyna: Whether to use Dyna-Q or not
+            dyna_updates: The number of Dyna-Q updates to perform each step
             project_name: The name of the project used for logging
             experiment_name: The name of the experiment used for logging
             log: Whether to log or not
@@ -68,11 +73,16 @@ class MOQLearning(MOPolicy, MOAgent):
         self.final_epsilon = final_epsilon
         self.epsilon_decay_steps = epsilon_decay_steps
         self.learning_starts = learning_starts
+        self.dyna = dyna
+        self.dyna_updates = dyna_updates
 
         self.weights = weights
         self.scalarization = scalarization
 
         self.q_table = dict()
+
+        if self.dyna:
+            self.model = TabularModel()
 
         self.log = log
         if parent_writer is not None:
@@ -108,9 +118,7 @@ class MOQLearning(MOPolicy, MOAgent):
 
     @override
     def update(self):
-        """
-        Updates the Q table
-        """
+        """Updates the Q table."""
         obs = tuple(self.obs)
         next_obs = tuple(self.next_obs)
         if obs not in self.q_table:
@@ -121,6 +129,19 @@ class MOQLearning(MOPolicy, MOAgent):
         max_q = self.q_table[next_obs][self.eval(self.next_obs)]
         td_error = self.reward + (1 - self.terminated) * self.gamma * max_q - self.q_table[obs][self.action]
         self.q_table[obs][self.action] += self.learning_rate * td_error
+
+        # Dyna updates
+        if self.dyna:
+            self.model.update(obs, self.action, next_obs, self.reward, self.terminated)
+            for _ in range(self.dyna_updates):
+                s, a, r, next_s, terminal = self.model.random_transition()
+                if s not in self.q_table:
+                    self.q_table[s] = np.zeros((self.action_dim, self.reward_dim))
+                if next_s not in self.q_table:
+                    self.q_table[next_s] = np.zeros((self.action_dim, self.reward_dim))
+                max_q = self.q_table[next_s][self.eval(next_s)]
+                model_td = r + (1 - terminal) * self.gamma * max_q - self.q_table[s][a]
+                self.q_table[s][a] += self.learning_rate * model_td
 
         if self.epsilon_decay_steps is not None:
             self.epsilon = linearly_decaying_value(
@@ -148,6 +169,8 @@ class MOQLearning(MOPolicy, MOAgent):
             "initial_epsilon": self.initial_epsilon,
             "final_epsilon": self.final_epsilon,
             "epsilon_decay_steps": self.epsilon_decay_steps,
+            "dyna": self.dyna,
+            "dyna_updates": self.dyna_updates,
             "weight": self.weights,
             "scalarization": self.scalarization.__name__,
         }
@@ -198,7 +221,6 @@ class MOQLearning(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and self.global_step % 1000 == 0:
-                    print("SPS:", int(self.global_step / (time.time() - start_time)))
                     self.writer.add_scalar(
                         f"charts{self.idstr}/SPS",
                         int(self.global_step / (time.time() - start_time)),

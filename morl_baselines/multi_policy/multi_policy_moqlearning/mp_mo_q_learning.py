@@ -35,6 +35,8 @@ class MPMOQLearning(MOAgent, MOPolicy):
         final_epsilon: float = 0.1,
         epsilon_decay_steps: int = None,
         use_gpi: bool = False,
+        dyna: bool = False,
+        dyna_updates: int = 5,
         project_name: str = "MORL Baselines",
         experiment_name: str = "MultiPolicy MO Q-Learning",
         log: bool = True,
@@ -50,6 +52,8 @@ class MPMOQLearning(MOAgent, MOPolicy):
             final_epsilon: The final epsilon value.
             epsilon_decay_steps: The number of steps for epsilon decay.
             use_gpi: Whether to use the Generalized Policy Improvement (GPI) or not.
+            dyna: Whether to use Dyna-Q or not.
+            dyna_updates: The number of Dyna-Q updates to perform.
             project_name: The name of the project for logging.
             experiment_name: The name of the experiment for logging.
             log: Whether to log or not.
@@ -64,6 +68,8 @@ class MPMOQLearning(MOAgent, MOPolicy):
         self.final_epsilon = final_epsilon
         self.epsilon_decay_steps = epsilon_decay_steps
         self.use_gpi = use_gpi
+        self.dyna = dyna
+        self.dyna_updates = dyna_updates
 
         # Logging
         self.project_name = project_name
@@ -177,6 +183,8 @@ class MPMOQLearning(MOAgent, MOPolicy):
                 initial_epsilon=self.initial_epsilon,
                 final_epsilon=self.final_epsilon,
                 epsilon_decay_steps=self.epsilon_decay_steps,
+                dyna=self.dyna,
+                dyna_updates=self.dyna_updates,
                 log=self.log,
                 parent_writer=self.writer,
             )
