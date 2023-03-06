@@ -159,6 +159,7 @@ def log_episode_info(
     global_timestep: int,
     id: Optional[int] = None,
     writer: Optional[SummaryWriter] = None,
+    verbose: bool = True,
 ):
     """Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).
 
@@ -169,6 +170,7 @@ def log_episode_info(
         global_timestep: global timestep
         id: agent's id
         writer: wandb writer
+        verbose: whether to print the episode info
     """
     episode_ts = info["l"]
     episode_time = info["t"]
@@ -181,10 +183,11 @@ def log_episode_info(
         scal_return = scalarization(episode_return, weights)
         disc_scal_return = scalarization(disc_episode_return, weights)
 
-    print("Episode infos:")
-    print(f"Steps: {episode_ts}, Time: {episode_time}")
-    print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")
-    print(f"Scalarized Reward: {scal_return}, Discounted: {disc_scal_return}")
+    if verbose:
+        print("Episode infos:")
+        print(f"Steps: {episode_ts}, Time: {episode_time}")
+        print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")
+        print(f"Scalarized Reward: {scal_return}, Discounted: {disc_scal_return}")
 
     if writer is not None:
         if id is not None:
