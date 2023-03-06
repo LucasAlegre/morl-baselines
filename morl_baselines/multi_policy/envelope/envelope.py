@@ -271,7 +271,7 @@ class Envelope(MOPolicy, MOAgent):
                 ) = self.__sample_batch_experiences()
 
             sampled_w = (
-                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w)).float().to(self.device)
+                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w, dist="gaussian")).float().to(self.device)
             )  # sample num_sample_w random weights
             w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = (
@@ -476,7 +476,7 @@ class Envelope(MOPolicy, MOAgent):
         num_episodes = 0
         obs, _ = self.env.reset()
 
-        w = weight if weight is not None else random_weights(self.reward_dim, 1)
+        w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian")
         tensor_w = th.tensor(w).float().to(self.device)
 
         for _ in range(1, total_timesteps + 1):
@@ -505,7 +505,7 @@ class Envelope(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if weight is None:
-                    w = random_weights(self.reward_dim, 1)
+                    w = random_weights(self.reward_dim, 1, dist="gaussian")
                     tensor_w = th.tensor(w).float().to(self.device)
 
                 if self.log and "episode" in info.keys():

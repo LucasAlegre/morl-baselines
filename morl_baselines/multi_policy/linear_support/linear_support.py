@@ -33,9 +33,9 @@ class LinearSupport:
         self,
         num_objectives: int,
         epsilon: float = 0.0,
-        verbose: bool = False,
+        verbose: bool = True,
     ):
-        """Initialize LS.
+        """Initialize Linear Support.
 
         Args:
             num_objectives (int): Number of objectives
@@ -99,9 +99,14 @@ class LinearSupport:
             print("CCS:", self.ccs, "CCS size:", len(self.ccs))
 
         if len(self.queue) == 0:
+            if self.verbose:
+                print("There are no corner weights in the queue. Returning None.")
             return None
         else:
-            return self.queue.pop(0)[1]
+            next_w = self.queue.pop(0)[1]
+            if self.verbose:
+                print("Next weight:", next_w)
+            return next_w
 
     def get_weight_support(self) -> List[np.ndarray]:
         """Returns the weight support of the CCS.
@@ -149,7 +154,7 @@ class LinearSupport:
 
         if self.is_dominated(value):
             if self.verbose:
-                print("Value is dominated. Discarding.")
+                print(f"Value {value} is dominated. Discarding.")
             return [len(self.ccs)]
 
         removed_indx = self.remove_obsolete_values(value)

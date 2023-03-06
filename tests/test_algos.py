@@ -97,19 +97,15 @@ def test_mp_moql():
 
     agent = MPMOQLearning(
         env,
-        ref_point=np.array([0.0, -25.0]),
         scalarization=scalarization,
-        num_timesteps=int(1e4),
-        weights_step_size=0.3,
         initial_epsilon=0.9,
         epsilon_decay_steps=int(1e3),
         log=False,
     )
-    agent.train()
+    agent.train(num_iterations=1, timesteps_per_iteration=1000)
 
-    front, discounted_front = agent.eval_all_agents()
+    front = agent.linear_support.ccs
     assert len(front) > 0
-    assert len(discounted_front) > 0
 
 
 def test_ols():
