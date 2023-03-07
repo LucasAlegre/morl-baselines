@@ -40,7 +40,7 @@ class MPMOQLearning(MOAgent):
         transfer_q_table: bool = True,
         dyna: bool = False,
         dyna_updates: int = 5,
-        project_name: str = "MORL Baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "MultiPolicy MO Q-Learning",
         log: bool = True,
     ):
