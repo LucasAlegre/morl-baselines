@@ -617,18 +617,16 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             )
 
             if weight_selection_algo == "ols":
-                value = policy_evaluation_mo(self, eval_env, w, rep=5)
+                value = policy_evaluation_mo(self, eval_env, w, rep=5)[3]
                 linear_support.add_solution(value, w)
             elif weight_selection_algo == "gpi-ls":
                 for wcw in M:
-                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)
+                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)[3]
                     linear_support.add_solution(n_value, wcw)
 
             if self.log:
                 # Evaluation
-                gpi_returns_test_tasks = [
-                    policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in eval_weights
-                ]
+                gpi_returns_test_tasks = [policy_evaluation_mo(self, eval_env, w, rep=5)[3] for w in eval_weights]
                 log_all_multi_policy_metrics(
                     current_front=gpi_returns_test_tasks,
                     hv_ref_point=ref_point,

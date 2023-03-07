@@ -1,6 +1,6 @@
 """Utilities related to evaluation."""
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -22,7 +22,7 @@ def eval_mo(
         render (bool, optional): Whether to render the environment. Defaults to False.
 
     Returns:
-        (float, float, np.ndarray, np.ndarray): Scalarized total reward, scalarized return, vectorized total reward, vectorized return
+        (float, float, np.ndarray, np.ndarray): Scalarized return, scalarized discounted return, vectorized return, vectorized discounted return
     """
     obs, _ = env.reset()
     done = False
@@ -69,7 +69,7 @@ def eval_mo_reward_conditioned(
         render (bool, optional): Whether to render the environment. Defaults to False.
 
     Returns:
-        (float, float, np.ndarray, np.ndarray): Scalarized total reward, scalarized return, vectorized total reward, vectorized return
+        (float, float, np.ndarray, np.ndarray): Scalarized return, scalarized discounted return, vectorized return, vectorized discounted return
     """
     obs, _ = env.reset()
     done = False
@@ -98,23 +98,27 @@ def eval_mo_reward_conditioned(
     )
 
 
-def policy_evaluation_mo(
-    agent, env, w: np.ndarray, rep: int = 5, return_scalarized_value: bool = False
-) -> Union[np.ndarray, float]:
-    """Evaluates the value of a policy by running the policy for multiple episodes.
+def policy_evaluation_mo(agent, env, w: np.ndarray, rep: int = 5) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    """Evaluates the value of a policy by running the policy for multiple episodes. Returns the average returns.
 
     Args:
         agent: Agent
-        env: MO-Gymnasium environment with LinearReward wrapper
+        env: MO-Gymnasium environment
         w (np.ndarray): Weight vector
         rep (int, optional): Number of episodes for averaging. Defaults to 5.
-        return_scalarized_value (bool, optional): Whether to return scalarized value. Defaults to False.
 
     Returns:
-        np.ndarray: Value of the policy
+        (float, float, np.ndarray, np.ndarray): Avg scalarized return, Avg scalarized discounted return, Avg vectorized return, Avg vectorized discounted return
     """
-    if return_scalarized_value:
-        returns = [eval_mo(agent, env, w=w)[1] for _ in range(rep)]
-    else:
-        returns = [eval_mo(agent, env, w=w)[3] for _ in range(rep)]
-    return np.mean(returns, axis=0)
+    evals = [eval_mo(agent, env, w) for _ in range(rep)]
+    avg_scalarized_return = np.mean([eval[0] for eval in evals])
+    avg_scalarized_discounted_return = np.mean([eval[1] for eval in evals])
+    avg_vec_return = np.mean([eval[2] for eval in evals], axis=0)
+    avg_disc_vec_return = np.mean([eval[3] for eval in evals], axis=0)
+
+    return (
+        avg_scalarized_return,
+        avg_scalarized_discounted_return,
+        avg_vec_return,
+        avg_disc_vec_return,
+    )

@@ -80,7 +80,7 @@ class LinearSupport:
                 elif algo == "gpi-ls":
                     if gpi_agent is None:
                         raise ValueError("GPI-LS requires passing a GPI agent.")
-                    gpi_expanded_set = [policy_evaluation_mo(gpi_agent, env, wc, rep=rep_eval) for wc in W_corner]
+                    gpi_expanded_set = [policy_evaluation_mo(gpi_agent, env, wc, rep=rep_eval)[3] for wc in W_corner]
                     priority = self.gpi_ls_priority(wc, gpi_expanded_set)
 
                 if self.epsilon is None or priority >= self.epsilon:

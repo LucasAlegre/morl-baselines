@@ -215,13 +215,15 @@ class MPMOQLearning(MOAgent):
             )
             self.global_step = new_agent.global_step
 
-            value = policy_evaluation_mo(agent=new_agent, env=eval_env, w=w, rep=num_episodes_eval)
+            value = policy_evaluation_mo(agent=new_agent, env=eval_env, w=w, rep=num_episodes_eval)[3]
             removed_inds = self.linear_support.add_solution(value, w)
             self.delete_policies(removed_inds)
 
             if self.log:
                 if self.use_gpi_policy:
-                    front = [policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_episodes_eval) for w in eval_weights]
+                    front = [
+                        policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_episodes_eval)[3] for w in eval_weights
+                    ]
                 else:
                     front = self.linear_support.ccs
                 log_all_multi_policy_metrics(
