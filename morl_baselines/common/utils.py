@@ -121,7 +121,7 @@ def extrema_weights(dim: int) -> List[np.ndarray]:
     return list(np.eye(dim, dtype=np.float32))
 
 
-def equally_spaced_weights(dim: int, n: int, seed: Optional[int] = None) -> List[np.ndarray]:
+def equally_spaced_weights(dim: int, n: int, seed: int = 42) -> List[np.ndarray]:
     """Generate weight vectors that are equally spaced in the weight simplex.
 
     It uses the Riesz s-Energy method from pymoo: https://pymoo.org/misc/reference_directions.html

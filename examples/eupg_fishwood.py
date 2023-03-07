@@ -2,6 +2,7 @@ import mo_gymnasium as mo_gym
 import numpy as np
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
+from morl_baselines.common.evaluation import eval_mo_reward_conditioned
 from morl_baselines.single_policy.esr.eupg import EUPG
 
 
@@ -15,4 +16,4 @@ if __name__ == "__main__":
     agent = EUPG(env, scalarization=scalarization, gamma=0.99, log=True, learning_rate=0.001)
     agent.train(total_timesteps=int(4e6), eval_env=eval_env, eval_freq=1000)
 
-    print(mo_gym.eval_mo_reward_conditioned(agent, env=eval_env, scalarization=scalarization))
+    print(eval_mo_reward_conditioned(agent, env=eval_env, scalarization=scalarization))

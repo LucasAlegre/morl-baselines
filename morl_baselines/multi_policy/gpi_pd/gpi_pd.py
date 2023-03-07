@@ -84,8 +84,6 @@ class GPIPD(MOPolicy, MOAgent):
     def __init__(
         self,
         env,
-        ref_point: np.ndarray,
-        known_pareto_front: Optional[List[np.ndarray]] = None,
         learning_rate: float = 3e-4,
         initial_epsilon: float = 0.01,
         final_epsilon: float = 0.01,
@@ -129,8 +127,6 @@ class GPIPD(MOPolicy, MOAgent):
 
         Args:
             env: The environment to learn from.
-            ref_point: The reference point for the hypervolume calculation.
-            known_pareto_front: The known pareto front for the environment.
             learning_rate: The learning rate.
             initial_epsilon: The initial epsilon value.
             final_epsilon: The final epsilon value.
@@ -172,8 +168,6 @@ class GPIPD(MOPolicy, MOAgent):
         """
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
-        self.ref_point = ref_point
-        self.known_pareto_front = known_pareto_front
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -739,6 +733,9 @@ class GPIPD(MOPolicy, MOAgent):
     def train(
         self,
         eval_env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        eval_weights_number_for_front: int = 100,
         timesteps_per_iter: int = 10000,
         max_iter: int = 15,
         weight_selection_algo: str = "gpi-ls",
@@ -747,6 +744,9 @@ class GPIPD(MOPolicy, MOAgent):
 
         Args:
             eval_env (gym.Env): Environment to evaluate on
+            ref_point (np.ndarray): Reference point for hypervolume calculation
+            known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front if known.
+            eval_weights_number_for_front: Number of weights to evaluate for the Pareto front
             timesteps_per_iter (int): Number of timesteps to train for per iteration
             max_iter (int): Number of iterations to train for
             weight_selection_algo (str): Weight selection algorithm to use
@@ -755,7 +755,7 @@ class GPIPD(MOPolicy, MOAgent):
 
         weight_history = []
 
-        test_tasks = equally_spaced_weights(self.reward_dim, 100, seed=42)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
 
         for iter in range(1, max_iter + 1):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
@@ -801,20 +801,19 @@ class GPIPD(MOPolicy, MOAgent):
             if self.log:
                 # Evaluation
                 gpi_returns_test_tasks = [
-                    policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
+                    policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in eval_weights
                 ]
                 log_all_multi_policy_metrics(
                     current_front=gpi_returns_test_tasks,
-                    hv_ref_point=self.ref_point,
+                    hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
                     writer=self.writer,
-                    ref_front=self.known_pareto_front,
-                    n_sample_weights=100,
+                    ref_front=known_pareto_front,
                 )
                 # This is the EU computed in the paper
                 mean_gpi_returns_test_tasks = np.mean(
-                    [np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0
+                    [np.dot(w, q) for w, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
                 wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 

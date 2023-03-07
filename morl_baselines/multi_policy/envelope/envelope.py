@@ -15,6 +15,7 @@ from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import NatureCNN, mlp
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
+    equally_spaced_weights,
     get_grad_norm,
     layer_init,
     linearly_decaying_value,
@@ -81,8 +82,6 @@ class Envelope(MOPolicy, MOAgent):
     def __init__(
         self,
         env,
-        ref_point: np.ndarray,
-        known_pareto_front: Optional[List[np.ndarray]] = None,
         learning_rate: float = 3e-4,
         initial_epsilon: float = 0.01,
         final_epsilon: float = 0.01,
@@ -112,8 +111,6 @@ class Envelope(MOPolicy, MOAgent):
 
         Args:
             env: The environment to learn from.
-            ref_point: The reference point for the hypervolume calculation.
-            known_pareto_front: The known discounted pareto front of the environment if known.
             learning_rate: The learning rate (alpha).
             initial_epsilon: The initial epsilon value for epsilon-greedy exploration.
             final_epsilon: The final epsilon value for epsilon-greedy exploration.
@@ -141,8 +138,6 @@ class Envelope(MOPolicy, MOAgent):
         """
         MOAgent.__init__(self, env, device=device)
         MOPolicy.__init__(self, device)
-        self.ref_point = ref_point
-        self.known_pareto_front = known_pareto_front
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -461,7 +456,10 @@ class Envelope(MOPolicy, MOAgent):
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
+        ref_point: Optional[np.ndarray] = None,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         eval_freq: int = 1000,
+        eval_weights_number_for_front: int = 100,
         reset_learning_starts: bool = False,
     ):
         """Train the agent.
@@ -472,7 +470,10 @@ class Envelope(MOPolicy, MOAgent):
             total_episodes: total number of episodes to train for. If None, it is ignored.
             reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
             eval_env: environment to use for evaluation. If None, it is ignored.
+            ref_point: reference point for the hypervolume computation.
+            known_pareto_front: known pareto front for the hypervolume computation.
             eval_freq: policy evaluation frequency.
+            eval_weights_number_for_front: number of weights to sample for creating the pareto front when evaluating.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
         """
         self.global_step = 0 if reset_num_timesteps else self.global_step
@@ -481,6 +482,7 @@ class Envelope(MOPolicy, MOAgent):
             self.learning_starts = self.global_step
 
         num_episodes = 0
+        eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
         obs, _ = self.env.reset()
 
         w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian")
@@ -504,16 +506,15 @@ class Envelope(MOPolicy, MOAgent):
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                eval_weights = list(random_weights(dim=self.reward_dim, n=100))
+                assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
                 current_front = [self.policy_eval(eval_env, weights=ew, writer=None)[3] for ew in eval_weights]
                 log_all_multi_policy_metrics(
                     current_front=current_front,
-                    hv_ref_point=self.ref_point,
+                    hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
                     writer=self.writer,
-                    ref_front=self.known_pareto_front,
-                    n_sample_weights=100,
+                    ref_front=known_pareto_front,
                 )
                 self.policy_eval(eval_env, weights=w, writer=self.writer)
 

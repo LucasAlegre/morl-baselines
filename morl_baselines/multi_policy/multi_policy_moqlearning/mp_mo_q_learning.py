@@ -4,17 +4,17 @@ from copy import deepcopy
 from typing import List, Optional
 from typing_extensions import override
 
+import gymnasium as gym
 import numpy as np
-from mo_gymnasium import policy_evaluation_mo
 
+from morl_baselines.common.evaluation import policy_evaluation_mo
 from morl_baselines.common.morl_algorithm import MOAgent
-from morl_baselines.common.performance_indicators import (
-    expected_utility,
-    hypervolume,
-    maximum_utility_loss,
-)
 from morl_baselines.common.scalarization import weighted_sum
-from morl_baselines.common.utils import equally_spaced_weights, random_weights
+from morl_baselines.common.utils import (
+    equally_spaced_weights,
+    log_all_multi_policy_metrics,
+    random_weights,
+)
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
@@ -115,10 +115,6 @@ class MPMOQLearning(MOAgent):
             "dyna_updates": self.dyna_updates,
         }
 
-    def update(self) -> None:
-        """This class does not implement the update method."""
-        pass
-
     def _gpi_action(self, state: np.ndarray, w: np.ndarray) -> int:
         """Get the action given by the GPI policy.
 
@@ -136,7 +132,7 @@ class MPMOQLearning(MOAgent):
         return int(action)
 
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
-        """If use_gpi is True, return the action given by the GPI policy. Otherwise, return the action given by the policy with the given index."""
+        """If use_gpi is True, return the action given by the GPI policy. Otherwise, chooses the best policy for w and follows it."""
         if self.use_gpi_policy:
             return self._gpi_action(obs, w)
         else:
@@ -150,31 +146,32 @@ class MPMOQLearning(MOAgent):
 
     def train(
         self,
+        eval_env: gym.Env,
+        ref_point: np.ndarray,
         num_iterations: int,
         timesteps_per_iteration: int,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        eval_weights_number_for_front: int = 100,
         eval_freq: int = 1000,
-        eval_env=None,
-        ref_point: Optional[np.ndarray] = None,
-        test_weights: Optional[np.ndarray] = None,
         num_episodes_eval: int = 10,
     ):
         """Learn a set of policies.
 
         Args:
+            eval_env: The environment to use for evaluation.
+            ref_point: The reference point for the hypervolume calculation.
             num_iterations: The number of iterations/policies to train.
             timesteps_per_iteration: The number of timesteps per iteration.
             eval_freq: The frequency of evaluation.
-            eval_env: The environment to use for evaluation.
-            ref_point: The reference point for the hypervolume calculation.
-            test_weights: The weight vectors to use for evaluation (e.g. for expected utility).
+            known_pareto_front: The optimal Pareto front, if known. Used for metrics.
+            eval_weights_number_for_front: The number of weights to use to construct a Pareto front for evaluation.
             epsilon_linear_support: The epsilon value for the linear support algorithm.
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
         """
         if eval_env is None:
             eval_env = deepcopy(self.env)
 
-        if test_weights is None:
-            test_weights = equally_spaced_weights(self.reward_dim, n=64)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
 
         for iter in range(num_iterations):
             if self.weight_selection_algo == "ols" or self.weight_selection_algo == "gpi-ls":
@@ -223,27 +220,18 @@ class MPMOQLearning(MOAgent):
             self.delete_policies(removed_inds)
 
             if self.log:
-                front = self.linear_support.ccs
-                self.writer.add_scalar("metrics/eu", expected_utility(front, test_weights), self.global_step)
-                self.writer.add_scalar(
-                    "metrics/mul",
-                    maximum_utility_loss(front, eval_env.pareto_front(gamma=self.gamma), test_weights),
-                    self.global_step,
-                )
                 if self.use_gpi_policy:
-                    front_gpi = [
-                        policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_episodes_eval) for w in test_weights
-                    ]
-                    self.writer.add_scalar("metrics/eu_gpi", expected_utility(front_gpi, test_weights), self.global_step)
-                    self.writer.add_scalar(
-                        "metrics/mul_gpi",
-                        maximum_utility_loss(front_gpi, eval_env.pareto_front(gamma=self.gamma), test_weights),
-                        self.global_step,
-                    )
-                if ref_point is not None:
-                    self.writer.add_scalar("metrics/hv", hypervolume(ref_point, front), self.global_step)
-                    if self.use_gpi_policy:
-                        self.writer.add_scalar("metrics/hv_gpi", hypervolume(ref_point, front_gpi), self.global_step)
+                    front = [policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_episodes_eval) for w in eval_weights]
+                else:
+                    front = self.linear_support.ccs
+                log_all_multi_policy_metrics(
+                    current_front=front,
+                    hv_ref_point=ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=known_pareto_front,
+                )
 
         if self.writer is not None:
             self.close_wandb()

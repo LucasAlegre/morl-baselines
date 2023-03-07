@@ -1,6 +1,6 @@
-import mo_gymnasium as mo_gym
 import numpy as np
 
+from morl_baselines.common.evaluation import eval_mo
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.ser.mo_ppo import make_env
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     # Execution of trained policies
     for a in algo.archive.individuals:
-        scalarized, discounted_scalarized, reward, discounted_reward = mo_gym.eval_mo(
+        scalarized, discounted_scalarized, reward, discounted_reward = eval_mo(
             agent=a, env=env, w=np.array([1.0, 1.0]), render=True
         )
         print(f"Agent #{a.id}")

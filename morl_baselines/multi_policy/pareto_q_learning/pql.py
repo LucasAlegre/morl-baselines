@@ -20,7 +20,6 @@ class PQL(MOAgent):
         self,
         env,
         ref_point: np.ndarray,
-        known_pareto_front: Optional[List[np.ndarray]] = None,
         gamma: float = 0.8,
         initial_epsilon: float = 1.0,
         epsilon_decay: float = 0.99,
@@ -35,7 +34,6 @@ class PQL(MOAgent):
         Args:
             env: The environment.
             ref_point: The reference point for the hypervolume metric.
-            known_pareto_front: The known pareto front on the env, if any.
             gamma: The discount factor.
             initial_epsilon: The initial epsilon value.
             epsilon_decay: The epsilon decay rate.
@@ -57,7 +55,6 @@ class PQL(MOAgent):
         self.seed = seed
         self.rng = np.random.default_rng(seed)
         self.ref_point = ref_point
-        self.known_pareto_front = known_pareto_front
 
         self.num_actions = self.env.action_space.n
         low_bound = self.env.observation_space.low
@@ -173,11 +170,18 @@ class PQL(MOAgent):
         return non_dominated
 
     def train(
-        self, num_episodes: Optional[int] = 3000, log_every: Optional[int] = 100, action_eval: Optional[str] = "hypervolume"
+        self,
+        eval_ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_episodes: Optional[int] = 3000,
+        log_every: Optional[int] = 100,
+        action_eval: Optional[str] = "hypervolume",
     ):
         """Learn the Pareto front.
 
         Args:
+            eval_ref_point (ndarray): The reference point for the hypervolume metric during evaluation.
+            known_pareto_front (List[ndarray], optional): The optimal Pareto front, if known.
             num_episodes (int, optional): The number of episodes to train for.
             log_every (int, optional): Log the results every number of episodes. (Default value = 100)
             action_eval (str, optional): The action evaluation function name. (Default value = 'hypervolume')
@@ -219,11 +223,11 @@ class PQL(MOAgent):
                 pf = self._eval_all_policies()
                 log_all_multi_policy_metrics(
                     current_front=pf,
-                    hv_ref_point=self.ref_point,
+                    hv_ref_point=eval_ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
                     writer=self.writer,
-                    ref_front=self.known_pareto_front,
+                    ref_front=known_pareto_front,
                 )
 
         return self.get_local_pcs(state=0)

@@ -1,22 +1,8 @@
 """Utilities related to evaluation."""
 
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
-from pymoo.indicators.hv import HV
-
-
-def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
-    """Computes the hypervolume metric for a set of points (value vectors) and a reference point.
-
-    Args:
-        ref_point (np.ndarray): Reference point
-        points (List[np.ndarray]): List of value vectors
-
-    Returns:
-        float: Hypervolume metric
-    """
-    return HV(ref_point=ref_point * -1)(np.array(points) * -1)
 
 
 def eval_mo(

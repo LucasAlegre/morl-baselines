@@ -320,27 +320,27 @@ class PCN(MOAgent, MOPolicy):
     def train(
         self,
         env: gym.Env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         num_er_episodes: int = 500,
         total_time_steps: int = 1e7,
         num_step_episodes: int = 10,
         num_model_updates: int = 100,
         max_return: np.ndarray = 250.0,
         max_buffer_size: int = 500,
-        ref_point: np.ndarray = np.array([0.0, 0.0]),
-        known_pareto_front: Optional[List[np.ndarray]] = None,
     ):
         """Train PCN.
 
         Args:
             env: environment
+            ref_point: reference point for hypervolume calculation
+            known_pareto_front: Optimal pareto front for metrics calculation, if known.
             num_er_episodes: number of episodes to fill experience replay buffer
             total_time_steps: total number of time steps to train for
             num_step_episodes: number of steps per episode
             num_model_updates: number of model updates per episode
             max_return: maximum return for clipping desired return
             max_buffer_size: maximum buffer size
-            ref_point: reference point for hypervolume calculation
-            known_pareto_front: known pareto front for metrics calculation
         """
         self.global_step = 0
         total_episodes = num_er_episodes

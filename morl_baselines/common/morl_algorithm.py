@@ -6,8 +6,9 @@ import gymnasium as gym
 import numpy as np
 import torch as th
 from gymnasium import spaces
-from mo_gymnasium import eval_mo, eval_mo_reward_conditioned
 from torch.utils.tensorboard import SummaryWriter
+
+from morl_baselines.common.evaluation import eval_mo, eval_mo_reward_conditioned
 
 
 class MOPolicy(ABC):

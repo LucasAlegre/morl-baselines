@@ -22,8 +22,6 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 15000):
 
     agent = GPIPDContinuousAction(
         env,
-        ref_point=np.array([-100.0, -100.0]),
-        known_pareto_front=None,
         gradient_updates=g,
         min_priority=0.1,
         batch_size=128,
@@ -45,6 +43,8 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 15000):
 
     agent.train(
         eval_env=eval_env,
+        ref_point=np.array([-100.0, -100.0]),
+        known_pareto_front=None,
         weight_selection_algo=algo,
         max_iter=10,
         timesteps_per_iter=timesteps_per_iter,

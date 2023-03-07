@@ -18,8 +18,6 @@ def main():
 
     agent = Envelope(
         env,
-        ref_point=np.array([0, 0, -200.0]),
-        known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
         max_grad_norm=0.1,
         learning_rate=3e-4,
         gamma=0.98,
@@ -43,10 +41,13 @@ def main():
     )
 
     agent.train(
-        total_timesteps=1000000,
+        total_timesteps=100000,
         total_episodes=None,
         weight=None,
         eval_env=eval_env,
+        ref_point=np.array([0, 0, -200.0]),
+        known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
+        eval_weights_number_for_front=100,
         eval_freq=1000,
         reset_num_timesteps=False,
         reset_learning_starts=False,

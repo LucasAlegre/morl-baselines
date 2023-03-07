@@ -11,7 +11,6 @@ if __name__ == "__main__":
     agent = PQL(
         env,
         ref_point,
-        known_pareto_front=env.pareto_front(gamma=0.99),
         gamma=0.99,
         initial_epsilon=1.0,
         epsilon_decay=0.997,
@@ -23,7 +22,13 @@ if __name__ == "__main__":
     )
 
     num_episodes = 10000
-    pf = agent.train(num_episodes=10000, log_every=100, action_eval="hypervolume")
+    pf = agent.train(
+        num_episodes=10000,
+        log_every=100,
+        action_eval="hypervolume",
+        known_pareto_front=env.pareto_front(gamma=0.99),
+        eval_ref_point=ref_point,
+    )
     print(pf)
 
     # Execute a policy

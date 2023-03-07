@@ -4,6 +4,7 @@ import mo_gymnasium as mo_gym
 import numpy as np
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
+from morl_baselines.common.evaluation import eval_mo
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
@@ -22,4 +23,4 @@ if __name__ == "__main__":
         eval_env=eval_env,
     )
 
-    print(mo_gym.eval_mo(agent, env=eval_env, w=weights))
+    print(eval_mo(agent, env=eval_env, w=weights))
