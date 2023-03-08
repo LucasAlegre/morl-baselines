@@ -14,6 +14,7 @@ from morl_baselines.common.utils import (
     equally_spaced_weights,
     log_all_multi_policy_metrics,
     random_weights,
+    seed_everything,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
@@ -99,7 +100,7 @@ class MPMOQLearning(MOAgent):
         # Seed
         self.seed = seed
         if self.seed is not None:
-            np.random.seed(self.seed)
+            seed_everything(self.seed)
 
         if self.log:
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)

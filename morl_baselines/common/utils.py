@@ -1,4 +1,6 @@
 """General utils for the MORL baselines."""
+import os
+import random
 from typing import Iterable, List, Optional
 
 import numpy as np
@@ -299,3 +301,18 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
     clip = ImageSequenceClip(list(frames), fps=fps)
     clip.write_gif(fullpath + ".gif", fps=fps)
     print("Saved gif at: " + fullpath + ".gif")
+
+
+def seed_everything(seed: int):
+    """Set random seeds for reproducibility.
+
+    Args:
+        seed: random seed
+    """
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    th.manual_seed(seed)
+    th.cuda.manual_seed(seed)
+    th.backends.cudnn.deterministic = True
+    th.backends.cudnn.benchmark = True

@@ -23,6 +23,7 @@ from morl_baselines.common.utils import (
     log_episode_info,
     polyak_update,
     random_weights,
+    seed_everything,
 )
 
 
@@ -192,8 +193,7 @@ class Envelope(MOPolicy, MOAgent):
 
         self.seed = seed
         if self.seed is not None:
-            th.manual_seed(self.seed)
-            np.random.seed(self.seed)
+            seed_everything(self.seed)
         self.log = log
         if log:
             self.setup_wandb(project_name, experiment_name, wandb_entity)

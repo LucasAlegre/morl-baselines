@@ -6,7 +6,7 @@ import numpy as np
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import log_all_multi_policy_metrics
+from morl_baselines.common.utils import log_all_multi_policy_metrics, seed_everything
 
 
 class PQL(MOAgent):
@@ -55,7 +55,9 @@ class PQL(MOAgent):
 
         # Algorithm setup
         self.seed = seed
-        self.rng = np.random.default_rng(seed)
+        if self.seed is not None:
+            seed_everything(self.seed)
+            self.rng = np.random.default_rng(seed)
         self.ref_point = ref_point
 
         self.num_actions = self.env.action_space.n

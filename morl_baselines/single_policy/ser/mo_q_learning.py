@@ -10,7 +10,11 @@ from torch.utils.tensorboard import SummaryWriter
 from morl_baselines.common.model_based.tabular_model import TabularModel
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.scalarization import weighted_sum
-from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
+from morl_baselines.common.utils import (
+    linearly_decaying_value,
+    log_episode_info,
+    seed_everything,
+)
 
 
 class MOQLearning(MOPolicy, MOAgent):
@@ -69,7 +73,8 @@ class MOQLearning(MOPolicy, MOAgent):
         self.id = id
         self.seed = seed
         if self.seed is not None:
-            np.random.seed(self.seed)
+            seed_everything(self.seed)
+
         if self.id is not None:
             self.idstr = f"_{self.id}"
         else:

@@ -27,6 +27,7 @@ from morl_baselines.common.utils import (
     log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
+    seed_everything,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
@@ -239,8 +240,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
         self.seed = seed
         if self.seed is not None:
-            th.manual_seed(self.seed)
-            np.random.seed(self.seed)
+            seed_everything(self.seed)
 
         self.log = log
         if self.log:

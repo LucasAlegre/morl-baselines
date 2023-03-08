@@ -4,7 +4,6 @@ Some code in this file has been adapted from the original code provided by the a
 (!) Limited to 2 objectives for now.
 (!) The post-processing phase has not been implemented yet.
 """
-import random
 import time
 from copy import deepcopy
 from typing import List, Optional, Tuple, Union
@@ -19,7 +18,7 @@ from scipy.optimize import least_squares
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.common.performance_indicators import hypervolume, sparsity
-from morl_baselines.common.utils import log_all_multi_policy_metrics
+from morl_baselines.common.utils import log_all_multi_policy_metrics, seed_everything
 from morl_baselines.single_policy.ser.mo_ppo import MOPPO, MOPPONet, make_env
 
 
@@ -308,7 +307,6 @@ class PGMORL(MOAgent):
         experiment_name: str = "PGMORL",
         wandb_entity: Optional[str] = None,
         seed: Optional[int] = None,
-        torch_deterministic: bool = True,
         log: bool = True,
         net_arch: List = [64, 64],
         num_minibatches: int = 32,
@@ -347,7 +345,6 @@ class PGMORL(MOAgent):
             experiment_name: name of the experiment. Usually PGMORL.
             wandb_entity: wandb entity, defaults to None.
             seed: seed for the random number generator
-            torch_deterministic: whether to use deterministic torch operations
             log: whether to log the results
             net_arch: number of units per layer
             num_minibatches: number of minibatches
@@ -415,10 +412,7 @@ class PGMORL(MOAgent):
         # seeding
         self.seed = seed
         if self.seed is not None:
-            random.seed(self.seed)
-            np.random.seed(self.seed)
-            th.manual_seed(self.seed)
-        th.backends.cudnn.deterministic = torch_deterministic
+            seed_everything(self.seed)
 
         # env setup
         if env is None:
@@ -585,7 +579,7 @@ class PGMORL(MOAgent):
                 )
                 # optimization criterion is a hypervolume - sparsity
                 mixture_metrics = [
-                    hypervolume(self.ref_point, current_front + [predicted_eval]) - sparsity(current_front + [predicted_eval])
+                    hypervolume(ref_point, current_front + [predicted_eval]) - sparsity(current_front + [predicted_eval])
                     for predicted_eval in predicted_evals
                 ]
                 # Best among all the weights for the current candidate
