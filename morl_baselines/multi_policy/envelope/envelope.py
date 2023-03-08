@@ -461,12 +461,12 @@ class Envelope(MOPolicy, MOAgent):
     def train(
         self,
         total_timesteps: int,
-        weight: Optional[np.ndarray] = None,
-        total_episodes: Optional[int] = None,
-        reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
         ref_point: Optional[np.ndarray] = None,
         known_pareto_front: Optional[List[np.ndarray]] = None,
+        weight: Optional[np.ndarray] = None,
+        total_episodes: Optional[int] = None,
+        reset_num_timesteps: bool = True,
         eval_freq: int = 1000,
         eval_weights_number_for_front: int = 100,
         reset_learning_starts: bool = False,
@@ -475,12 +475,12 @@ class Envelope(MOPolicy, MOAgent):
 
         Args:
             total_timesteps: total number of timesteps to train for.
-            weight: weight vector. If None, it is randomly sampled every episode (as done in the paper).
-            total_episodes: total number of episodes to train for. If None, it is ignored.
-            reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
             eval_env: environment to use for evaluation. If None, it is ignored.
             ref_point: reference point for the hypervolume computation.
             known_pareto_front: known pareto front for the hypervolume computation.
+            weight: weight vector. If None, it is randomly sampled every episode (as done in the paper).
+            total_episodes: total number of episodes to train for. If None, it is ignored.
+            reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
             eval_freq: policy evaluation frequency.
             eval_weights_number_for_front: number of weights to sample for creating the pareto front when evaluating.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.

@@ -742,25 +742,26 @@ class GPIPD(MOPolicy, MOAgent):
 
     def train(
         self,
+        total_timesteps: int,
         eval_env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         eval_weights_number_for_front: int = 100,
         timesteps_per_iter: int = 10000,
-        max_iter: int = 15,
         weight_selection_algo: str = "gpi-ls",
     ):
         """Train agent.
 
         Args:
+            total_timesteps (int): Number of timesteps to train for
             eval_env (gym.Env): Environment to evaluate on
             ref_point (np.ndarray): Reference point for hypervolume calculation
             known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front if known.
             eval_weights_number_for_front: Number of weights to evaluate for the Pareto front
             timesteps_per_iter (int): Number of timesteps to train for per iteration
-            max_iter (int): Number of iterations to train for
             weight_selection_algo (str): Weight selection algorithm to use
         """
+        max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
         weight_history = []

@@ -27,13 +27,13 @@ def main():
         epsilon_ols=0.0,
     )
     mp_moql.train(
-        num_iterations=15,
-        timesteps_per_iteration=int(2e5),
-        eval_freq=100,
-        num_episodes_eval=1,
+        total_timesteps=15 * int(2e5),
         eval_env=eval_env,
         ref_point=np.array([0.0, -25.0]),
         known_pareto_front=env.unwrapped.pareto_front(gamma=GAMMA),
+        timesteps_per_iteration=int(2e5),
+        eval_freq=100,
+        num_episodes_eval=1,
     )
 
 

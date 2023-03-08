@@ -156,10 +156,10 @@ class MPMOQLearning(MOAgent):
 
     def train(
         self,
+        total_timesteps: int,
         eval_env: gym.Env,
         ref_point: np.ndarray,
-        num_iterations: int,
-        timesteps_per_iteration: int,
+        timesteps_per_iteration: int = int(2e5),
         known_pareto_front: Optional[List[np.ndarray]] = None,
         eval_weights_number_for_front: int = 100,
         eval_freq: int = 1000,
@@ -168,9 +168,9 @@ class MPMOQLearning(MOAgent):
         """Learn a set of policies.
 
         Args:
+            total_timesteps: The total number of timesteps to train for.
             eval_env: The environment to use for evaluation.
             ref_point: The reference point for the hypervolume calculation.
-            num_iterations: The number of iterations/policies to train.
             timesteps_per_iteration: The number of timesteps per iteration.
             eval_freq: The frequency of evaluation.
             known_pareto_front: The optimal Pareto front, if known. Used for metrics.
@@ -178,6 +178,7 @@ class MPMOQLearning(MOAgent):
             epsilon_linear_support: The epsilon value for the linear support algorithm.
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
         """
+        num_iterations = int(total_timesteps / timesteps_per_iteration)
         if eval_env is None:
             eval_env = deepcopy(self.env)
 

@@ -173,19 +173,19 @@ class PQL(MOAgent):
 
     def train(
         self,
-        eval_ref_point: np.ndarray,
+        total_timesteps: int,
+        eval_ref_point: Optional[np.ndarray] = None,
         known_pareto_front: Optional[List[np.ndarray]] = None,
-        num_episodes: Optional[int] = 3000,
         log_every: Optional[int] = 100,
         action_eval: Optional[str] = "hypervolume",
     ):
         """Learn the Pareto front.
 
         Args:
-            eval_ref_point (ndarray): The reference point for the hypervolume metric during evaluation.
+            total_timesteps (int, optional): The number of episodes to train for.
+            eval_ref_point (ndarray, optional): The reference point for the hypervolume metric during evaluation. If none, use the same ref point as training.
             known_pareto_front (List[ndarray], optional): The optimal Pareto front, if known.
-            num_episodes (int, optional): The number of episodes to train for.
-            log_every (int, optional): Log the results every number of episodes. (Default value = 100)
+            log_every (int, optional): Log the results every number of timesteps. (Default value = 1000)
             action_eval (str, optional): The action evaluation function name. (Default value = 'hypervolume')
 
         Returns:
@@ -197,17 +197,16 @@ class PQL(MOAgent):
             score_func = self.score_pareto_cardinality
         else:
             raise Exception("No other method implemented yet")
+        if eval_ref_point is None:
+            eval_ref_point = self.ref_point
 
-        for episode in range(num_episodes):
-            if episode % log_every == 0:
-                print(f"Training episode {episode + 1}")
-
+        while self.global_step < total_timesteps:
             state, _ = self.env.reset()
             state = int(np.ravel_multi_index(state, self.env_shape))
             terminated = False
             truncated = False
 
-            while not (terminated or truncated):
+            while not (terminated or truncated) and self.global_step < total_timesteps:
                 action = self.select_action(state, score_func)
                 next_state, reward, terminated, truncated, _ = self.env.step(action)
                 self.global_step += 1
@@ -218,19 +217,19 @@ class PQL(MOAgent):
                 self.avg_reward[state, action] += (reward - self.avg_reward[state, action]) / self.counts[state, action]
                 state = next_state
 
-            self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
+                if self.log and self.global_step % log_every == 0:
+                    self.writer.add_scalar("global_step", self.global_step, self.global_step)
+                    pf = self._eval_all_policies()
+                    log_all_multi_policy_metrics(
+                        current_front=pf,
+                        hv_ref_point=eval_ref_point,
+                        reward_dim=self.reward_dim,
+                        global_step=self.global_step,
+                        writer=self.writer,
+                        ref_front=known_pareto_front,
+                    )
 
-            if self.log and episode % log_every == 0:
-                self.writer.add_scalar("global_step", self.global_step, self.global_step)
-                pf = self._eval_all_policies()
-                log_all_multi_policy_metrics(
-                    current_front=pf,
-                    hv_ref_point=eval_ref_point,
-                    reward_dim=self.reward_dim,
-                    global_step=self.global_step,
-                    writer=self.writer,
-                    ref_front=known_pareto_front,
-                )
+            self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
 
         return self.get_local_pcs(state=0)
 

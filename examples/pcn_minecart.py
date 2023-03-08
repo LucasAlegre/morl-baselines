@@ -24,13 +24,12 @@ def main():
     )
 
     agent.train(
-        env,
+        total_timesteps=int(1e7),
+        ref_point=np.array([0, 0, -200.0]),
         num_er_episodes=20,
         max_buffer_size=50,
         num_model_updates=50,
-        total_time_steps=int(1e7),
         max_return=np.array([1.5, 1.5, -0.0]),
-        ref_point=np.array([0, 0, -200.0]),
         known_pareto_front=env.unwrapped.pareto_front(gamma=1.0),
     )
 
