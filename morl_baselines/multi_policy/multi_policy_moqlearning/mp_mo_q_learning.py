@@ -160,8 +160,8 @@ class MPMOQLearning(MOAgent):
         total_timesteps: int,
         eval_env: gym.Env,
         ref_point: np.ndarray,
-        timesteps_per_iteration: int = int(2e5),
         known_pareto_front: Optional[List[np.ndarray]] = None,
+        timesteps_per_iteration: int = int(2e5),
         eval_weights_number_for_front: int = 100,
         eval_freq: int = 1000,
         num_episodes_eval: int = 10,
@@ -172,9 +172,9 @@ class MPMOQLearning(MOAgent):
             total_timesteps: The total number of timesteps to train for.
             eval_env: The environment to use for evaluation.
             ref_point: The reference point for the hypervolume calculation.
+            known_pareto_front: The optimal Pareto front, if known. Used for metrics.
             timesteps_per_iteration: The number of timesteps per iteration.
             eval_freq: The frequency of evaluation.
-            known_pareto_front: The optimal Pareto front, if known. Used for metrics.
             eval_weights_number_for_front: The number of weights to use to construct a Pareto front for evaluation.
             epsilon_linear_support: The epsilon value for the linear support algorithm.
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
