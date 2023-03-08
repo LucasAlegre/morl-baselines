@@ -433,10 +433,11 @@ class PGMORL(MOAgent):
 
         # env setup
         if env is None:
-            self.env = mo_gym.MOSyncVectorEnv(
-                # Video recording is disabled since broken for now
-                [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(1, self.num_envs + 1)]
-            )
+            if self.seed is not None:
+                envs = [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
+            else:
+                envs = [make_env(env_id, i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
+            self.env = mo_gym.MOSyncVectorEnv(envs)
         else:
             raise ValueError("Environments should be vectorized for PPO. You should provide an environment id instead.")
 
