@@ -1,7 +1,11 @@
 import argparse
+import os
+import subprocess
+from distutils.util import strtobool
 
 import mo_gymnasium as mo_gym
 import numpy as np
+import requests
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
@@ -45,15 +49,62 @@ def parse_args():
     parser.add_argument("--ref-point", type=list, nargs="+", help="Reference point to use for the hypervolume calculation")
     parser.add_argument("--seed", type=int, help="Random seed to use", default=42)
     parser.add_argument("--wandb-entity", type=str, help="Wandb entity to use", required=False)
+    parser.add_argument(
+        "--auto-tag",
+        type=lambda x: bool(strtobool(x)),
+        default=True,
+        nargs="?",
+        const=True,
+        help="if toggled, the runs will be tagged with git tags, commit, and pull request number if possible",
+    )
 
     return parser.parse_args()
 
 
+def autotag() -> str:
+    """This adds a tag to the wandb run marking the commit number, allows to versioning of experiments. From CleanRL's benchmark utility."""
+    wandb_tag = ""
+    print("autotag feature is enabled")
+    try:
+        git_tag = subprocess.check_output(["git", "describe", "--tags"]).decode("ascii").strip()
+        wandb_tag = f"{git_tag}"
+        print(f"identified git tag: {git_tag}")
+    except subprocess.CalledProcessError:
+        return wandb_tag
+
+    git_commit = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"]).decode("ascii").strip()
+    try:
+        # try finding the pull request number on github
+        prs = requests.get(f"https://api.github.com/search/issues?q=repo:LucasAlegre/morl-baselines+is:pr+{git_commit}")
+        if prs.status_code == 200:
+            prs = prs.json()
+            if len(prs["items"]) > 0:
+                pr = prs["items"][0]
+                pr_number = pr["number"]
+                wandb_tag += f",pr-{pr_number}"
+        print(f"identified github pull request: {pr_number}")
+    except Exception as e:
+        print(e)
+
+    return wandb_tag
+
+
 def main():
     args = parse_args()
+
+    if args.auto_tag:
+        if "WANDB_TAGS" in os.environ:
+            raise ValueError(
+                "WANDB_TAGS is already set. Please unset it before running this script or run the script with --auto-tag False"
+            )
+        wandb_tag = autotag()
+        if len(wandb_tag) > 0:
+            os.environ["WANDB_TAGS"] = wandb_tag
+
     if args.algo != "pgmorl":
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
         eval_env = mo_gym.make(args.env_id)
+        print(f"Instantiating {args.algo} on {args.env_id}")
         algo = ALGOS[args.algo](
             env=env,
             gamma=args.gamma,
@@ -66,6 +117,7 @@ def main():
         else:
             known_pareto_front = None
 
+        print("Training starts... Let's roll!")
         algo.train(
             total_timesteps=args.num_timesteps,
             eval_env=eval_env,
