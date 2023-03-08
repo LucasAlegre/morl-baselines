@@ -102,7 +102,9 @@ class PCN(MOAgent, MOPolicy):
         hidden_dim: int = 64,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "PCN",
-        log: bool = False,
+        wandb_entity: Optional[str] = None,
+        log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ) -> None:
         """Initialize PCN agent.
@@ -116,7 +118,9 @@ class PCN(MOAgent, MOPolicy):
             hidden_dim (int, optional): Hidden dimension. Defaults to 64.
             project_name (str, optional): Name of the project for wandb. Defaults to "MORL-Baselines".
             experiment_name (str, optional): Name of the experiment for wandb. Defaults to "PCN".
-            log (bool, optional): Whether to log to wandb. Defaults to False.
+            wandb_entity (Optional[str], optional): Entity for wandb. Defaults to None.
+            log (bool, optional): Whether to log to wandb. Defaults to True.
+            seed (Optional[int], optional): Seed for reproducibility. Defaults to None.
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device)
@@ -136,9 +140,14 @@ class PCN(MOAgent, MOPolicy):
         ).to(self.device)
         self.opt = th.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
+        self.seed = seed
+        if self.seed is not None:
+            th.manual_seed(self.seed)
+            np.random.seed(self.seed)
+
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self) -> dict:
         """Get configuration of PCN model."""
@@ -149,6 +158,7 @@ class PCN(MOAgent, MOPolicy):
             "learning_rate": self.learning_rate,
             "hidden_dim": self.hidden_dim,
             "scaling_factor": self.scaling_factor,
+            "seed": self.seed,
         }
 
     def update(self):

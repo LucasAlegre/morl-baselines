@@ -36,7 +36,9 @@ class MOQLearning(MOPolicy, MOAgent):
         dyna_updates: int = 5,
         project_name: str = "MORL-baselines",
         experiment_name: str = "MO Q-Learning",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         parent_writer: Optional[SummaryWriter] = None,
     ):
         """Initializes the MOQ-learning algorithm.
@@ -56,13 +58,18 @@ class MOQLearning(MOPolicy, MOAgent):
             dyna_updates: The number of Dyna-Q updates to perform each step
             project_name: The name of the project used for logging
             experiment_name: The name of the experiment used for logging
+            wandb_entity: The entity to use for logging
             log: Whether to log or not
+            seed: The seed to use for the experiment
             parent_writer: The writer to use for logging. If None, a new writer is created.
         """
         MOAgent.__init__(self, env)
         MOPolicy.__init__(self, id)
         self.learning_rate = learning_rate
         self.id = id
+        self.seed = seed
+        if self.seed is not None:
+            np.random.seed(self.seed)
         if self.id is not None:
             self.idstr = f"_{self.id}"
         else:
@@ -88,7 +95,7 @@ class MOQLearning(MOPolicy, MOAgent):
         if parent_writer is not None:
             self.writer = parent_writer
         if self.log and parent_writer is None:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def __act(self, obs: np.array):
         # epsilon-greedy
@@ -174,6 +181,7 @@ class MOQLearning(MOPolicy, MOAgent):
             "dyna_updates": self.dyna_updates,
             "weight": self.weights,
             "scalarization": self.scalarization.__name__,
+            "seed": self.seed,
         }
 
     def train(

@@ -309,7 +309,8 @@ class PGMORL(MOAgent):
         gamma: float = 0.995,
         project_name: str = "MORL-baselines",
         experiment_name: str = "PGMORL",
-        seed: int = 0,
+        wandb_entity: Optional[str] = None,
+        seed: Optional[int] = None,
         torch_deterministic: bool = True,
         log: bool = True,
         net_arch: List = [64, 64],
@@ -350,6 +351,7 @@ class PGMORL(MOAgent):
             gamma: discount factor
             project_name: name of the project. Usually MORL-baselines.
             experiment_name: name of the experiment. Usually PGMORL.
+            wandb_entity: wandb entity, defaults to None.
             seed: seed for the random number generator
             torch_deterministic: whether to use deterministic torch operations
             log: whether to log the results
@@ -423,9 +425,10 @@ class PGMORL(MOAgent):
 
         # seeding
         self.seed = seed
-        random.seed(self.seed)
-        np.random.seed(self.seed)
-        th.manual_seed(self.seed)
+        if self.seed is not None:
+            random.seed(self.seed)
+            np.random.seed(self.seed)
+            th.manual_seed(self.seed)
         th.backends.cudnn.deterministic = torch_deterministic
 
         # env setup
@@ -440,7 +443,7 @@ class PGMORL(MOAgent):
         # Logging
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
         else:
             self.writer = None
 

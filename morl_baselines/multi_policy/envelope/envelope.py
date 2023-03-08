@@ -104,7 +104,9 @@ class Envelope(MOPolicy, MOAgent):
         homotopy_decay_steps: int = None,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "Envelope",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """Envelope Q-learning algorithm.
@@ -133,7 +135,9 @@ class Envelope(MOPolicy, MOAgent):
             homotopy_decay_steps: The number of steps to decay the homotopy parameter over.
             project_name: The name of the project, for wandb logging.
             experiment_name: The name of the experiment, for wandb logging.
+            wandb_entity: The entity of the project, for wandb logging.
             log: Whether to log to wandb.
+            seed: The seed for the random number generator.
             device: The device to use for training.
         """
         MOAgent.__init__(self, env, device=device)
@@ -186,9 +190,13 @@ class Envelope(MOPolicy, MOAgent):
                 action_dtype=np.uint8,
             )
 
+        self.seed = seed
+        if self.seed is not None:
+            th.manual_seed(self.seed)
+            np.random.seed(self.seed)
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     @override
     def get_config(self):
@@ -212,6 +220,7 @@ class Envelope(MOPolicy, MOAgent):
             "final_homotopy_lambda": self.final_homotopy_lambda,
             "homotopy_decay_steps": self.homotopy_decay_steps,
             "learning_starts": self.learning_starts,
+            "seed": self.seed,
         }
 
     def save(self, save_replay_buffer: bool = True, save_dir: str = "weights/", filename: Optional[str] = None):

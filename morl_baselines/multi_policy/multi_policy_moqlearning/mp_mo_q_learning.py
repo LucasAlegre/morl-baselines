@@ -42,6 +42,8 @@ class MPMOQLearning(MOAgent):
         dyna_updates: int = 5,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "MultiPolicy MO Q-Learning",
+        wandb_entity: Optional[str] = None,
+        seed: Optional[int] = None,
         log: bool = True,
     ):
         """Initialize the Multi-policy MOQ-learning algorithm.
@@ -62,6 +64,8 @@ class MPMOQLearning(MOAgent):
             dyna_updates: The number of Dyna-Q updates to perform.
             project_name: The name of the project for logging.
             experiment_name: The name of the experiment for logging.
+            wandb_entity: The entity to use for logging.
+            seed: The seed to use for reproducibility.
             log: Whether to log or not.
         """
         MOAgent.__init__(self, env)
@@ -92,8 +96,13 @@ class MPMOQLearning(MOAgent):
         self.experiment_name = experiment_name
         self.log = log
 
+        # Seed
+        self.seed = seed
+        if self.seed is not None:
+            np.random.seed(self.seed)
+
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
+            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
         else:
             self.writer = None
 
@@ -113,6 +122,7 @@ class MPMOQLearning(MOAgent):
             "transfer_q_table": self.transfer_q_table,
             "dyna": self.dyna,
             "dyna_updates": self.dyna_updates,
+            "seed": self.seed,
         }
 
     def _gpi_action(self, state: np.ndarray, w: np.ndarray) -> int:
@@ -198,6 +208,7 @@ class MPMOQLearning(MOAgent):
                 dyna_updates=self.dyna_updates,
                 log=self.log,
                 parent_writer=self.writer,
+                seed=self.seed,
             )
             if self.transfer_q_table and len(self.policies) > 0:
                 reuse_ind = np.argmax([np.dot(w, v) for v in self.linear_support.ccs])

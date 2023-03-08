@@ -24,9 +24,10 @@ class PQL(MOAgent):
         initial_epsilon: float = 1.0,
         epsilon_decay: float = 0.99,
         final_epsilon: float = 0.1,
-        seed: int = None,
+        seed: Optional[int] = None,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "Pareto Q-Learning",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
     ):
         """Initialize the Pareto Q-learning algorithm.
@@ -41,6 +42,7 @@ class PQL(MOAgent):
             seed: The random seed.
             project_name: The name of the project used for logging.
             experiment_name: The name of the experiment used for logging.
+            wandb_entity: The wandb entity used for logging.
             log: Whether to log or not.
         """
         super().__init__(env)
@@ -74,7 +76,7 @@ class PQL(MOAgent):
         self.log = log
 
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
+            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
 
     def get_config(self) -> dict:
         """Get the configuration dictionary.

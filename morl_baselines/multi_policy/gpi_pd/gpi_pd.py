@@ -120,7 +120,9 @@ class GPIPD(MOPolicy, MOAgent):
         real_ratio: float = 0.05,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """Initialize the GPI-PD algorithm.
@@ -163,7 +165,9 @@ class GPIPD(MOPolicy, MOAgent):
             real_ratio: The ratio of real transitions to sample.
             project_name: The name of the project.
             experiment_name: The name of the experiment.
+            wandb_entity: The name of the wandb entity.
             log: Whether to log.
+            seed: The seed for random number generators.
             device: The device to use.
         """
         MOAgent.__init__(self, env, device=device)
@@ -254,9 +258,14 @@ class GPIPD(MOPolicy, MOAgent):
         self.dynamics_uncertainty_threshold = dynamics_uncertainty_threshold
         self.real_ratio = real_ratio
 
+        self.seed = seed
+        if self.seed is not None:
+            th.random.manual_seed(self.seed)
+            np.random.seed(self.seed)
+        # logging
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self):
         """Return the configuration of the agent."""
@@ -293,6 +302,7 @@ class GPIPD(MOPolicy, MOAgent):
             "real_ratio": self.real_ratio,
             "drop_rate": self.drop_rate,
             "layer_norm": self.layer_norm,
+            "seed": self.seed,
         }
 
     def save(self, save_replay_buffer=True, save_dir="weights/", filename=None):

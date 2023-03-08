@@ -1,4 +1,5 @@
 """MORL algorithm base classes."""
+import time
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
@@ -170,6 +171,7 @@ class MOAgent(ABC):
 
         self.global_step = 0
         self.num_episodes = 0
+        self.seed = None
 
     def extract_env_info(self, env: Optional[gym.Env]) -> None:
         """Extracts all the features of the environment: observation space, action space, ...
@@ -205,25 +207,28 @@ class MOAgent(ABC):
             dict: Config
         """
 
-    def setup_wandb(self, project_name: str, experiment_name: str) -> None:
+    def setup_wandb(self, project_name: str, experiment_name: str, entity: Optional[str] = None) -> None:
         """Initializes the wandb writer.
 
         Args:
             project_name: name of the wandb project. Usually MORL-Baselines.
             experiment_name: name of the wandb experiment. Usually the algorithm name.
+            entity: wandb entity. Usually your username but useful for reporting other places such as openrlbenmark.
 
         Returns:
             None
         """
         self.experiment_name = experiment_name
+        self.full_experiment_name = f"{self.env.spec.id}__{experiment_name}__{self.seed}__{int(time.time())}"
         import wandb
 
         wandb.init(
             project=project_name,
+            entity=entity,
             sync_tensorboard=True,
             config=self.get_config(),
-            name=self.experiment_name,
-            monitor_gym=False,
+            name=self.full_experiment_name,
+            monitor_gym=True,
             save_code=True,
         )
         self.writer = SummaryWriter(f"/tmp/{self.experiment_name}")

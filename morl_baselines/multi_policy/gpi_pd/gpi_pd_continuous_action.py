@@ -114,7 +114,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         dynamics_real_ratio: float = 0.1,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD Continuous Action",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """GPI-PD algorithm with continuous actions.
@@ -152,7 +154,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             dynamics_real_ratio (float, optional): The ratio of real data to use for the dynamics model. Defaults to 0.1.
             project_name (str, optional): The name of the project. Defaults to "MORL Baselines".
             experiment_name (str, optional): The name of the experiment. Defaults to "GPI-PD Continuous Action".
+            wandb_entity (Optional[str], optional): The wandb entity. Defaults to None.
             log (bool, optional): Whether to log to wandb. Defaults to True.
+            seed (Optional[int], optional): The seed to use. Defaults to None.
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device)
@@ -233,9 +237,14 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
         self._n_updates = 0
 
+        self.seed = seed
+        if self.seed is not None:
+            th.manual_seed(self.seed)
+            np.random.seed(self.seed)
+
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self):
         """Get the configuration of the agent."""
@@ -260,6 +269,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             "dynamics_rollout_len": self.dynamics_rollout_len,
             "dynamics_min_uncertainty": self.dynamics_min_uncertainty,
             "dynamics_real_ratio": self.dynamics_real_ratio,
+            "dynamics_train_freq": self.dynamics_train_freq,
+            "dynamics_rollout_starts": self.dynamics_rollout_starts,
+            "dynamics_rollout_freq": self.dynamics_rollout_freq,
+            "dynamics_rollout_batch_size": self.dynamics_rollout_batch_size,
+            "seed": self.seed,
         }
 
     def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):

@@ -88,8 +88,10 @@ class EUPG(MOPolicy, MOAgent):
         learning_rate: float = 1e-3,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "EUPG",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
         device: Union[th.device, str] = "auto",
+        seed: Optional[int] = None,
     ):
         """Initialize the EUPG algorithm.
 
@@ -102,8 +104,10 @@ class EUPG(MOPolicy, MOAgent):
             learning_rate: Learning rate (alpha)
             project_name: Name of the project (for logging)
             experiment_name: Name of the experiment (for logging)
+            wandb_entity: Entity to use for wandb
             log: Whether to log or not
             device: Device to use for NN. Can be "cpu", "cuda" or "auto".
+            seed: Seed for the random number generator
         """
         MOAgent.__init__(self, env, device)
         MOPolicy.__init__(self, None, device)
@@ -112,6 +116,10 @@ class EUPG(MOPolicy, MOAgent):
         # RL
         self.scalarization = scalarization
         self.gamma = gamma
+        self.seed = seed
+        if self.seed is not None:
+            np.random.seed(self.seed)
+            th.manual_seed(self.seed)
 
         # Learning
         self.buffer_size = buffer_size
@@ -138,7 +146,7 @@ class EUPG(MOPolicy, MOAgent):
         self.experiment_name = experiment_name
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     @override
     def eval(self, obs: np.ndarray, accrued_reward: Optional[np.ndarray]) -> Union[int, np.ndarray]:
@@ -250,4 +258,5 @@ class EUPG(MOPolicy, MOAgent):
             "buffer_size": self.buffer_size,
             "gamma": self.gamma,
             "net_arch": self.net_arch,
+            "seed": self.seed,
         }

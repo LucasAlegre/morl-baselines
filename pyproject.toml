@@ -29,7 +29,7 @@ dependencies = [
     "pygame >=2.1.0",
     "scipy >=1.7.3",
     "pymoo >=0.6.0",
-    "wandb",
+    "wandb >=0.13.11",
     "seaborn",
     "tensorboard",
     "cvxpy",
