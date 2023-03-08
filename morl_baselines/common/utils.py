@@ -231,7 +231,7 @@ def log_all_multi_policy_metrics(
     reward_dim: int,
     global_step: int,
     writer: SummaryWriter,
-    n_sample_weights: int = 20,
+    n_sample_weights: int = 50,
     ref_front: Optional[List[np.ndarray]] = None,
 ):
     """Logs all metrics for multi-policy training.
@@ -255,9 +255,7 @@ def log_all_multi_policy_metrics(
     """
     hv = hypervolume(hv_ref_point, current_front)
     sp = sparsity(current_front)
-    eum = expected_utility(
-        current_front, weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32)
-    )
+    eum = expected_utility(current_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
 
     writer.add_scalar("eval/hypervolume", hv, global_step=global_step)
     writer.add_scalar("eval/sparsity", sp, global_step=global_step)

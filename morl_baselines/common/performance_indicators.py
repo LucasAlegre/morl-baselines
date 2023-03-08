@@ -64,7 +64,7 @@ def sparsity(front: List[np.ndarray]) -> float:
     return sparsity_value
 
 
-def expected_utility(front: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot) -> float:
+def expected_utility(front: List[np.ndarray], weights_set: List[np.ndarray], utility: Callable = np.dot) -> float:
     """Expected Utility Metric.
 
     Expected utility of the policies on the PF for various weights.

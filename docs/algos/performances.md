@@ -19,7 +19,7 @@ For multi-policy algorithms, we propose to rely on various metrics to assess the
 Moreover, some metrics relying on assumptions on the utility function of the user are proposed in the literature. These metric allow to have an idea on the true value on the user utility, whereas others such as hypervolume do not [2]. We propose to use the following metrics:
 * EUM: Expected Utility Metric. From [3]. Keyword: `eval/eum`.
 * MUL: Maximum Utility Loss for the problems we know the true CCS/PF. From [3]. Keyword: `eval/mul`.
-For both these metrics, we propose to generate a number of equally spaced weights on the objective simplex. The number of weights is 20 by default, can be changed.
+For both these metrics, we propose to generate a number of equally spaced weights on the objective simplex. The number of weights is 50 by default, can be changed.
 
 Finally, the PF can also be logged as a wandb table for a posteriori analysis. Keyword: `eval/front`.
 

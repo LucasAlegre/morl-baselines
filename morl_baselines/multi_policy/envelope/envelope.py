@@ -458,7 +458,7 @@ class Envelope(MOPolicy, MOAgent):
         eval_env: Optional[gym.Env] = None,
         ref_point: Optional[np.ndarray] = None,
         known_pareto_front: Optional[List[np.ndarray]] = None,
-        eval_freq: int = 1000,
+        eval_freq: int = 10000,
         eval_weights_number_for_front: int = 100,
         reset_learning_starts: bool = False,
     ):
@@ -472,7 +472,7 @@ class Envelope(MOPolicy, MOAgent):
             eval_env: environment to use for evaluation. If None, it is ignored.
             ref_point: reference point for the hypervolume computation.
             known_pareto_front: known pareto front for the hypervolume computation.
-            eval_freq: policy evaluation frequency.
+            eval_freq: policy evaluation frequency (in number of steps).
             eval_weights_number_for_front: number of weights to sample for creating the pareto front when evaluating.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
         """
@@ -516,7 +516,6 @@ class Envelope(MOPolicy, MOAgent):
                     writer=self.writer,
                     ref_front=known_pareto_front,
                 )
-                self.policy_eval(eval_env, weights=w, writer=self.writer)
 
             if terminated or truncated:
                 obs, _ = self.env.reset()
