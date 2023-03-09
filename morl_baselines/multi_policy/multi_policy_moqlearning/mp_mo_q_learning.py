@@ -179,6 +179,7 @@ class MPMOQLearning(MOAgent):
             epsilon_linear_support: The epsilon value for the linear support algorithm.
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
         """
+        self.register_additional_config(ref_point, known_pareto_front)
         num_iterations = int(total_timesteps / timesteps_per_iteration)
         if eval_env is None:
             eval_env = deepcopy(self.env)

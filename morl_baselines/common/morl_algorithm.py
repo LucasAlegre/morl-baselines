@@ -1,11 +1,12 @@
 """MORL algorithm base classes."""
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import gymnasium as gym
 import numpy as np
 import torch as th
+import wandb
 from gymnasium import spaces
 from torch.utils.tensorboard import SummaryWriter
 
@@ -207,6 +208,16 @@ class MOAgent(ABC):
             dict: Config
         """
 
+    def register_additional_config(self, ref_point: np.ndarray, known_front: Optional[List[np.ndarray]]) -> None:
+        """Registers additional config parameters to wandb. For example when calling train().
+
+        Args:
+            ref_point: reference point used for the scalarization
+            known_front: known pareto front
+        """
+        wandb.config["ref_point"] = ref_point.tolist()
+        wandb.config["known_front"] = known_front
+
     def setup_wandb(self, project_name: str, experiment_name: str, entity: Optional[str] = None) -> None:
         """Initializes the wandb writer.
 
@@ -222,11 +233,14 @@ class MOAgent(ABC):
         self.full_experiment_name = f"{self.env.spec.id}__{experiment_name}__{self.seed}__{int(time.time())}"
         import wandb
 
+        config = self.get_config()
+        config["algo"] = self.experiment_name
+
         wandb.init(
             project=project_name,
             entity=entity,
             sync_tensorboard=True,
-            config=self.get_config(),
+            config=config,
             name=self.full_experiment_name,
             monitor_gym=True,
             save_code=True,

@@ -619,6 +619,7 @@ class PGMORL(MOAgent):
         known_pareto_front: Optional[List[np.ndarray]] = None,
     ):
         """Trains the agents."""
+        self.register_additional_config(ref_point, known_pareto_front)
         max_iterations = total_timesteps // self.steps_per_iteration // self.num_envs
         iteration = 0
         # Init

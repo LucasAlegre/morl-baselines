@@ -30,7 +30,14 @@ Here is the function that logs all the metrics:
 
 ## Storage
 
-All the metrics will be reported to wandb to allow for easy manipulation and exporting of the data.
+Our official performance metrics are sent to [openrlbenchmark](https://wandb.ai/openrlbenchmark/MORL-Baselines) on wandb. From there, it is possible to use [openrlbenchmark API](https://github.com/openrlbenchmark/openrlbenchmark) to query and plot the wanted results for paper format. Life is good when the full flow is automated 🥸.
+
+## Benchmarking script
+It is possible to run algorithms from a CLI and configure the parameters accordingly. The script is located in `benchmark/launch_experiment.py`. Here is the documentation:
+```{eval-rst}
+.. automodule:: benchmark.launch_experiment
+    :members:
+```
 
 ## Algorithms
 

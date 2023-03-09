@@ -329,6 +329,7 @@ class PCN(MOAgent, MOPolicy):
     def train(
         self,
         total_timesteps: int,
+        eval_env: gym.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         num_er_episodes: int = 500,
@@ -341,6 +342,7 @@ class PCN(MOAgent, MOPolicy):
 
         Args:
             total_timesteps: total number of time steps to train for
+            eval_env: environment for evaluation
             ref_point: reference point for hypervolume calculation
             known_pareto_front: Optimal pareto front for metrics calculation, if known.
             num_er_episodes: number of episodes to fill experience replay buffer
@@ -349,6 +351,7 @@ class PCN(MOAgent, MOPolicy):
             max_return: maximum return for clipping desired return
             max_buffer_size: maximum buffer size
         """
+        self.register_additional_config(ref_point, known_pareto_front)
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0
@@ -425,7 +428,7 @@ class PCN(MOAgent, MOPolicy):
                 self.save()
                 n_checkpoints += 1
                 n_points = 10
-                e_returns, _, _ = self.evaluate(self.env, max_return, n=n_points)
+                e_returns, _, _ = self.evaluate(eval_env, max_return, n=n_points)
 
                 if self.log:
                     log_all_multi_policy_metrics(

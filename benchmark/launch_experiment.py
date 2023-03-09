@@ -1,3 +1,11 @@
+"""Launches an experiment on a given environment and algorithm.
+
+Many parameters can be given in the command line, see the help for more infos.
+
+Examples:
+    python benchmark/launch_experiment.py --algo pcn --env-id deep-sea-treasure-v0 --num-timesteps 1000000 --gamma 0.99 --ref-point 0 -25 --auto-tag True --wandb-entity openrlbenchmark --seed 0 --init-hyperparams "scaling_factor:np.array([1, 1, 1])"
+"""
+
 import argparse
 import os
 import subprocess
@@ -40,6 +48,29 @@ ENVS_WITH_KNOWN_PARETO_FRONT = [
 ]
 
 
+class StoreDict(argparse.Action):
+    """
+    Custom argparse action for storing dict.
+    In: args1:0.0 args2:"dict(a=1)"
+    Out: {'args1': 0.0, arg2: dict(a=1)}
+
+    From RL Baselines3 Zoo
+    """
+
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        self._nargs = nargs
+        super().__init__(option_strings, dest, nargs=nargs, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        arg_dict = {}
+        for arguments in values:
+            key = arguments.split(":")[0]
+            value = ":".join(arguments.split(":")[1:])
+            # Evaluate the string as python code
+            arg_dict[key] = eval(value)
+        setattr(namespace, self.dest, arg_dict)
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--algo", type=str, help="Name of the algorithm to run", choices=ALGOS.keys(), required=True)
@@ -58,6 +89,23 @@ def parse_args():
         nargs="?",
         const=True,
         help="if toggled, the runs will be tagged with git tags, commit, and pull request number if possible",
+    )
+    parser.add_argument(
+        "--init-hyperparams",
+        type=str,
+        nargs="+",
+        action=StoreDict,
+        help="Override hyperparameters to use for the initiation of the algorithm. Example: --init-hyperparams learning_rate:0.001 final_epsilon:0.1",
+        default={},
+    )
+
+    parser.add_argument(
+        "--train-hyperparams",
+        type=str,
+        nargs="+",
+        action=StoreDict,
+        help="Override hyperparameters to use for the train method algorithm. Example: --train-hyperparams eval_weights_number_for_front:10 timesteps_per_iter:10000",
+        default={},
     )
 
     return parser.parse_args()
@@ -104,31 +152,7 @@ def main():
         if len(wandb_tag) > 0:
             os.environ["WANDB_TAGS"] = wandb_tag
 
-    if args.algo != "pgmorl":
-        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
-        eval_env = mo_gym.make(args.env_id)
-        print(f"Instantiating {args.algo} on {args.env_id}")
-        algo = ALGOS[args.algo](
-            env=env,
-            gamma=args.gamma,
-            log=True,
-            seed=args.seed,
-            wandb_entity=args.wandb_entity,
-        )
-        if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
-            known_pareto_front = env.unwrapped.pareto_front(gamma=args.gamma)
-        else:
-            known_pareto_front = None
-
-        print("Training starts... Let's roll!")
-        algo.train(
-            total_timesteps=args.num_timesteps,
-            eval_env=eval_env,
-            ref_point=np.array(args.ref_point),
-            known_pareto_front=known_pareto_front,
-        )
-
-    else:
+    if args.algo == "pgmorl":
         # PGMORL creates its own environments because it requires wrappers
         algo = ALGOS[args.algo](
             env_id=args.env_id,
@@ -139,6 +163,59 @@ def main():
             wandb_entity=args.wandb_entity,
         )
         algo.train(total_timesteps=args.num_timesteps)
+    elif args.algo == "pql":
+        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
+        print(f"Instantiating {args.algo} on {args.env_id}")
+        algo = ALGOS[args.algo](
+            env=env,
+            ref_point=np.array(args.ref_point),
+            gamma=args.gamma,
+            log=True,
+            seed=args.seed,
+            wandb_entity=args.wandb_entity,
+            **args.init_hyperparams,
+        )
+        if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
+            known_pareto_front = env.unwrapped.pareto_front(gamma=args.gamma)
+        else:
+            known_pareto_front = None
+
+        print(algo.get_config())
+
+        print("Training starts... Let's roll!")
+        algo.train(
+            total_timesteps=args.num_timesteps,
+            known_pareto_front=known_pareto_front,
+            **args.train_hyperparams,
+        )
+
+    else:
+        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
+        eval_env = mo_gym.make(args.env_id)
+        print(f"Instantiating {args.algo} on {args.env_id}")
+        algo = ALGOS[args.algo](
+            env=env,
+            gamma=args.gamma,
+            log=True,
+            seed=args.seed,
+            wandb_entity=args.wandb_entity,
+            **args.init_hyperparams,
+        )
+        if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
+            known_pareto_front = env.unwrapped.pareto_front(gamma=args.gamma)
+        else:
+            known_pareto_front = None
+
+        print(algo.get_config())
+
+        print("Training starts... Let's roll!")
+        algo.train(
+            total_timesteps=args.num_timesteps,
+            eval_env=eval_env,
+            ref_point=np.array(args.ref_point),
+            known_pareto_front=known_pareto_front,
+            **args.train_hyperparams,
+        )
 
 
 if __name__ == "__main__":

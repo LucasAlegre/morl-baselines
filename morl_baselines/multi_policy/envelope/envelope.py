@@ -467,7 +467,7 @@ class Envelope(MOPolicy, MOAgent):
         weight: Optional[np.ndarray] = None,
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
-        eval_freq: int = 1000,
+        eval_freq: int = 10000,
         eval_weights_number_for_front: int = 100,
         reset_learning_starts: bool = False,
     ):
@@ -485,6 +485,10 @@ class Envelope(MOPolicy, MOAgent):
             eval_weights_number_for_front: number of weights to sample for creating the pareto front when evaluating.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
         """
+        if eval_env is not None:
+            assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
+            self.register_additional_config(ref_point, known_pareto_front)
+
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
         if reset_learning_starts:  # Resets epsilon-greedy exploration
@@ -500,7 +504,6 @@ class Envelope(MOPolicy, MOAgent):
         for _ in range(1, total_timesteps + 1):
             if total_episodes is not None and num_episodes == total_episodes:
                 break
-            self.global_step += 1
 
             if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
@@ -508,14 +511,13 @@ class Envelope(MOPolicy, MOAgent):
                 action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
+            self.global_step += 1
 
             self.replay_buffer.add(obs, action, vec_reward, next_obs, terminated)
-
             if self.global_step >= self.learning_starts:
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
                 current_front = [self.policy_eval(eval_env, weights=ew, writer=None)[3] for ew in eval_weights]
                 log_all_multi_policy_metrics(
                     current_front=current_front,
