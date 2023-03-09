@@ -481,7 +481,7 @@ class Envelope(MOPolicy, MOAgent):
             weight: weight vector. If None, it is randomly sampled every episode (as done in the paper).
             total_episodes: total number of episodes to train for. If None, it is ignored.
             reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
-            eval_freq: policy evaluation frequency.
+            eval_freq: policy evaluation frequency (in number of steps).
             eval_weights_number_for_front: number of weights to sample for creating the pareto front when evaluating.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
         """
@@ -527,7 +527,6 @@ class Envelope(MOPolicy, MOAgent):
                     writer=self.writer,
                     ref_front=known_pareto_front,
                 )
-                self.policy_eval(eval_env, weights=w, writer=self.writer)
 
             if terminated or truncated:
                 obs, _ = self.env.reset()
