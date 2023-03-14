@@ -7,16 +7,26 @@ To ensure the implementation of the algorithms are correct, we want to test them
 
 
 ## Metrics
-For single-policy algorithms, the metric used will be the scalarized return of the policy (utility).
+### Single-policy algorithms
+For single-policy algorithms, the metric used will be the scalarized return of the policy on the evaluation env (utility). Keywords: `eval/scalarized_return` and `eval/scalarized_discounted_return`.
 
-For multi-policy algorithms, we propose to rely on various metrics to assess the quality of the Pareto Fronts (PF). In general, we want to have a metric that is able to assess the convergence of the PF, a metric that is able to assess the diversity of the PF, and a hybrid metric assessing both. The metrics are implemented in `common/performance_indicators`. We propose to use the following metrics:
-* (Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1].
-* (Convergence) IGD: a SOTA metric from Multi-Objective Optimization (MOO) literature. It requires a reference PF that we can compute a posteriori. That is, we do a merge of all the PFs found by the method and compute the IGD with respect to this reference PF.
-* (Hybrid) Hypervolume: a SOTA metric from MOO and MORL literature.
+### Multi-policy algorithms
+For multi-policy algorithms, we propose to rely on various metrics to assess the quality of the **discounted** Pareto Fronts (PF) or Convex Coverage Set (CCS). In general, we want to have a metric that is able to assess the convergence of the PF, a metric that is able to assess the diversity of the PF, and a hybrid metric assessing both. The metrics are implemented in `common/performance_indicators`. We propose to use the following metrics:
+* (Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1]. Keyword: `eval/sparsity`.
+* (Convergence) IGD: a SOTA metric from Multi-Objective Optimization (MOO) literature. It requires a reference PF that we can compute a posteriori. That is, we do a merge of all the PFs found by the method and compute the IGD with respect to this reference PF. Keyword: `eval/igd`.
+* (Hybrid) Hypervolume: a SOTA metric from MOO and MORL literature. Keyword: `eval/hypervolume`.
 
 Moreover, some metrics relying on assumptions on the utility function of the user are proposed in the literature. These metric allow to have an idea on the true value on the user utility, whereas others such as hypervolume do not [2]. We propose to use the following metrics:
-* EUM: Expected Utility Metric. From [3].
-* MUL: Maximum Utility Loss for the problems we know the true CCS/PF. From [3].
+* EUM: Expected Utility Metric. From [3]. Keyword: `eval/eum`.
+* MUL: Maximum Utility Loss for the problems we know the true CCS/PF. From [3]. Keyword: `eval/mul`.
+For both these metrics, we propose to generate a number of equally spaced weights on the objective simplex. The number of weights is 50 by default, can be changed.
+
+Finally, the PF can also be logged as a wandb table for a posteriori analysis. Keyword: `eval/front`.
+
+Here is the function that logs all the metrics:
+```{eval-rst}
+.. autofunction:: morl_baselines.common.utils.log_all_multi_policy_metrics
+```
 
 ## Storage
 

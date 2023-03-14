@@ -1,5 +1,6 @@
 import fire
 import mo_gymnasium as mo_gym
+import numpy as np
 
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 
@@ -48,12 +49,14 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed:
         dynamics_rollout_len=1,
         real_ratio=0.5,
         log=True,
-        project_name="MORL Baselines",
-        experiment_name="GPI-PD - Minecart",
+        project_name="MORL-Baselines",
+        experiment_name="GPI-PD",
     )
 
     agent.train(
         eval_env=eval_env,
+        ref_point=np.array([0.0, 0.0, -200.0]),
+        known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
         weight_selection_algo=algo,
         max_iter=15,
         timesteps_per_iter=timesteps_per_iter,

@@ -6,8 +6,12 @@ import gymnasium as gym
 import numpy as np
 import torch as th
 from gymnasium import spaces
-from mo_gymnasium import eval_mo, eval_mo_reward_conditioned
 from torch.utils.tensorboard import SummaryWriter
+
+from morl_baselines.common.evaluation import (
+    eval_mo_reward_conditioned,
+    policy_evaluation_mo,
+)
 
 
 class MOPolicy(ABC):
@@ -75,38 +79,40 @@ class MOPolicy(ABC):
     def policy_eval(
         self,
         eval_env,
+        num_episodes: int = 5,
         scalarization=np.dot,
         weights: Optional[np.ndarray] = None,
         writer: Optional[SummaryWriter] = None,
     ):
-        """Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics using writer.
+        """Runs a policy evaluation (typically over a few episodes) on eval_env and logs some metrics using writer.
 
         Args:
             eval_env: evaluation environment
+            num_episodes: number of episodes to evaluate
             scalarization: scalarization function
             weights: weights to use in the evaluation
             writer: wandb writer
 
         Returns:
-             a tuple containing the evaluations
+             a tuple containing the average evaluations
         """
         (
-            scalarized_reward,
-            scalarized_discounted_reward,
-            vec_reward,
-            discounted_vec_reward,
-        ) = eval_mo(self, eval_env, scalarization=scalarization, w=weights)
+            scalarized_return,
+            scalarized_discounted_return,
+            vec_return,
+            discounted_vec_return,
+        ) = policy_evaluation_mo(self, eval_env, w=weights, rep=num_episodes)
 
         if writer is not None:
             self.__report(
-                scalarized_reward,
-                scalarized_discounted_reward,
-                vec_reward,
-                discounted_vec_reward,
+                scalarized_return,
+                scalarized_discounted_return,
+                vec_return,
+                discounted_vec_return,
                 writer,
             )
 
-        return scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward
+        return scalarized_return, scalarized_discounted_return, vec_return, discounted_vec_return
 
     def policy_eval_esr(
         self,

@@ -35,7 +35,7 @@ class MOQLearning(MOPolicy, MOAgent):
         dyna: bool = False,
         dyna_updates: int = 5,
         project_name: str = "MORL-baselines",
-        experiment_name: str = "MO-Q-Learning",
+        experiment_name: str = "MO Q-Learning",
         log: bool = True,
         parent_writer: Optional[SummaryWriter] = None,
     ):
@@ -164,6 +164,7 @@ class MOQLearning(MOPolicy, MOAgent):
     @override
     def get_config(self) -> dict:
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "alpha": self.learning_rate,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
@@ -213,7 +214,7 @@ class MOQLearning(MOPolicy, MOAgent):
             self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=self.weights, writer=self.writer)
+                self.policy_eval(eval_env, scalarization=self.scalarization, weights=self.weights, writer=self.writer)
 
             if self.terminated or self.truncated:
                 self.obs, _ = self.env.reset()

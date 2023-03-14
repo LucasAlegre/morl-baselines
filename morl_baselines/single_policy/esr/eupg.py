@@ -233,10 +233,10 @@ class EUPG(MOPolicy, MOAgent):
                 if self.log and "episode" in info.keys():
                     log_episode_info(
                         info["episode"],
-                        self.scalarization,
-                        None,
-                        self.global_step,
-                        self.writer,
+                        scalarization=self.scalarization,
+                        weights=None,
+                        global_timestep=self.global_step,
+                        writer=self.writer,
                     )
 
             else:
@@ -245,7 +245,7 @@ class EUPG(MOPolicy, MOAgent):
     @override
     def get_config(self) -> dict:
         return {
-            # "env_id": self.env.unwrapped.spec.id,
+            "env_id": self.env.unwrapped.spec.id,
             "learning_rate": self.learning_rate,
             "buffer_size": self.buffer_size,
             "gamma": self.gamma,

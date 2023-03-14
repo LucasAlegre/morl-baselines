@@ -11,19 +11,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import wandb as wb
-from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.evaluation import policy_evaluation_mo
 from morl_baselines.common.model_based.probabilistic_ensemble import (
     ProbabilisticEnsemble,
 )
 from morl_baselines.common.model_based.utils import ModelEnv, visualize_eval
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.performance_indicators import (
-    expected_utility,
-    maximum_utility_loss,
-)
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
     equally_spaced_weights,
@@ -31,6 +27,7 @@ from morl_baselines.common.utils import (
     huber,
     layer_init,
     linearly_decaying_value,
+    log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
 )
@@ -121,7 +118,7 @@ class GPIPD(MOPolicy, MOAgent):
         dynamics_ensemble_size: int = 5,
         dynamics_num_elites: int = 2,
         real_ratio: float = 0.05,
-        project_name: str = "MORL Baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD",
         log: bool = True,
         device: Union[th.device, str] = "auto",
@@ -736,25 +733,29 @@ class GPIPD(MOPolicy, MOAgent):
     def train(
         self,
         eval_env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        eval_weights_number_for_front: int = 100,
         timesteps_per_iter: int = 10000,
         max_iter: int = 15,
         weight_selection_algo: str = "gpi-ls",
-        ref_front: Optional[List[np.ndarray]] = None,
     ):
         """Train agent.
 
         Args:
             eval_env (gym.Env): Environment to evaluate on
+            ref_point (np.ndarray): Reference point for hypervolume calculation
+            known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front if known.
+            eval_weights_number_for_front: Number of weights to evaluate for the Pareto front
             timesteps_per_iter (int): Number of timesteps to train for per iteration
             max_iter (int): Number of iterations to train for
             weight_selection_algo (str): Weight selection algorithm to use
-            ref_front (Optional[List[np.ndarray]]): Reference front for computing maximum utiltiy loss
         """
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
         weight_history = []
 
-        test_tasks = equally_spaced_weights(self.reward_dim, 100, seed=42)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
 
         for iter in range(1, max_iter + 1):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
@@ -790,27 +791,29 @@ class GPIPD(MOPolicy, MOAgent):
             )
 
             if weight_selection_algo == "ols":
-                value = policy_evaluation_mo(self, eval_env, w, rep=5)
+                value = policy_evaluation_mo(self, eval_env, w, rep=5)[3]
                 linear_support.add_solution(value, w)
             elif weight_selection_algo == "gpi-ls":
                 for wcw in M:
-                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)
+                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)[3]
                     linear_support.add_solution(n_value, wcw)
 
-            # Evaluation
-            gpi_returns_test_tasks = [
-                policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
-            ]
-            mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
-            wb.log(
-                {"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}
-            )  # This is the EU computed in the paper
-            eu = expected_utility(gpi_returns_test_tasks, test_tasks)
-            wb.log({"eval/EU - GPI": eu, "iteration": iter})
-
-            if ref_front is not None:
-                mul = maximum_utility_loss(gpi_returns_test_tasks, ref_front, test_tasks)
-                wb.log({"eval/MUL - GPI": mul, "iteration": iter})
+            if self.log:
+                # Evaluation
+                gpi_returns_test_tasks = [policy_evaluation_mo(self, eval_env, w, rep=5)[3] for w in eval_weights]
+                log_all_multi_policy_metrics(
+                    current_front=gpi_returns_test_tasks,
+                    hv_ref_point=ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=known_pareto_front,
+                )
+                # This is the EU computed in the paper
+                mean_gpi_returns_test_tasks = np.mean(
+                    [np.dot(w, q) for w, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
+                )
+                wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 

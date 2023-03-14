@@ -10,13 +10,14 @@ def main():
 
     GAMMA = 0.99
     env = mo_gym.MORecordEpisodeStatistics(mo_gym.make("deep-sea-treasure-v0"), gamma=GAMMA)
+
     eval_env = mo_gym.make("deep-sea-treasure-v0")
 
     mp_moql = MPMOQLearning(
         env,
         learning_rate=0.3,
         gamma=GAMMA,
-        use_gpi=True,
+        use_gpi_policy=True,
         dyna=True,
         dyna_updates=5,
         initial_epsilon=1,
@@ -32,6 +33,7 @@ def main():
         num_episodes_eval=1,
         eval_env=eval_env,
         ref_point=np.array([0.0, -25.0]),
+        known_pareto_front=env.unwrapped.pareto_front(gamma=GAMMA),
     )
 
 

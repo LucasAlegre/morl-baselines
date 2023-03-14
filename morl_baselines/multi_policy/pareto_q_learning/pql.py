@@ -1,11 +1,12 @@
 """Pareto Q-Learning."""
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 import numpy as np
 
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
 from morl_baselines.common.performance_indicators import hypervolume
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 
 
 class PQL(MOAgent):
@@ -24,7 +25,7 @@ class PQL(MOAgent):
         epsilon_decay: float = 0.99,
         final_epsilon: float = 0.1,
         seed: int = None,
-        project_name: str = "MORL-baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "Pareto Q-Learning",
         log: bool = True,
     ):
@@ -82,6 +83,7 @@ class PQL(MOAgent):
             Dict: A dictionary of parameters and values.
         """
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "ref_point": list(self.ref_point),
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
@@ -168,11 +170,18 @@ class PQL(MOAgent):
         return non_dominated
 
     def train(
-        self, num_episodes: Optional[int] = 3000, log_every: Optional[int] = 100, action_eval: Optional[str] = "hypervolume"
+        self,
+        eval_ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_episodes: Optional[int] = 3000,
+        log_every: Optional[int] = 100,
+        action_eval: Optional[str] = "hypervolume",
     ):
         """Learn the Pareto front.
 
         Args:
+            eval_ref_point (ndarray): The reference point for the hypervolume metric during evaluation.
+            known_pareto_front (List[ndarray], optional): The optimal Pareto front, if known.
             num_episodes (int, optional): The number of episodes to train for.
             log_every (int, optional): Log the results every number of episodes. (Default value = 100)
             action_eval (str, optional): The action evaluation function name. (Default value = 'hypervolume')
@@ -199,6 +208,7 @@ class PQL(MOAgent):
             while not (terminated or truncated):
                 action = self.select_action(state, score_func)
                 next_state, reward, terminated, truncated, _ = self.env.step(action)
+                self.global_step += 1
                 next_state = int(np.ravel_multi_index(next_state, self.env_shape))
 
                 self.counts[state, action] += 1
@@ -209,12 +219,26 @@ class PQL(MOAgent):
             self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
 
             if self.log and episode % log_every == 0:
-                pf = self.get_local_pcs(state=0)
-                value = hypervolume(self.ref_point, list(pf))
-                print(f"Hypervolume in episode {episode}: {value}")
-                self.writer.add_scalar("train/hypervolume", value, episode)
+                self.writer.add_scalar("global_step", self.global_step, self.global_step)
+                pf = self._eval_all_policies()
+                log_all_multi_policy_metrics(
+                    current_front=pf,
+                    hv_ref_point=eval_ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=known_pareto_front,
+                )
 
         return self.get_local_pcs(state=0)
+
+    def _eval_all_policies(self) -> List[np.ndarray]:
+        """Evaluate all learned policies by tracking them."""
+        pf = []
+        for vec in self.get_local_pcs(state=0):
+            pf.append(self.track_policy(vec))
+
+        return pf
 
     def track_policy(self, vec):
         """Track a policy from its return vector.
@@ -227,6 +251,7 @@ class PQL(MOAgent):
         terminated = False
         truncated = False
         total_rew = np.zeros(self.num_objectives)
+        current_gamma = 1.0
 
         while not (terminated or truncated):
             state = np.ravel_multi_index(state, self.env_shape)
@@ -237,9 +262,10 @@ class PQL(MOAgent):
                 non_dominated_set = self.non_dominated[state][action]
                 for q in non_dominated_set:
                     q = np.array(q)
-                    if np.all(self.gamma * q + im_rew == target):
+                    if np.allclose(self.gamma * q + im_rew, target, atol=1e-3):
                         state, reward, terminated, truncated, _ = self.env.step(action)
-                        total_rew += reward
+                        total_rew += current_gamma * reward
+                        current_gamma *= self.gamma
                         target = q
                         new_target = True
                         break
