@@ -162,8 +162,10 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../algos/algorithms/">Overview</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../algos/multi_policy/">Multi-Policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/gpi_pd/">GPI-Prioritized Dyna</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/envelope/">Envelope Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pcn/">Pareto Conditioned Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
 </ul>
@@ -178,6 +180,7 @@
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../pareto/">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../evaluations/">Evaluations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../performance_indicators/">Performance indicators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
@@ -235,7 +238,7 @@
 <p>General utils for the MORL baselines.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.utils.equally_spaced_weights">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">equally_spaced_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.utils.equally_spaced_weights" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">equally_spaced_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.utils.equally_spaced_weights" title="Permalink to this definition">#</a></dt>
 <dd><p>Generate weight vectors that are equally spaced in the weight simplex.</p>
 <p>It uses the Riesz s-Energy method from pymoo: <a class="reference external" href="https://pymoo.org/misc/reference_directions.html">https://pymoo.org/misc/reference_directions.html</a></p>
 <dl class="field-list simple">
@@ -327,6 +330,32 @@ Use epsilon from there on.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>A float, the current value computed according to the schedule.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.log_all_multi_policy_metrics">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">log_all_multi_policy_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hv_ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SummaryWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.log_all_multi_policy_metrics" title="Permalink to this definition">#</a></dt>
+<dd><p>Logs all metrics for multi-policy training.</p>
+<p>Logged metrics:
+- hypervolume
+- sparsity
+- expected utility metric (EUM)
+If a reference front is provided, also logs:
+- Inverted generational distance (IGD)
+- Maximum utility loss (MUL)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current_front</strong> (<em>List</em>) – current Pareto front approximation, computed in an evaluation step</p></li>
+<li><p><strong>hv_ref_point</strong> – reference point for hypervolume computation</p></li>
+<li><p><strong>reward_dim</strong> – number of objectives</p></li>
+<li><p><strong>global_step</strong> – global step for logging</p></li>
+<li><p><strong>writer</strong> – wandb writer</p></li>
+<li><p><strong>n_sample_weights</strong> – number of weights to sample for EUM and MUL computation</p></li>
+<li><p><strong>ref_front</strong> – reference front, if known</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -451,6 +480,7 @@ Use epsilon from there on.</p>
 <li><a class="reference internal" href="#morl_baselines.common.utils.huber"><code class="docutils literal notranslate"><span class="pre">huber()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.utils.layer_init"><code class="docutils literal notranslate"><span class="pre">layer_init()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.utils.linearly_decaying_value"><code class="docutils literal notranslate"><span class="pre">linearly_decaying_value()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.log_all_multi_policy_metrics"><code class="docutils literal notranslate"><span class="pre">log_all_multi_policy_metrics()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.utils.log_episode_info"><code class="docutils literal notranslate"><span class="pre">log_episode_info()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.utils.make_gif"><code class="docutils literal notranslate"><span class="pre">make_gif()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.utils.polyak_update"><code class="docutils literal notranslate"><span class="pre">polyak_update()</span></code></a></li>

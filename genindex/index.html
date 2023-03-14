@@ -160,8 +160,10 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../algos/algorithms/">Overview</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../algos/multi_policy/">Multi-Policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/gpi_pd/">GPI-Prioritized Dyna</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/envelope/">Envelope Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/pcn/">Pareto Conditioned Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../algos/multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
 </ul>
@@ -176,6 +178,7 @@
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../features/pareto/">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features/evaluations/">Evaluations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features/performance_indicators/">Performance indicators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features/scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features/buffers/">Replay Buffers</a></li>
@@ -320,6 +323,10 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/evaluations/#morl_baselines.common.evaluation.eval_mo">eval_mo() (in module morl_baselines.common.evaluation)</a>
+</li>
+        <li><a href="../features/evaluations/#morl_baselines.common.evaluation.eval_mo_reward_conditioned">eval_mo_reward_conditioned() (in module morl_baselines.common.evaluation)</a>
+</li>
         <li><a href="../algos/multi_policy/pcn/#morl_baselines.multi_policy.pcn.pcn.PCN.evaluate">evaluate() (morl_baselines.multi_policy.pcn.pcn.PCN method)</a>
 </li>
         <li><a href="../features/performance_indicators/#morl_baselines.common.performance_indicators.expected_utility">expected_utility() (in module morl_baselines.common.performance_indicators)</a>
@@ -426,6 +433,10 @@
   <h2>I</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/performance_indicators/#morl_baselines.common.performance_indicators.igd">igd() (in module morl_baselines.common.performance_indicators)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../algos/multi_policy/linear_support/#morl_baselines.multi_policy.linear_support.linear_support.LinearSupport.is_dominated">is_dominated() (morl_baselines.multi_policy.linear_support.linear_support.LinearSupport method)</a>
 </li>
     </ul></td>
@@ -450,6 +461,8 @@
           <li><a href="../algos/multi_policy/gpi_pd/#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.load">(morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD method)</a>
 </li>
         </ul></li>
+        <li><a href="../algos/performances/#morl_baselines.common.utils.log_all_multi_policy_metrics">log_all_multi_policy_metrics() (in module morl_baselines.common.utils)</a>, <a href="../features/misc/#morl_baselines.common.utils.log_all_multi_policy_metrics">[1]</a>
+</li>
         <li><a href="../features/misc/#morl_baselines.common.utils.log_episode_info">log_episode_info() (in module morl_baselines.common.utils)</a>
 </li>
     </ul></td>
@@ -482,6 +495,8 @@
     module
 
         <ul>
+          <li><a href="../features/evaluations/#module-morl_baselines.common.evaluation">morl_baselines.common.evaluation</a>
+</li>
           <li><a href="../features/networks/#module-morl_baselines.common.networks">morl_baselines.common.networks</a>
 </li>
           <li><a href="../features/pareto/#module-morl_baselines.common.pareto">morl_baselines.common.pareto</a>
@@ -497,6 +512,13 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../algos/single_policy/moq_learning/#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning">MOQLearning (class in morl_baselines.single_policy.ser.mo_q_learning)</a>
 </li>
+        <li>
+    morl_baselines.common.evaluation
+
+        <ul>
+          <li><a href="../features/evaluations/#module-morl_baselines.common.evaluation">module</a>
+</li>
+        </ul></li>
         <li>
     morl_baselines.common.networks
 
@@ -576,6 +598,8 @@
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../features/evaluations/#morl_baselines.common.evaluation.policy_evaluation_mo">policy_evaluation_mo() (in module morl_baselines.common.evaluation)</a>
+</li>
         <li><a href="../features/misc/#morl_baselines.common.utils.polyak_update">polyak_update() (in module morl_baselines.common.utils)</a>
 </li>
         <li><a href="../algos/multi_policy/pareto_q_learning/#morl_baselines.multi_policy.pareto_q_learning.pql.PQL">PQL (class in morl_baselines.multi_policy.pareto_q_learning.pql)</a>
@@ -700,8 +724,6 @@
           <li><a href="../algos/multi_policy/envelope/#morl_baselines.multi_policy.envelope.envelope.Envelope.update">(morl_baselines.multi_policy.envelope.envelope.Envelope method)</a>
 </li>
           <li><a href="../algos/multi_policy/gpi_pd/#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.update">(morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD method)</a>
-</li>
-          <li><a href="../algos/multi_policy/mp_mo_q_learning/#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.update">(morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning method)</a>
 </li>
           <li><a href="../algos/multi_policy/pcn/#morl_baselines.multi_policy.pcn.pcn.PCN.update">(morl_baselines.multi_policy.pcn.pcn.PCN method)</a>
 </li>

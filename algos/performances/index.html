@@ -162,8 +162,10 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../algorithms/">Overview</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../multi_policy/">Multi-Policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/gpi_pd/">GPI-Prioritized Dyna</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/envelope/">Envelope Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/pcn/">Pareto Conditioned Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
 </ul>
@@ -178,6 +180,7 @@
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../features/pareto/">Pareto utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/evaluations/">Evaluations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../features/performance_indicators/">Performance indicators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../features/scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../features/buffers/">Replay Buffers</a></li>
@@ -239,18 +242,53 @@
 </section>
 <section id="metrics">
 <h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">#</a></h2>
-<p>For single-policy algorithms, the metric used will be the scalarized return of the policy (utility).</p>
-<p>For multi-policy algorithms, we propose to rely on various metrics to assess the quality of the Pareto Fronts (PF). In general, we want to have a metric that is able to assess the convergence of the PF, a metric that is able to assess the diversity of the PF, and a hybrid metric assessing both. The metrics are implemented in <code class="docutils literal notranslate"><span class="pre">common/performance_indicators</span></code>. We propose to use the following metrics:</p>
+<section id="single-policy-algorithms">
+<h3>Single-policy algorithms<a class="headerlink" href="#single-policy-algorithms" title="Permalink to this heading">#</a></h3>
+<p>For single-policy algorithms, the metric used will be the scalarized return of the policy on the evaluation env (utility). Keywords: <code class="docutils literal notranslate"><span class="pre">eval/scalarized_return</span></code> and <code class="docutils literal notranslate"><span class="pre">eval/scalarized_discounted_return</span></code>.</p>
+</section>
+<section id="multi-policy-algorithms">
+<h3>Multi-policy algorithms<a class="headerlink" href="#multi-policy-algorithms" title="Permalink to this heading">#</a></h3>
+<p>For multi-policy algorithms, we propose to rely on various metrics to assess the quality of the <strong>discounted</strong> Pareto Fronts (PF) or Convex Coverage Set (CCS). In general, we want to have a metric that is able to assess the convergence of the PF, a metric that is able to assess the diversity of the PF, and a hybrid metric assessing both. The metrics are implemented in <code class="docutils literal notranslate"><span class="pre">common/performance_indicators</span></code>. We propose to use the following metrics:</p>
 <ul class="simple">
-<li><p>(Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1].</p></li>
-<li><p>(Convergence) IGD: a SOTA metric from Multi-Objective Optimization (MOO) literature. It requires a reference PF that we can compute a posteriori. That is, we do a merge of all the PFs found by the method and compute the IGD with respect to this reference PF.</p></li>
-<li><p>(Hybrid) Hypervolume: a SOTA metric from MOO and MORL literature.</p></li>
+<li><p>(Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1]. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/sparsity</span></code>.</p></li>
+<li><p>(Convergence) IGD: a SOTA metric from Multi-Objective Optimization (MOO) literature. It requires a reference PF that we can compute a posteriori. That is, we do a merge of all the PFs found by the method and compute the IGD with respect to this reference PF. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/igd</span></code>.</p></li>
+<li><p>(Hybrid) Hypervolume: a SOTA metric from MOO and MORL literature. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/hypervolume</span></code>.</p></li>
 </ul>
 <p>Moreover, some metrics relying on assumptions on the utility function of the user are proposed in the literature. These metric allow to have an idea on the true value on the user utility, whereas others such as hypervolume do not [2]. We propose to use the following metrics:</p>
 <ul class="simple">
-<li><p>EUM: Expected Utility Metric. From [3].</p></li>
-<li><p>MUL: Maximum Utility Loss for the problems we know the true CCS/PF. From [3].</p></li>
+<li><p>EUM: Expected Utility Metric. From [3]. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/eum</span></code>.</p></li>
+<li><p>MUL: Maximum Utility Loss for the problems we know the true CCS/PF. From [3]. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/mul</span></code>.
+For both these metrics, we propose to generate a number of equally spaced weights on the objective simplex. The number of weights is 50 by default, can be changed.</p></li>
 </ul>
+<p>Finally, the PF can also be logged as a wandb table for a posteriori analysis. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/front</span></code>.</p>
+<p>Here is the function that logs all the metrics:</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.log_all_multi_policy_metrics">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">log_all_multi_policy_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hv_ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SummaryWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.log_all_multi_policy_metrics" title="Permalink to this definition">#</a></dt>
+<dd><p>Logs all metrics for multi-policy training.</p>
+<p>Logged metrics:
+- hypervolume
+- sparsity
+- expected utility metric (EUM)
+If a reference front is provided, also logs:
+- Inverted generational distance (IGD)
+- Maximum utility loss (MUL)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current_front</strong> (<em>List</em>) – current Pareto front approximation, computed in an evaluation step</p></li>
+<li><p><strong>hv_ref_point</strong> – reference point for hypervolume computation</p></li>
+<li><p><strong>reward_dim</strong> – number of objectives</p></li>
+<li><p><strong>global_step</strong> – global step for logging</p></li>
+<li><p><strong>writer</strong> – wandb writer</p></li>
+<li><p><strong>n_sample_weights</strong> – number of weights to sample for EUM and MUL computation</p></li>
+<li><p><strong>ref_front</strong> – reference front, if known</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 </section>
 <section id="storage">
 <h2>Storage<a class="headerlink" href="#storage" title="Permalink to this heading">#</a></h2>
@@ -259,15 +297,15 @@
 <section id="algorithms">
 <h2>Algorithms<a class="headerlink" href="#algorithms" title="Permalink to this heading">#</a></h2>
 <p>Below are the algorithms that we want to test along with the environments from their original papers which are supported in MO-Gymnasium.</p>
-<section id="single-policy-algorithms">
-<h3>Single-policy algorithms<a class="headerlink" href="#single-policy-algorithms" title="Permalink to this heading">#</a></h3>
+<section id="id1">
+<h3>Single-policy algorithms<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
 <ul class="simple">
 <li><p>MOQ-Learning (discrete/discrete): DST, MO-MountainCar;</p></li>
 <li><p>EUPG (discrete/discrete): Fishwood;</p></li>
 </ul>
 </section>
-<section id="multi-policy-algorithms">
-<h3>Multi-policy algorithms<a class="headerlink" href="#multi-policy-algorithms" title="Permalink to this heading">#</a></h3>
+<section id="id2">
+<h3>Multi-policy algorithms<a class="headerlink" href="#id2" title="Permalink to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Envelope Q-Learning (continuous/discrete): DST, Fruit-tree, Mario;</p></li>
 <li><p>Pareto Q-Learning (discrete/discrete): DST;</p></li>
@@ -344,11 +382,18 @@
             <ul>
 <li><a class="reference internal" href="#">Performance assessments</a><ul>
 <li><a class="reference internal" href="#introduction">Introduction</a></li>
-<li><a class="reference internal" href="#metrics">Metrics</a></li>
+<li><a class="reference internal" href="#metrics">Metrics</a><ul>
+<li><a class="reference internal" href="#single-policy-algorithms">Single-policy algorithms</a></li>
+<li><a class="reference internal" href="#multi-policy-algorithms">Multi-policy algorithms</a><ul>
+<li><a class="reference internal" href="#morl_baselines.common.utils.log_all_multi_policy_metrics"><code class="docutils literal notranslate"><span class="pre">log_all_multi_policy_metrics()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#storage">Storage</a></li>
 <li><a class="reference internal" href="#algorithms">Algorithms</a><ul>
-<li><a class="reference internal" href="#single-policy-algorithms">Single-policy algorithms</a></li>
-<li><a class="reference internal" href="#multi-policy-algorithms">Multi-policy algorithms</a></li>
+<li><a class="reference internal" href="#id1">Single-policy algorithms</a></li>
+<li><a class="reference internal" href="#id2">Multi-policy algorithms</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#references">References</a></li>

@@ -51,6 +51,7 @@ algos/performances
 :caption: Features
 
 features/pareto
+features/evaluations
 features/performance_indicators
 features/scalarization
 features/buffers

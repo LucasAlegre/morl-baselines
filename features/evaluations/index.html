@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Replay Buffers" href="../buffers/" /><link rel="prev" title="Performance indicators" href="../performance_indicators/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Performance indicators" href="../performance_indicators/" /><link rel="prev" title="Pareto utils" href="../pareto/" />
 
     <!-- Generated with Sphinx 6.1.3 and Furo 2022.12.07 -->
-        <title>Scalarization functions - MORL-Baselines 0.0.1 documentation</title>
+        <title>Evaluations - MORL-Baselines 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -180,9 +180,9 @@
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../pareto/">Pareto utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../evaluations/">Evaluations</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Evaluations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../performance_indicators/">Performance indicators</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Scalarization functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../networks/">Neural Networks helpers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../misc/">Miscellaneous</a></li>
@@ -211,7 +211,7 @@
         </a>
         <div class="content-icon-container">
           <div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/features/scalarization.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/features/evaluations.md" title="Edit this page">
     <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
@@ -233,40 +233,64 @@
           </label>
         </div>
         <article role="main">
-          <section id="module-morl_baselines.common.scalarization">
-<span id="scalarization-functions"></span><h1>Scalarization functions<a class="headerlink" href="#module-morl_baselines.common.scalarization" title="Permalink to this heading">#</a></h1>
-<p>Scalarization functions relying on numpy.</p>
+          <section id="module-morl_baselines.common.evaluation">
+<span id="evaluations"></span><h1>Evaluations<a class="headerlink" href="#module-morl_baselines.common.evaluation" title="Permalink to this heading">#</a></h1>
+<p>Utilities related to evaluation.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.scalarization.tchebicheff">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">tchebicheff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.scalarization.tchebicheff" title="Permalink to this definition">#</a></dt>
-<dd><p>Tchebicheff scalarization function.</p>
-<p>This function requires a reference point. It is automatically adapted to the best value seen so far for each component of the reward.</p>
+<dt class="sig sig-object py" id="morl_baselines.common.evaluation.eval_mo">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.evaluation.</span></span><span class="sig-name descname"><span class="pre">eval_mo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization=&lt;function</span> <span class="pre">dot&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.evaluation.eval_mo" title="Permalink to this definition">#</a></dt>
+<dd><p>Evaluates one episode of the agent in the environment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>tau</strong> – Parameter to be sure the reference point is always dominating (automatically adapted).</p></li>
-<li><p><strong>reward_dim</strong> – Dimension of the reward vector</p></li>
+<li><p><strong>agent</strong> – Agent</p></li>
+<li><p><strong>env</strong> – MO-Gymnasium environment with LinearReward wrapper</p></li>
+<li><p><strong>scalarization</strong> – scalarization function, taking weights and reward as parameters</p></li>
+<li><p><strong>w</strong> (<em>np.ndarray</em>) – Weight vector</p></li>
+<li><p><strong>render</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to render the environment. Defaults to False.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Callable</strong> – Tchebicheff scalarization function</p>
+<dd class="field-even"><p><strong>(float, float, np.ndarray, np.ndarray)</strong> – Scalarized return, scalarized discounted return, vectorized return, vectorized discounted return</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.scalarization.weighted_sum">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">weighted_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.scalarization.weighted_sum" title="Permalink to this definition">#</a></dt>
-<dd><p>Weighted sum scalarization (numpy dot product).</p>
+<dt class="sig sig-object py" id="morl_baselines.common.evaluation.eval_mo_reward_conditioned">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.evaluation.</span></span><span class="sig-name descname"><span class="pre">eval_mo_reward_conditioned</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization=&lt;function</span> <span class="pre">dot&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.evaluation.eval_mo_reward_conditioned" title="Permalink to this definition">#</a></dt>
+<dd><p>Evaluates one episode of the agent in the environment. This makes the assumption that the agent is conditioned on the accrued reward i.e. for ESR agent.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>reward</strong> – Reward vector</p></li>
-<li><p><strong>weights</strong> – Weight vector</p></li>
+<li><p><strong>agent</strong> – Agent</p></li>
+<li><p><strong>env</strong> – MO-Gymnasium environment</p></li>
+<li><p><strong>scalarization</strong> – scalarization function, taking weights and reward as parameters</p></li>
+<li><p><strong>w</strong> – weight vector</p></li>
+<li><p><strong>render</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to render the environment. Defaults to False.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>float</strong> – Weighted sum</p>
+<dd class="field-even"><p><strong>(float, float, np.ndarray, np.ndarray)</strong> – Scalarized return, scalarized discounted return, vectorized return, vectorized discounted return</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.evaluation.policy_evaluation_mo">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.evaluation.</span></span><span class="sig-name descname"><span class="pre">policy_evaluation_mo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.evaluation.policy_evaluation_mo" title="Permalink to this definition">#</a></dt>
+<dd><p>Evaluates the value of a policy by running the policy for multiple episodes. Returns the average returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agent</strong> – Agent</p></li>
+<li><p><strong>env</strong> – MO-Gymnasium environment</p></li>
+<li><p><strong>w</strong> (<em>np.ndarray</em>) – Weight vector</p></li>
+<li><p><strong>rep</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of episodes for averaging. Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>(float, float, np.ndarray, np.ndarray)</strong> – Avg scalarized return, Avg scalarized discounted return, Avg vectorized return, Avg vectorized discounted return</p>
 </dd>
 </dl>
 </dd></dl>
@@ -278,23 +302,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../buffers/">
+          <a class="next-page" href="../performance_indicators/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Replay Buffers</div>
+                <div class="title">Performance indicators</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../performance_indicators/">
+          <a class="prev-page" href="../pareto/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Performance indicators</div>
+                <div class="title">Pareto utils</div>
                 
               </div>
             </a>
@@ -328,9 +352,10 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Scalarization functions</a><ul>
-<li><a class="reference internal" href="#morl_baselines.common.scalarization.tchebicheff"><code class="docutils literal notranslate"><span class="pre">tchebicheff()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.common.scalarization.weighted_sum"><code class="docutils literal notranslate"><span class="pre">weighted_sum()</span></code></a></li>
+<li><a class="reference internal" href="#">Evaluations</a><ul>
+<li><a class="reference internal" href="#morl_baselines.common.evaluation.eval_mo"><code class="docutils literal notranslate"><span class="pre">eval_mo()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.evaluation.eval_mo_reward_conditioned"><code class="docutils literal notranslate"><span class="pre">eval_mo_reward_conditioned()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.evaluation.policy_evaluation_mo"><code class="docutils literal notranslate"><span class="pre">policy_evaluation_mo()</span></code></a></li>
 </ul>
 </li>
 </ul>
