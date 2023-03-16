@@ -28,6 +28,7 @@ from morl_baselines.common.utils import (
     log_episode_info,
     polyak_update,
     seed_everything,
+    unique_tol,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
@@ -480,7 +481,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
         """Set the weight support set."""
-        self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
+        weights_no_repeat = unique_tol(weight_list)
+        self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeat]
         if len(self.weight_support) > 0:
             self.stacked_weight_support = th.stack(self.weight_support)
 

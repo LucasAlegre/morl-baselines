@@ -31,6 +31,7 @@ from morl_baselines.common.utils import (
     log_episode_info,
     polyak_update,
     seed_everything,
+    unique_tol,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
@@ -650,7 +651,8 @@ class GPIPD(MOPolicy, MOAgent):
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
         """Set the weight support set."""
-        self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
+        weights_no_repeats = unique_tol(weight_list)
+        self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeats]
 
     def train_iteration(
         self,
@@ -675,7 +677,7 @@ class GPIPD(MOPolicy, MOAgent):
             eval_freq (int): Number of timesteps between evaluations
             reset_learning_starts (bool): Whether to reset the learning starts
         """
-        self.weight_support = [th.tensor(z).float().to(self.device) for z in weight_support]
+        self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
 
         self.police_indices = []
