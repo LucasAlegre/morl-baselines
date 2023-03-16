@@ -237,28 +237,26 @@ class LinearSupport:
         return W_del
 
     def remove_obsolete_values(self, value: np.ndarray) -> List[int]:
-        """Removes the values vectors which are dominated by the new value for all visited weight vectors.
+        """Removes the values vectors which are no longer optimal for any weight vector after adding the new value vector.
 
         Args:
-            value: New value vector
+            value (np.ndarray): New value vector
 
         Returns:
-             the indices of the removed values.
+            The indices of the removed values.
         """
         removed_indx = []
         for i in reversed(range(len(self.ccs))):
-            best_in_all = True
-            for j in range(len(self.visited_weights)):
-                w = self.visited_weights[j]
-                if np.dot(value, w) < np.dot(self.ccs[i], w):
-                    best_in_all = False
-                    break
-
-            if best_in_all:
+            weights_optimal = [
+                w
+                for w in self.visited_weights
+                if np.dot(self.ccs[i], w) == self.max_scalarized_value(w) and np.dot(value, w) < np.dot(self.ccs[i], w)
+            ]
+            if len(weights_optimal) == 0:
+                print("removed value", self.ccs[i])
                 removed_indx.append(i)
                 self.ccs.pop(i)
                 self.weight_support.pop(i)
-
         return removed_indx
 
     def max_value_lp(self, w_new: np.ndarray) -> float:
