@@ -163,31 +163,6 @@ def main():
             wandb_entity=args.wandb_entity,
         )
         algo.train(total_timesteps=args.num_timesteps)
-    elif args.algo == "pql":
-        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
-        print(f"Instantiating {args.algo} on {args.env_id}")
-        algo = ALGOS[args.algo](
-            env=env,
-            ref_point=np.array(args.ref_point),
-            gamma=args.gamma,
-            log=True,
-            seed=args.seed,
-            wandb_entity=args.wandb_entity,
-            **args.init_hyperparams,
-        )
-        if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
-            known_pareto_front = env.unwrapped.pareto_front(gamma=args.gamma)
-        else:
-            known_pareto_front = None
-
-        print(algo.get_config())
-
-        print("Training starts... Let's roll!")
-        algo.train(
-            total_timesteps=args.num_timesteps,
-            known_pareto_front=known_pareto_front,
-            **args.train_hyperparams,
-        )
 
     else:
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
