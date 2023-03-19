@@ -201,7 +201,8 @@ class PQL(MOAgent):
             raise Exception("No other method implemented yet")
         if eval_ref_point is None:
             eval_ref_point = self.ref_point
-        self.register_additional_config(eval_ref_point, known_pareto_front)
+        if self.log:
+            self.register_additional_config(eval_ref_point, known_pareto_front)
 
         while self.global_step < total_timesteps:
             state, _ = self.env.reset()

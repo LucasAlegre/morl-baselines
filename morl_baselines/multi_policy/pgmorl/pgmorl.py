@@ -290,6 +290,7 @@ class PGMORL(MOAgent):
     def __init__(
         self,
         env_id: str,
+        origin: np.ndarray,
         num_envs: int = 4,
         pop_size: int = 6,
         warmup_iterations: int = 80,
@@ -328,6 +329,7 @@ class PGMORL(MOAgent):
 
         Args:
             env_id: environment id
+            origin: reference point to make the objectives positive in the performance buffer
             num_envs: number of environments to use (VectorizedEnvs)
             pop_size: population size
             warmup_iterations: number of warmup iterations
@@ -387,7 +389,7 @@ class PGMORL(MOAgent):
         self.population = PerformanceBuffer(
             num_bins=self.num_performance_buffer,
             max_size=self.performance_buffer_size,
-            origin=self.ref_point,
+            origin=origin,
         )
         self.predictor = PerformancePredictor()
 
@@ -619,7 +621,8 @@ class PGMORL(MOAgent):
         known_pareto_front: Optional[List[np.ndarray]] = None,
     ):
         """Trains the agents."""
-        self.register_additional_config(ref_point, known_pareto_front)
+        if self.log:
+            self.register_additional_config(ref_point, known_pareto_front)
         max_iterations = total_timesteps // self.steps_per_iteration // self.num_envs
         iteration = 0
         # Init

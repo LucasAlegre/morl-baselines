@@ -215,6 +215,7 @@ def test_pgmorl():
     env_id = "mo-mountaincarcontinuous-v0"
     algo = PGMORL(
         env_id=env_id,
+        origin=np.array([0.0, 0.0]),
         num_envs=4,
         pop_size=6,
         warmup_iterations=2,
@@ -254,6 +255,7 @@ def test_pcn():
         max_buffer_size=50,
         num_model_updates=50,
         max_return=np.array([1.5, 1.5, -0.0]),
+        eval_env=env,
     )
 
     agent.set_desired_return_and_horizon(np.array([1.5, 1.5, -0.0]), 100)

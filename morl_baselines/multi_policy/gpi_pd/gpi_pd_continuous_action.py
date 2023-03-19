@@ -596,7 +596,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
             eval_freq (int): Number of timesteps between evaluations during an iteration.
         """
-        self.register_additional_config(ref_point, known_pareto_front)
+        if self.log:
+            self.register_additional_config(ref_point, known_pareto_front)
         max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 

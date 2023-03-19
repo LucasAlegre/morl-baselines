@@ -156,7 +156,7 @@ def main():
         # PGMORL creates its own environments because it requires wrappers
         algo = ALGOS[args.algo](
             env_id=args.env_id,
-            ref_point=np.array(args.ref_point),
+            origin=np.array(args.ref_point),
             gamma=args.gamma,
             log=True,
             seed=args.seed,

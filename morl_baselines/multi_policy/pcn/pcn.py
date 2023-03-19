@@ -351,7 +351,8 @@ class PCN(MOAgent, MOPolicy):
             max_return: maximum return for clipping desired return
             max_buffer_size: maximum buffer size
         """
-        self.register_additional_config(ref_point, known_pareto_front)
+        if self.log:
+            self.register_additional_config(ref_point, known_pareto_front)
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0

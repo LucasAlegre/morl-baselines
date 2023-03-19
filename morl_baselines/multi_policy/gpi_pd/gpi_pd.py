@@ -763,7 +763,8 @@ class GPIPD(MOPolicy, MOAgent):
             timesteps_per_iter (int): Number of timesteps to train for per iteration
             weight_selection_algo (str): Weight selection algorithm to use
         """
-        self.register_additional_config(ref_point, known_pareto_front)
+        if self.log:
+            self.register_additional_config(ref_point, known_pareto_front)
         max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
