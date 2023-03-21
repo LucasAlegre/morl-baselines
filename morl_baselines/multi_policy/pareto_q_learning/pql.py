@@ -240,11 +240,12 @@ class PQL(MOAgent):
 
         return pf
 
-    def track_policy(self, vec):
+    def track_policy(self, vec, tol=1e-3):
         """Track a policy from its return vector.
 
         Args:
             vec (array_like): The return vector to track.
+            tol (float, optional): The tolerance for the return vector. (Default value = 1e-3) 
         """
         target = np.array(vec)
         state, _ = self.env.reset()
@@ -255,23 +256,34 @@ class PQL(MOAgent):
 
         while not (terminated or truncated):
             state = np.ravel_multi_index(state, self.env_shape)
-            new_target = False
+            closest_dist = np.inf
+            closest_action = 0
+            found_action = False
+            new_target = target
 
             for action in range(self.num_actions):
                 im_rew = self.avg_reward[state, action]
                 non_dominated_set = self.non_dominated[state][action]
+
                 for q in non_dominated_set:
                     q = np.array(q)
-                    if np.allclose(self.gamma * q + im_rew, target, atol=1e-3):
-                        state, reward, terminated, truncated, _ = self.env.step(action)
-                        total_rew += current_gamma * reward
-                        current_gamma *= self.gamma
-                        target = q
-                        new_target = True
-                        break
+                    dist = np.sum(np.abs(self.gamma * q + im_rew - target))
+                    if dist < closest_dist:
+                        closest_dist = dist
+                        closest_action = action
+                        new_target = q
 
-                if new_target:
+                        if dist < tol:
+                            found_action = True
+                            break
+
+                if found_action:
                     break
+
+            state, reward, terminated, truncated, _ = self.env.step(closest_action)
+            total_rew += current_gamma * reward
+            current_gamma *= self.gamma
+            target = new_target
 
         return total_rew
 
