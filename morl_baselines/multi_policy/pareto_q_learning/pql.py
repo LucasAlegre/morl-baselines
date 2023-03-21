@@ -245,7 +245,7 @@ class PQL(MOAgent):
 
         Args:
             vec (array_like): The return vector to track.
-            tol (float, optional): The tolerance for the return vector. (Default value = 1e-3) 
+            tol (float, optional): The tolerance for the return vector. (Default value = 1e-3)
         """
         target = np.array(vec)
         state, _ = self.env.reset()
