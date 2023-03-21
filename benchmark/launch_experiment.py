@@ -154,6 +154,7 @@ def main():
 
     if args.algo == "pgmorl":
         # PGMORL creates its own environments because it requires wrappers
+        print(f"Instantiating {args.algo} on {args.env_id}")
         algo = ALGOS[args.algo](
             env_id=args.env_id,
             origin=np.array(args.ref_point),
@@ -161,8 +162,17 @@ def main():
             log=True,
             seed=args.seed,
             wandb_entity=args.wandb_entity,
+            **args.init_hyperparams,
         )
-        algo.train(total_timesteps=args.num_timesteps)
+        print(algo.get_config())
+
+        print("Training starts... Let's roll!")
+        algo.train(
+            total_timesteps=args.num_timesteps,
+            ref_point=np.array(args.ref_point),
+            known_pareto_front=None,
+            **args.train_hyperparams,
+        )
 
     else:
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
