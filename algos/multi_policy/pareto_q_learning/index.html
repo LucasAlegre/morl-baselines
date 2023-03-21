@@ -344,11 +344,14 @@ Paper: K. Van Moffaert and A. Nowé, “Multi-objective reinforcement learning u
 
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.track_policy">
-<span class="sig-name descname"><span class="pre">track_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.track_policy" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">track_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.track_policy" title="Permalink to this definition">#</a></dt>
 <dd><p>Track a policy from its return vector.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>vec</strong> (<em>array_like</em>) – The return vector to track.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vec</strong> (<em>array_like</em>) – The return vector to track.</p></li>
+<li><p><strong>tol</strong> (<em>float</em><em>, </em><em>optional</em>) – The tolerance for the return vector. (Default value = 1e-3)</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
