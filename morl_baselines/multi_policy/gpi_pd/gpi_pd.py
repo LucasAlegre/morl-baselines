@@ -233,6 +233,8 @@ class GPIPD(MOPolicy, MOAgent):
         # model-based parameters
         self.dyna = dyna
         self.dynamics_net_arch = dynamics_net_arch
+        self.dynamics = None
+        self.dynamics_buffer = None
         if self.dyna:
             self.dynamics = ProbabilisticEnsemble(
                 input_dim=self.observation_dim + self.action_dim,

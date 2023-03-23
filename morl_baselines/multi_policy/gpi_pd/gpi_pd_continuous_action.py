@@ -210,6 +210,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         self.policy_optim = optim.Adam(list(self.policy.parameters()), lr=self.learning_rate)
 
         self.dyna = dyna
+        self.dynamics = None
+        self.dynamics_buffer = None
         if self.dyna:
             self.dynamics = ProbabilisticEnsemble(
                 input_dim=self.observation_dim + self.action_dim,
@@ -540,9 +542,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval(eval_env, weights=weight, writer=self.writer)
-                plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
-                wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
-                plot.close()
+
+                if self.dyna and self.global_step >= self.dynamics_rollout_starts:
+                    plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
+                    wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
+                    plot.close()
 
             if terminated or truncated:
                 obs, info = self.env.reset()
