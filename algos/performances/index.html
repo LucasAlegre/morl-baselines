@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Pareto utils" href="../../features/pareto/" /><link rel="prev" title="EUPG" href="../single_policy/eupg/" />
 
-    <!-- Generated with Sphinx 6.1.3 and Furo 2022.12.07 -->
+    <!-- Generated with Sphinx 6.1.3 and Furo 2023.03.23 -->
         <title>Performance assessments - MORL-Baselines 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=fad236701ea90a88636c2a8c73b44ae642ed2a53" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -292,7 +292,11 @@ If a reference front is provided, also logs:
 </section>
 <section id="storage">
 <h2>Storage<a class="headerlink" href="#storage" title="Permalink to this heading">#</a></h2>
-<p>All the metrics will be reported to wandb to allow for easy manipulation and exporting of the data.</p>
+<p>Our official performance metrics are sent to <a class="reference external" href="https://wandb.ai/openrlbenchmark/MORL-Baselines">openrlbenchmark</a> on wandb. From there, it is possible to use <a class="reference external" href="https://github.com/openrlbenchmark/openrlbenchmark">openrlbenchmark API</a> to query and plot the wanted results for paper format. Life is good when the full flow is automated 🥸.</p>
+</section>
+<section id="benchmarking-script">
+<h2>Benchmarking script<a class="headerlink" href="#benchmarking-script" title="Permalink to this heading">#</a></h2>
+<p>It is possible to run algorithms from a CLI and configure the parameters accordingly. The script is located in <code class="docutils literal notranslate"><span class="pre">benchmark/launch_experiment.py</span></code>. Here is the documentation:</p>
 </section>
 <section id="algorithms">
 <h2>Algorithms<a class="headerlink" href="#algorithms" title="Permalink to this heading">#</a></h2>
@@ -391,6 +395,7 @@ If a reference front is provided, also logs:
 </ul>
 </li>
 <li><a class="reference internal" href="#storage">Storage</a></li>
+<li><a class="reference internal" href="#benchmarking-script">Benchmarking script</a></li>
 <li><a class="reference internal" href="#algorithms">Algorithms</a><ul>
 <li><a class="reference internal" href="#id1">Single-policy algorithms</a></li>
 <li><a class="reference internal" href="#id2">Multi-policy algorithms</a></li>
