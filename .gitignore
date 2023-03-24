@@ -137,3 +137,6 @@ wandb/
 
 # Saved weights
 weights/
+
+# Saved videos
+videos/
