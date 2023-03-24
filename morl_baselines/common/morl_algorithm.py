@@ -1,7 +1,7 @@
 """MORL algorithm base classes."""
 import time
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+from typing import Dict, Optional, Union
 
 import gymnasium as gym
 import numpy as np
@@ -208,15 +208,14 @@ class MOAgent(ABC):
             dict: Config
         """
 
-    def register_additional_config(self, ref_point: np.ndarray, known_front: Optional[List[np.ndarray]]) -> None:
+    def register_additional_config(self, conf: Dict = {}) -> None:
         """Registers additional config parameters to wandb. For example when calling train().
 
         Args:
-            ref_point: reference point used for the scalarization
-            known_front: known pareto front
+            conf: dictionary of additional config parameters
         """
-        wandb.config["ref_point"] = ref_point.tolist()
-        wandb.config["known_front"] = known_front
+        for key, value in conf.items():
+            wandb.config[key] = value
 
     def setup_wandb(self, project_name: str, experiment_name: str, entity: Optional[str] = None) -> None:
         """Initializes the wandb writer.

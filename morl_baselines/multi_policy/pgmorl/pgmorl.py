@@ -622,7 +622,7 @@ class PGMORL(MOAgent):
     ):
         """Trains the agents."""
         if self.log:
-            self.register_additional_config(ref_point, known_pareto_front)
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
         max_iterations = total_timesteps // self.steps_per_iteration // self.num_envs
         iteration = 0
         # Init

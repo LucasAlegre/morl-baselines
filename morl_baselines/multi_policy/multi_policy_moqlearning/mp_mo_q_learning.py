@@ -180,7 +180,7 @@ class MPMOQLearning(MOAgent):
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
         """
         if self.log:
-            self.register_additional_config(ref_point, known_pareto_front)
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
         num_iterations = int(total_timesteps / timesteps_per_iteration)
         if eval_env is None:
             eval_env = deepcopy(self.env)

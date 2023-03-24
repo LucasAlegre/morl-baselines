@@ -202,7 +202,7 @@ class PQL(MOAgent):
         if eval_ref_point is None:
             eval_ref_point = self.ref_point
         if self.log:
-            self.register_additional_config(eval_ref_point, known_pareto_front)
+            self.register_additional_config({"ref_point": eval_ref_point.tolist(), "known_front": known_pareto_front})
 
         while self.global_step < total_timesteps:
             state, _ = self.env.reset()

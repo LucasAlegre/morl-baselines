@@ -352,7 +352,7 @@ class PCN(MOAgent, MOPolicy):
             max_buffer_size: maximum buffer size
         """
         if self.log:
-            self.register_additional_config(ref_point, known_pareto_front)
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0
