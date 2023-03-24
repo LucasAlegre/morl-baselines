@@ -9,16 +9,17 @@ if __name__ == "__main__":
     env_id = "mo-halfcheetah-v4"
     algo = PGMORL(
         env_id=env_id,
-        ref_point=np.array([0.0, -5.0]),
-        known_pareto_front=None,
         num_envs=4,
         pop_size=6,
         warmup_iterations=80,
         evolutionary_iterations=20,
         num_weight_candidates=7,
-        limit_env_steps=int(5e6),
     )
-    algo.train()
+    algo.train(
+        total_timesteps=int(5e6),
+        ref_point=np.array([0.0, -5.0]),
+        known_pareto_front=None,
+    )
     env = make_env(env_id, 422, 1, "PGMORL_test", gamma=0.995)()  # idx != 0 to avoid taking videos
 
     # Execution of trained policies

@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import get_non_dominated_inds
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import log_all_multi_policy_metrics
+from morl_baselines.common.utils import log_all_multi_policy_metrics, seed_everything
 
 
 def crowding_distance(points):
@@ -102,7 +102,9 @@ class PCN(MOAgent, MOPolicy):
         hidden_dim: int = 64,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "PCN",
-        log: bool = False,
+        wandb_entity: Optional[str] = None,
+        log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ) -> None:
         """Initialize PCN agent.
@@ -116,7 +118,9 @@ class PCN(MOAgent, MOPolicy):
             hidden_dim (int, optional): Hidden dimension. Defaults to 64.
             project_name (str, optional): Name of the project for wandb. Defaults to "MORL-Baselines".
             experiment_name (str, optional): Name of the experiment for wandb. Defaults to "PCN".
-            log (bool, optional): Whether to log to wandb. Defaults to False.
+            wandb_entity (Optional[str], optional): Entity for wandb. Defaults to None.
+            log (bool, optional): Whether to log to wandb. Defaults to True.
+            seed (Optional[int], optional): Seed for reproducibility. Defaults to None.
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device)
@@ -136,9 +140,13 @@ class PCN(MOAgent, MOPolicy):
         ).to(self.device)
         self.opt = th.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
+        self.seed = seed
+        if self.seed is not None:
+            seed_everything(self.seed)
+
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self) -> dict:
         """Get configuration of PCN model."""
@@ -149,6 +157,7 @@ class PCN(MOAgent, MOPolicy):
             "learning_rate": self.learning_rate,
             "hidden_dim": self.hidden_dim,
             "scaling_factor": self.scaling_factor,
+            "seed": self.seed,
         }
 
     def update(self):
@@ -319,11 +328,11 @@ class PCN(MOAgent, MOPolicy):
 
     def train(
         self,
-        env: gym.Env,
+        total_timesteps: int,
+        eval_env: gym.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         num_er_episodes: int = 500,
-        total_time_steps: int = 1e7,
         num_step_episodes: int = 10,
         num_model_updates: int = 100,
         max_return: np.ndarray = 250.0,
@@ -332,16 +341,18 @@ class PCN(MOAgent, MOPolicy):
         """Train PCN.
 
         Args:
-            env: environment
+            total_timesteps: total number of time steps to train for
+            eval_env: environment for evaluation
             ref_point: reference point for hypervolume calculation
             known_pareto_front: Optimal pareto front for metrics calculation, if known.
             num_er_episodes: number of episodes to fill experience replay buffer
-            total_time_steps: total number of time steps to train for
             num_step_episodes: number of steps per episode
             num_model_updates: number of model updates per episode
             max_return: maximum return for clipping desired return
             max_buffer_size: maximum buffer size
         """
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0
@@ -350,11 +361,11 @@ class PCN(MOAgent, MOPolicy):
         self.experience_replay = []
         for _ in range(num_er_episodes):
             transitions = []
-            obs, _ = env.reset()
+            obs, _ = self.env.reset()
             done = False
             while not done:
-                action = env.action_space.sample()
-                n_obs, reward, terminated, truncated, _ = env.step(action)
+                action = self.env.action_space.sample()
+                n_obs, reward, terminated, truncated, _ = self.env.step(action)
                 transitions.append(Transition(obs, action, np.float32(reward).copy(), n_obs, terminated))
                 done = terminated or truncated
                 obs = n_obs
@@ -362,7 +373,7 @@ class PCN(MOAgent, MOPolicy):
             # add episode in-place
             self._add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
 
-        while self.global_step < total_time_steps:
+        while self.global_step < total_timesteps:
             loss = []
             entropy = []
             for _ in range(num_model_updates):
@@ -388,7 +399,7 @@ class PCN(MOAgent, MOPolicy):
             returns = []
             horizons = []
             for _ in range(num_step_episodes):
-                transitions = self._run_episode(env, desired_return, desired_horizon, max_return)
+                transitions = self._run_episode(self.env, desired_return, desired_horizon, max_return)
                 self.global_step += len(transitions)
                 self._add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
                 returns.append(transitions[0].reward)
@@ -414,11 +425,11 @@ class PCN(MOAgent, MOPolicy):
                 f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"
             )
 
-            if self.global_step >= (n_checkpoints + 1) * total_time_steps / 100:
+            if self.global_step >= (n_checkpoints + 1) * total_timesteps / 100:
                 self.save()
                 n_checkpoints += 1
                 n_points = 10
-                e_returns, _, _ = self.evaluate(env, max_return, n=n_points)
+                e_returns, _, _ = self.evaluate(eval_env, max_return, n=n_points)
 
                 if self.log:
                     log_all_multi_policy_metrics(

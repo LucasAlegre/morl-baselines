@@ -30,6 +30,8 @@ from morl_baselines.common.utils import (
     log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
+    seed_everything,
+    unique_tol,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
@@ -120,7 +122,9 @@ class GPIPD(MOPolicy, MOAgent):
         real_ratio: float = 0.05,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """Initialize the GPI-PD algorithm.
@@ -163,7 +167,9 @@ class GPIPD(MOPolicy, MOAgent):
             real_ratio: The ratio of real transitions to sample.
             project_name: The name of the project.
             experiment_name: The name of the experiment.
+            wandb_entity: The name of the wandb entity.
             log: Whether to log.
+            seed: The seed for random number generators.
             device: The device to use.
         """
         MOAgent.__init__(self, env, device=device)
@@ -256,9 +262,13 @@ class GPIPD(MOPolicy, MOAgent):
         self.dynamics_uncertainty_threshold = dynamics_uncertainty_threshold
         self.real_ratio = real_ratio
 
+        self.seed = seed
+        if self.seed is not None:
+            seed_everything(self.seed)
+        # logging
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self):
         """Return the configuration of the agent."""
@@ -295,6 +305,7 @@ class GPIPD(MOPolicy, MOAgent):
             "real_ratio": self.real_ratio,
             "drop_rate": self.drop_rate,
             "layer_norm": self.layer_norm,
+            "seed": self.seed,
         }
 
     def save(self, save_replay_buffer=True, save_dir="weights/", filename=None):
@@ -642,7 +653,8 @@ class GPIPD(MOPolicy, MOAgent):
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
         """Set the weight support set."""
-        self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
+        weights_no_repeats = unique_tol(weight_list)
+        self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeats]
 
     def train_iteration(
         self,
@@ -667,7 +679,7 @@ class GPIPD(MOPolicy, MOAgent):
             eval_freq (int): Number of timesteps between evaluations
             reset_learning_starts (bool): Whether to reset the learning starts
         """
-        self.weight_support = [th.tensor(z).float().to(self.device) for z in weight_support]
+        self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
 
         self.police_indices = []
@@ -734,25 +746,28 @@ class GPIPD(MOPolicy, MOAgent):
 
     def train(
         self,
+        total_timesteps: int,
         eval_env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         eval_weights_number_for_front: int = 100,
         timesteps_per_iter: int = 10000,
-        max_iter: int = 15,
         weight_selection_algo: str = "gpi-ls",
     ):
         """Train agent.
 
         Args:
+            total_timesteps (int): Number of timesteps to train for
             eval_env (gym.Env): Environment to evaluate on
             ref_point (np.ndarray): Reference point for hypervolume calculation
             known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front if known.
             eval_weights_number_for_front: Number of weights to evaluate for the Pareto front
             timesteps_per_iter (int): Number of timesteps to train for per iteration
-            max_iter (int): Number of iterations to train for
             weight_selection_algo (str): Weight selection algorithm to use
         """
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+        max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
         weight_history = []

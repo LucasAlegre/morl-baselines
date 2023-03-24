@@ -23,6 +23,7 @@ from morl_baselines.common.utils import (
     log_episode_info,
     polyak_update,
     random_weights,
+    seed_everything,
 )
 
 
@@ -104,7 +105,9 @@ class Envelope(MOPolicy, MOAgent):
         homotopy_decay_steps: int = None,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "Envelope",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """Envelope Q-learning algorithm.
@@ -133,7 +136,9 @@ class Envelope(MOPolicy, MOAgent):
             homotopy_decay_steps: The number of steps to decay the homotopy parameter over.
             project_name: The name of the project, for wandb logging.
             experiment_name: The name of the experiment, for wandb logging.
+            wandb_entity: The entity of the project, for wandb logging.
             log: Whether to log to wandb.
+            seed: The seed for the random number generator.
             device: The device to use for training.
         """
         MOAgent.__init__(self, env, device=device)
@@ -186,9 +191,12 @@ class Envelope(MOPolicy, MOAgent):
                 action_dtype=np.uint8,
             )
 
+        self.seed = seed
+        if self.seed is not None:
+            seed_everything(self.seed)
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     @override
     def get_config(self):
@@ -212,6 +220,7 @@ class Envelope(MOPolicy, MOAgent):
             "final_homotopy_lambda": self.final_homotopy_lambda,
             "homotopy_decay_steps": self.homotopy_decay_steps,
             "learning_starts": self.learning_starts,
+            "seed": self.seed,
         }
 
     def save(self, save_replay_buffer: bool = True, save_dir: str = "weights/", filename: Optional[str] = None):
@@ -452,12 +461,12 @@ class Envelope(MOPolicy, MOAgent):
     def train(
         self,
         total_timesteps: int,
-        weight: Optional[np.ndarray] = None,
-        total_episodes: Optional[int] = None,
-        reset_num_timesteps: bool = True,
         eval_env: Optional[gym.Env] = None,
         ref_point: Optional[np.ndarray] = None,
         known_pareto_front: Optional[List[np.ndarray]] = None,
+        weight: Optional[np.ndarray] = None,
+        total_episodes: Optional[int] = None,
+        reset_num_timesteps: bool = True,
         eval_freq: int = 10000,
         eval_weights_number_for_front: int = 100,
         reset_learning_starts: bool = False,
@@ -466,16 +475,21 @@ class Envelope(MOPolicy, MOAgent):
 
         Args:
             total_timesteps: total number of timesteps to train for.
-            weight: weight vector. If None, it is randomly sampled every episode (as done in the paper).
-            total_episodes: total number of episodes to train for. If None, it is ignored.
-            reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
             eval_env: environment to use for evaluation. If None, it is ignored.
             ref_point: reference point for the hypervolume computation.
             known_pareto_front: known pareto front for the hypervolume computation.
+            weight: weight vector. If None, it is randomly sampled every episode (as done in the paper).
+            total_episodes: total number of episodes to train for. If None, it is ignored.
+            reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
             eval_freq: policy evaluation frequency (in number of steps).
             eval_weights_number_for_front: number of weights to sample for creating the pareto front when evaluating.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
         """
+        if eval_env is not None:
+            assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
         if reset_learning_starts:  # Resets epsilon-greedy exploration
@@ -491,7 +505,6 @@ class Envelope(MOPolicy, MOAgent):
         for _ in range(1, total_timesteps + 1):
             if total_episodes is not None and num_episodes == total_episodes:
                 break
-            self.global_step += 1
 
             if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
@@ -499,14 +512,13 @@ class Envelope(MOPolicy, MOAgent):
                 action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
+            self.global_step += 1
 
             self.replay_buffer.add(obs, action, vec_reward, next_obs, terminated)
-
             if self.global_step >= self.learning_starts:
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
                 current_front = [self.policy_eval(eval_env, weights=ew, writer=None)[3] for ew in eval_weights]
                 log_all_multi_policy_metrics(
                     current_front=current_front,

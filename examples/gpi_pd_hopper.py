@@ -42,11 +42,11 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 15000):
     )
 
     agent.train(
+        total_timesteps=10 * timesteps_per_iter,
         eval_env=eval_env,
         ref_point=np.array([-100.0, -100.0]),
         known_pareto_front=None,
         weight_selection_algo=algo,
-        max_iter=10,
         timesteps_per_iter=timesteps_per_iter,
     )
 

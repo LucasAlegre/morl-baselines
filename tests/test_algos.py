@@ -41,7 +41,7 @@ def test_pql():
     )
 
     # Training
-    pf = agent.train(num_episodes=1000, log_every=100, action_eval="hypervolume", eval_ref_point=ref_point)
+    pf = agent.train(total_timesteps=1000, log_every=100, action_eval="hypervolume", eval_ref_point=ref_point)
     assert len(pf) > 0
 
     # Policy following
@@ -104,7 +104,7 @@ def test_mp_moql():
         epsilon_decay_steps=int(1e3),
         log=False,
     )
-    agent.train(eval_env=eval_env, ref_point=np.array([0.0, -25.0]), num_iterations=1, timesteps_per_iteration=1000)
+    agent.train(eval_env=eval_env, ref_point=np.array([0.0, -25.0]), total_timesteps=2000, timesteps_per_iteration=1000)
 
     front = agent.linear_support.ccs
     assert len(front) > 0
@@ -215,16 +215,15 @@ def test_pgmorl():
     env_id = "mo-mountaincarcontinuous-v0"
     algo = PGMORL(
         env_id=env_id,
-        ref_point=np.array([0.0, 0.0]),
+        origin=np.array([0.0, 0.0]),
         num_envs=4,
         pop_size=6,
         warmup_iterations=2,
         evolutionary_iterations=2,
         num_weight_candidates=5,
-        limit_env_steps=int(1e4),
         log=False,
     )
-    algo.train()
+    algo.train(total_timesteps=int(1e4), ref_point=np.array([0.0, 0.0]))
     env = make_env(env_id, 422, 1, "PGMORL_test", gamma=0.995)()  # idx != 0 to avoid taking videos
 
     # Execution of trained policies
@@ -250,13 +249,13 @@ def test_pcn():
     )
 
     agent.train(
-        env,
+        total_timesteps=10,
         ref_point=np.array([0, 0, -200.0]),
         num_er_episodes=1,
         max_buffer_size=50,
         num_model_updates=50,
-        total_time_steps=10,
         max_return=np.array([1.5, 1.5, -0.0]),
+        eval_env=env,
     )
 
     agent.set_desired_return_and_horizon(np.array([1.5, 1.5, -0.0]), 100)

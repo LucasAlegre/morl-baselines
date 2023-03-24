@@ -14,6 +14,7 @@ from morl_baselines.common.utils import (
     equally_spaced_weights,
     log_all_multi_policy_metrics,
     random_weights,
+    seed_everything,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
@@ -42,6 +43,8 @@ class MPMOQLearning(MOAgent):
         dyna_updates: int = 5,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "MultiPolicy MO Q-Learning",
+        wandb_entity: Optional[str] = None,
+        seed: Optional[int] = None,
         log: bool = True,
     ):
         """Initialize the Multi-policy MOQ-learning algorithm.
@@ -62,6 +65,8 @@ class MPMOQLearning(MOAgent):
             dyna_updates: The number of Dyna-Q updates to perform.
             project_name: The name of the project for logging.
             experiment_name: The name of the experiment for logging.
+            wandb_entity: The entity to use for logging.
+            seed: The seed to use for reproducibility.
             log: Whether to log or not.
         """
         MOAgent.__init__(self, env)
@@ -92,8 +97,13 @@ class MPMOQLearning(MOAgent):
         self.experiment_name = experiment_name
         self.log = log
 
+        # Seed
+        self.seed = seed
+        if self.seed is not None:
+            seed_everything(self.seed)
+
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
+            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
         else:
             self.writer = None
 
@@ -113,6 +123,7 @@ class MPMOQLearning(MOAgent):
             "transfer_q_table": self.transfer_q_table,
             "dyna": self.dyna,
             "dyna_updates": self.dyna_updates,
+            "seed": self.seed,
         }
 
     def _gpi_action(self, state: np.ndarray, w: np.ndarray) -> int:
@@ -146,11 +157,11 @@ class MPMOQLearning(MOAgent):
 
     def train(
         self,
+        total_timesteps: int,
         eval_env: gym.Env,
         ref_point: np.ndarray,
-        num_iterations: int,
-        timesteps_per_iteration: int,
         known_pareto_front: Optional[List[np.ndarray]] = None,
+        timesteps_per_iteration: int = int(2e5),
         eval_weights_number_for_front: int = 100,
         eval_freq: int = 1000,
         num_episodes_eval: int = 10,
@@ -158,16 +169,19 @@ class MPMOQLearning(MOAgent):
         """Learn a set of policies.
 
         Args:
+            total_timesteps: The total number of timesteps to train for.
             eval_env: The environment to use for evaluation.
             ref_point: The reference point for the hypervolume calculation.
-            num_iterations: The number of iterations/policies to train.
+            known_pareto_front: The optimal Pareto front, if known. Used for metrics.
             timesteps_per_iteration: The number of timesteps per iteration.
             eval_freq: The frequency of evaluation.
-            known_pareto_front: The optimal Pareto front, if known. Used for metrics.
             eval_weights_number_for_front: The number of weights to use to construct a Pareto front for evaluation.
             epsilon_linear_support: The epsilon value for the linear support algorithm.
             num_episodes_eval: The number of episodes used to evaluate the value of a policy.
         """
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+        num_iterations = int(total_timesteps / timesteps_per_iteration)
         if eval_env is None:
             eval_env = deepcopy(self.env)
 
@@ -198,6 +212,7 @@ class MPMOQLearning(MOAgent):
                 dyna_updates=self.dyna_updates,
                 log=self.log,
                 parent_writer=self.writer,
+                seed=self.seed,
             )
             if self.transfer_q_table and len(self.policies) > 0:
                 reuse_ind = np.argmax([np.dot(w, v) for v in self.linear_support.ccs])

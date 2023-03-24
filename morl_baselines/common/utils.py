@@ -1,4 +1,6 @@
 """General utils for the MORL baselines."""
+import os
+import random
 from typing import Iterable, List, Optional
 
 import numpy as np
@@ -110,6 +112,21 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
     value = final_value + bonus
     value = np.clip(value, min(initial_value, final_value), max(initial_value, final_value))
     return value
+
+
+def unique_tol(a: List[np.ndarray], tol=1e-4) -> List[np.ndarray]:
+    """Returns unique elements of a list of np.arrays, within a tolerance."""
+    if len(a) == 0:
+        return a
+    delete = np.array([False] * len(a))
+    a = np.array(a)
+    for i in range(len(a)):
+        if delete[i]:
+            continue
+        for j in range(i + 1, len(a)):
+            if np.allclose(a[i], a[j], tol):
+                delete[j] = True
+    return list(a[~delete])
 
 
 def extrema_weights(dim: int) -> List[np.ndarray]:
@@ -297,3 +314,18 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
     clip = ImageSequenceClip(list(frames), fps=fps)
     clip.write_gif(fullpath + ".gif", fps=fps)
     print("Saved gif at: " + fullpath + ".gif")
+
+
+def seed_everything(seed: int):
+    """Set random seeds for reproducibility.
+
+    Args:
+        seed: random seed
+    """
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    th.manual_seed(seed)
+    th.cuda.manual_seed(seed)
+    th.backends.cudnn.deterministic = True
+    th.backends.cudnn.benchmark = True

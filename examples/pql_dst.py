@@ -21,9 +21,8 @@ if __name__ == "__main__":
         log=True,
     )
 
-    num_episodes = 10000
     pf = agent.train(
-        num_episodes=10000,
+        total_timesteps=10000,
         log_every=100,
         action_eval="hypervolume",
         known_pareto_front=env.pareto_front(gamma=0.99),

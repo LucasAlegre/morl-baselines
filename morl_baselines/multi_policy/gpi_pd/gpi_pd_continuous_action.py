@@ -27,6 +27,8 @@ from morl_baselines.common.utils import (
     log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
+    seed_everything,
+    unique_tol,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
@@ -114,7 +116,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         dynamics_real_ratio: float = 0.1,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD Continuous Action",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """GPI-PD algorithm with continuous actions.
@@ -152,7 +156,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             dynamics_real_ratio (float, optional): The ratio of real data to use for the dynamics model. Defaults to 0.1.
             project_name (str, optional): The name of the project. Defaults to "MORL Baselines".
             experiment_name (str, optional): The name of the experiment. Defaults to "GPI-PD Continuous Action".
+            wandb_entity (Optional[str], optional): The wandb entity. Defaults to None.
             log (bool, optional): Whether to log to wandb. Defaults to True.
+            seed (Optional[int], optional): The seed to use. Defaults to None.
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device)
@@ -235,9 +241,13 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
         self._n_updates = 0
 
+        self.seed = seed
+        if self.seed is not None:
+            seed_everything(self.seed)
+
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self):
         """Get the configuration of the agent."""
@@ -262,6 +272,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             "dynamics_rollout_len": self.dynamics_rollout_len,
             "dynamics_min_uncertainty": self.dynamics_min_uncertainty,
             "dynamics_real_ratio": self.dynamics_real_ratio,
+            "dynamics_train_freq": self.dynamics_train_freq,
+            "dynamics_rollout_starts": self.dynamics_rollout_starts,
+            "dynamics_rollout_freq": self.dynamics_rollout_freq,
+            "dynamics_rollout_batch_size": self.dynamics_rollout_batch_size,
+            "seed": self.seed,
         }
 
     def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
@@ -468,7 +483,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
         """Set the weight support set."""
-        self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
+        weights_no_repeat = unique_tol(weight_list)
+        self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeat]
         if len(self.weight_support) > 0:
             self.stacked_weight_support = th.stack(self.weight_support)
 
@@ -563,27 +579,30 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def train(
         self,
+        total_timesteps: int,
         eval_env: gymnasium.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         eval_weights_number_for_front: int = 100,
         weight_selection_algo: str = "gpi-ls",
         timesteps_per_iter: int = 10000,
-        max_iter: int = 10,
         eval_freq: int = 1000,
     ):
         """Train the agent.
 
         Args:
+            total_timesteps (int): Total number of timesteps to train the agent for.
             eval_env (gym.Env): Environment to use for evaluation.
             ref_point (np.ndarray): Reference point for hypervolume calculation
             known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front, if known.
             eval_weights_number_for_front (int): Number of weights to evaluate for the Pareto front
             weight_selection_algo (str): Weight selection algorithm to use.
             timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
-            max_iter (int): Maximum number of iterations to train the agent for.
             eval_freq (int): Number of timesteps between evaluations during an iteration.
         """
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+        max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
         eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
