@@ -47,7 +47,7 @@ def main():
         eval_env=eval_env,
         ref_point=np.array([0, 0, -200.0]),
         known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
-        eval_weights_number_for_front=100,
+        num_eval_weights_for_front=100,
         eval_freq=1000,
         reset_num_timesteps=False,
         reset_learning_starts=False,

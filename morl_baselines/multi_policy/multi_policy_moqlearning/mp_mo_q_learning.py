@@ -162,9 +162,9 @@ class MPMOQLearning(MOAgent):
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         timesteps_per_iteration: int = int(2e5),
-        eval_weights_number_for_front: int = 100,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
         eval_freq: int = 1000,
-        num_episodes_eval: int = 10,
     ):
         """Learn a set of policies.
 
@@ -174,10 +174,9 @@ class MPMOQLearning(MOAgent):
             ref_point: The reference point for the hypervolume calculation.
             known_pareto_front: The optimal Pareto front, if known. Used for metrics.
             timesteps_per_iteration: The number of timesteps per iteration.
+            num_eval_weights_for_front: The number of weights to use to construct a Pareto front for evaluation.
+            num_eval_episodes_for_front: The number of episodes to run when evaluating the policy.
             eval_freq: The frequency of evaluation.
-            eval_weights_number_for_front: The number of weights to use to construct a Pareto front for evaluation.
-            epsilon_linear_support: The epsilon value for the linear support algorithm.
-            num_episodes_eval: The number of episodes used to evaluate the value of a policy.
         """
         if self.log:
             self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
@@ -185,7 +184,7 @@ class MPMOQLearning(MOAgent):
         if eval_env is None:
             eval_env = deepcopy(self.env)
 
-        eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
 
         for iter in range(num_iterations):
             if self.weight_selection_algo == "ols" or self.weight_selection_algo == "gpi-ls":
@@ -193,7 +192,7 @@ class MPMOQLearning(MOAgent):
                     algo=self.weight_selection_algo,
                     gpi_agent=self if self.weight_selection_algo == "gpi-ls" else None,
                     env=eval_env if self.weight_selection_algo == "gpi-ls" else None,
-                    rep_eval=num_episodes_eval,
+                    rep_eval=num_eval_episodes_for_front,
                 )
             elif self.weight_selection_algo == "random":
                 w = random_weights(self.reward_dim)
@@ -230,14 +229,14 @@ class MPMOQLearning(MOAgent):
             )
             self.global_step = new_agent.global_step
 
-            value = policy_evaluation_mo(agent=new_agent, env=eval_env, w=w, rep=num_episodes_eval)[3]
+            value = policy_evaluation_mo(agent=new_agent, env=eval_env, w=w, rep=num_eval_episodes_for_front)[3]
             removed_inds = self.linear_support.add_solution(value, w)
             self.delete_policies(removed_inds)
 
             if self.log:
                 if self.use_gpi_policy:
                     front = [
-                        policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_episodes_eval)[3] for w in eval_weights
+                        policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_eval_episodes_for_front)[3] for w in eval_weights
                     ]
                 else:
                     front = self.linear_support.ccs
