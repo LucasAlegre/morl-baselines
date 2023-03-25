@@ -104,7 +104,7 @@ def parse_args():
         type=str,
         nargs="+",
         action=StoreDict,
-        help="Override hyperparameters to use for the train method algorithm. Example: --train-hyperparams eval_weights_number_for_front:10 timesteps_per_iter:10000",
+        help="Override hyperparameters to use for the train method algorithm. Example: --train-hyperparams num_eval_weights_for_front:10 timesteps_per_iter:10000",
         default={},
     )
 

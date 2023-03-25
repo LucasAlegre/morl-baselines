@@ -583,7 +583,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         eval_env: gymnasium.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
-        eval_weights_number_for_front: int = 100,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
         weight_selection_algo: str = "gpi-ls",
         timesteps_per_iter: int = 10000,
         eval_freq: int = 1000,
@@ -593,9 +594,10 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         Args:
             total_timesteps (int): Total number of timesteps to train the agent for.
             eval_env (gym.Env): Environment to use for evaluation.
-            ref_point (np.ndarray): Reference point for hypervolume calculation
+            ref_point (np.ndarray): Reference point for hypervolume calculation.
             known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front, if known.
-            eval_weights_number_for_front (int): Number of weights to evaluate for the Pareto front
+            num_eval_weights_for_front (int): Number of weights to evaluate for the Pareto front.
+            num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             weight_selection_algo (str): Weight selection algorithm to use.
             timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
             eval_freq (int): Number of timesteps between evaluations during an iteration.
@@ -605,14 +607,16 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
-        eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
 
         for iter in range(1, max_iter + 1):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
                 if weight_selection_algo == "gpi-ls":
                     self.set_weight_support(linear_support.get_weight_support())
                     self.use_gpi = True
-                    w = linear_support.next_weight(algo="gpi-ls", gpi_agent=self, env=eval_env)
+                    w = linear_support.next_weight(
+                        algo="gpi-ls", gpi_agent=self, env=eval_env, rep_eval=num_eval_episodes_for_front
+                    )
                     self.use_gpi = False
                 else:
                     w = linear_support.next_weight(algo="ols")
@@ -640,16 +644,18 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             )
 
             if weight_selection_algo == "ols":
-                value = policy_evaluation_mo(self, eval_env, w, rep=5)[3]
+                value = policy_evaluation_mo(self, eval_env, w, rep=num_eval_episodes_for_front)[3]
                 linear_support.add_solution(value, w)
             elif weight_selection_algo == "gpi-ls":
                 for wcw in M:
-                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)[3]
+                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
             if self.log:
                 # Evaluation
-                gpi_returns_test_tasks = [policy_evaluation_mo(self, eval_env, w, rep=5)[3] for w in eval_weights]
+                gpi_returns_test_tasks = [
+                    policy_evaluation_mo(self, eval_env, w, rep=num_eval_episodes_for_front)[3] for w in eval_weights
+                ]
                 log_all_multi_policy_metrics(
                     current_front=gpi_returns_test_tasks,
                     hv_ref_point=ref_point,

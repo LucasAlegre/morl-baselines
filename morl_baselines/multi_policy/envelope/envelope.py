@@ -468,7 +468,8 @@ class Envelope(MOPolicy, MOAgent):
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
         eval_freq: int = 10000,
-        eval_weights_number_for_front: int = 100,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
         reset_learning_starts: bool = False,
     ):
         """Train the agent.
@@ -482,7 +483,8 @@ class Envelope(MOPolicy, MOAgent):
             total_episodes: total number of episodes to train for. If None, it is ignored.
             reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
             eval_freq: policy evaluation frequency (in number of steps).
-            eval_weights_number_for_front: number of weights to sample for creating the pareto front when evaluating.
+            num_eval_weights_for_front: number of weights to sample for creating the pareto front when evaluating.
+            num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
         """
         if eval_env is not None:
@@ -496,7 +498,7 @@ class Envelope(MOPolicy, MOAgent):
             self.learning_starts = self.global_step
 
         num_episodes = 0
-        eval_weights = equally_spaced_weights(self.reward_dim, n=eval_weights_number_for_front)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
         obs, _ = self.env.reset()
 
         w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian")
@@ -519,7 +521,10 @@ class Envelope(MOPolicy, MOAgent):
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                current_front = [self.policy_eval(eval_env, weights=ew, writer=None)[3] for ew in eval_weights]
+                current_front = [
+                    self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, writer=None)[3]
+                    for ew in eval_weights
+                ]
                 log_all_multi_policy_metrics(
                     current_front=current_front,
                     hv_ref_point=ref_point,
