@@ -780,9 +780,12 @@ class GPIPD(MOPolicy, MOAgent):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
                 if weight_selection_algo == "gpi-ls":
                     self.set_weight_support(linear_support.get_weight_support())
+                    use_gpi = self.use_gpi
+                    self.use_gpi = True
                     w = linear_support.next_weight(
                         algo="gpi-ls", gpi_agent=self, env=eval_env, rep_eval=num_eval_episodes_for_front
                     )
+                    self.use_gpi = use_gpi
                 else:
                     w = linear_support.next_weight(algo="ols")
 
