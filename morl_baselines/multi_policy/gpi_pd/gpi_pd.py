@@ -780,7 +780,9 @@ class GPIPD(MOPolicy, MOAgent):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
                 if weight_selection_algo == "gpi-ls":
                     self.set_weight_support(linear_support.get_weight_support())
-                    w = linear_support.next_weight(algo="gpi-ls", gpi_agent=self, env=eval_env, rep_eval=num_eval_episodes_for_front)
+                    w = linear_support.next_weight(
+                        algo="gpi-ls", gpi_agent=self, env=eval_env, rep_eval=num_eval_episodes_for_front
+                    )
                 else:
                     w = linear_support.next_weight(algo="ols")
 
@@ -819,7 +821,9 @@ class GPIPD(MOPolicy, MOAgent):
 
             if self.log:
                 # Evaluation
-                gpi_returns_test_tasks = [policy_evaluation_mo(self, eval_env, w, rep=num_eval_episodes_for_front)[3] for w in eval_weights]
+                gpi_returns_test_tasks = [
+                    policy_evaluation_mo(self, eval_env, w, rep=num_eval_episodes_for_front)[3] for w in eval_weights
+                ]
                 log_all_multi_policy_metrics(
                     current_front=gpi_returns_test_tasks,
                     hv_ref_point=ref_point,

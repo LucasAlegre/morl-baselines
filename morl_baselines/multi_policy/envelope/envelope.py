@@ -521,7 +521,10 @@ class Envelope(MOPolicy, MOAgent):
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                current_front = [self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, writer=None)[3] for ew in eval_weights]
+                current_front = [
+                    self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, writer=None)[3]
+                    for ew in eval_weights
+                ]
                 log_all_multi_policy_metrics(
                     current_front=current_front,
                     hv_ref_point=ref_point,

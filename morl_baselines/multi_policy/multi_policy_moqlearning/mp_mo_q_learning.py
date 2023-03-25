@@ -236,7 +236,8 @@ class MPMOQLearning(MOAgent):
             if self.log:
                 if self.use_gpi_policy:
                     front = [
-                        policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_eval_episodes_for_front)[3] for w in eval_weights
+                        policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_eval_episodes_for_front)[3]
+                        for w in eval_weights
                     ]
                 else:
                     front = self.linear_support.ccs
