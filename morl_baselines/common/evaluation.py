@@ -30,7 +30,7 @@ def eval_mo(
     gamma = 1.0
     while not done:
         if render:
-            env.render(mode="human")
+            env.render()
         obs, r, terminated, truncated, info = env.step(agent.eval(obs, w))
         done = terminated or truncated
         vec_return += r
@@ -77,7 +77,7 @@ def eval_mo_reward_conditioned(
     gamma = 1.0
     while not done:
         if render:
-            env.render(mode="human")
+            env.render()
         obs, r, terminated, truncated, info = env.step(agent.eval(obs, disc_vec_return))
         done = terminated or truncated
         vec_return += r
