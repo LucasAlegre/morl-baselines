@@ -1,6 +1,7 @@
 """Pareto Q-Learning."""
 from typing import Callable, List, Optional
 
+import gymnasium as gym
 import numpy as np
 
 from morl_baselines.common.morl_algorithm import MOAgent
@@ -176,7 +177,8 @@ class PQL(MOAgent):
     def train(
         self,
         total_timesteps: int,
-        eval_ref_point: Optional[np.ndarray] = None,
+        eval_env: gym.Env,
+        ref_point: Optional[np.ndarray] = None,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         log_every: Optional[int] = 100,
         action_eval: Optional[str] = "hypervolume",
@@ -185,6 +187,7 @@ class PQL(MOAgent):
 
         Args:
             total_timesteps (int, optional): The number of episodes to train for.
+            eval_env (gym.Env): The environment to evaluate the policies on.
             eval_ref_point (ndarray, optional): The reference point for the hypervolume metric during evaluation. If none, use the same ref point as training.
             known_pareto_front (List[ndarray], optional): The optimal Pareto front, if known.
             log_every (int, optional): Log the results every number of timesteps. (Default value = 1000)
@@ -199,10 +202,10 @@ class PQL(MOAgent):
             score_func = self.score_pareto_cardinality
         else:
             raise Exception("No other method implemented yet")
-        if eval_ref_point is None:
-            eval_ref_point = self.ref_point
+        if ref_point is None:
+            ref_point = self.ref_point
         if self.log:
-            self.register_additional_config({"ref_point": eval_ref_point.tolist(), "known_front": known_pareto_front})
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
 
         while self.global_step < total_timesteps:
             state, _ = self.env.reset()
@@ -223,10 +226,10 @@ class PQL(MOAgent):
 
                 if self.log and self.global_step % log_every == 0:
                     self.writer.add_scalar("global_step", self.global_step, self.global_step)
-                    pf = self._eval_all_policies()
+                    pf = self._eval_all_policies(eval_env)
                     log_all_multi_policy_metrics(
                         current_front=pf,
-                        hv_ref_point=eval_ref_point,
+                        hv_ref_point=ref_point,
                         reward_dim=self.reward_dim,
                         global_step=self.global_step,
                         writer=self.writer,
@@ -237,23 +240,24 @@ class PQL(MOAgent):
 
         return self.get_local_pcs(state=0)
 
-    def _eval_all_policies(self) -> List[np.ndarray]:
+    def _eval_all_policies(self, env: gym.Env) -> List[np.ndarray]:
         """Evaluate all learned policies by tracking them."""
         pf = []
         for vec in self.get_local_pcs(state=0):
-            pf.append(self.track_policy(vec))
+            pf.append(self.track_policy(vec, env))
 
         return pf
 
-    def track_policy(self, vec, tol=1e-3):
+    def track_policy(self, vec, env: gym.Env, tol=1e-3):
         """Track a policy from its return vector.
 
         Args:
             vec (array_like): The return vector to track.
+            env (gym.Env): The environment to track the policy in.
             tol (float, optional): The tolerance for the return vector. (Default value = 1e-3)
         """
         target = np.array(vec)
-        state, _ = self.env.reset()
+        state, _ = env.reset()
         terminated = False
         truncated = False
         total_rew = np.zeros(self.num_objectives)
@@ -285,7 +289,7 @@ class PQL(MOAgent):
                 if found_action:
                     break
 
-            state, reward, terminated, truncated, _ = self.env.step(closest_action)
+            state, reward, terminated, truncated, _ = env.step(closest_action)
             total_rew += current_gamma * reward
             current_gamma *= self.gamma
             target = new_target
