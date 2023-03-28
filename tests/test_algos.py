@@ -41,7 +41,7 @@ def test_pql():
     )
 
     # Training
-    pf = agent.train(total_timesteps=1000, log_every=100, action_eval="hypervolume", eval_ref_point=ref_point)
+    pf = agent.train(total_timesteps=1000, log_every=100, action_eval="hypervolume", ref_point=ref_point, eval_env=env)
     assert len(pf) > 0
 
     # Policy following

@@ -26,12 +26,13 @@ if __name__ == "__main__":
         log_every=100,
         action_eval="hypervolume",
         known_pareto_front=env.pareto_front(gamma=0.99),
-        eval_ref_point=ref_point,
+        ref_point=ref_point,
+        eval_env=env,
     )
     print(pf)
 
     # Execute a policy
     target = np.array(pf.pop())
     print(f"Tracking {target}")
-    reward = agent.track_policy(target)
+    reward = agent.track_policy(target, env=env)
     print(f"Obtained {reward}")
