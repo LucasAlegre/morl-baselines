@@ -46,7 +46,7 @@ def test_pql():
 
     # Policy following
     target = np.array(pf.pop())
-    tracked = agent.track_policy(target)
+    tracked = agent.track_policy(target, env=env)
     assert np.all(tracked == target)
 
 
