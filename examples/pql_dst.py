@@ -13,7 +13,7 @@ if __name__ == "__main__":
         ref_point,
         gamma=0.99,
         initial_epsilon=1.0,
-        epsilon_decay=0.997,
+        epsilon_decay_steps=50000,
         final_epsilon=0.2,
         seed=1,
         project_name="MORL-Baselines",

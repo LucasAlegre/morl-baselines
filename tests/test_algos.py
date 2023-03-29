@@ -34,7 +34,7 @@ def test_pql():
         ref_point,
         gamma=1.0,
         initial_epsilon=1.0,
-        epsilon_decay=0.997,
+        epsilon_decay_steps=5000,
         final_epsilon=0.2,
         seed=1,
         log=False,
