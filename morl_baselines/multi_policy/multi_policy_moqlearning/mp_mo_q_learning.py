@@ -189,8 +189,7 @@ class MPMOQLearning(MOAgent):
                     rep_eval=num_eval_episodes_for_front,
                 )
             elif self.weight_selection_algo == "random":
-                w = random_weights(self.reward_dim)
-                print("aqui", w)
+                w = random_weights(self.reward_dim, rng=self.np_random)
 
             new_agent = MOQLearning(
                 env=self.env,
