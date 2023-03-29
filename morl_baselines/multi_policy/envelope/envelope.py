@@ -539,12 +539,12 @@ class Envelope(MOPolicy, MOAgent):
                 num_episodes += 1
                 self.num_episodes += 1
 
+                if self.log and "episode" in info.keys():
+                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer)
+
                 if weight is None:
                     w = random_weights(self.reward_dim, 1, dist="gaussian")
                     tensor_w = th.tensor(w).float().to(self.device)
-
-                if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer)
 
             else:
                 obs = next_obs
