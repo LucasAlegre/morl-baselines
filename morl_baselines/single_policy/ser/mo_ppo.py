@@ -8,6 +8,7 @@ import gymnasium as gym
 import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
+from gymnasium.utils import seeding
 from mo_gymnasium import MORecordEpisodeStatistics
 from torch import nn, optim
 from torch.distributions import Normal
@@ -295,6 +296,7 @@ class MOPPO(MOPolicy):
         self.networks = networks
         self.device = device
         self.seed = seed
+        self.np_random = seeding.np_random(seed)
 
         # PPO Parameters
         self.steps_per_iteration = steps_per_iteration
@@ -492,7 +494,7 @@ class MOPPO(MOPolicy):
         clipfracs = []
         # Perform multiple passes on the batch (that is shuffled every time)
         for epoch in range(self.update_epochs):
-            np.random.shuffle(b_inds)
+            self.np_random.shuffle(b_inds)
             for start in range(0, self.batch_size, self.minibatch_size):
                 end = start + self.minibatch_size
                 # mb == minibatch

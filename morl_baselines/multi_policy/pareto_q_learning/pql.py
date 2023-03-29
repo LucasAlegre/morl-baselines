@@ -10,7 +10,6 @@ from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.utils import (
     linearly_decaying_value,
     log_all_multi_policy_metrics,
-    seed_everything,
 )
 
 
@@ -50,7 +49,7 @@ class PQL(MOAgent):
             wandb_entity: The wandb entity used for logging.
             log: Whether to log or not.
         """
-        super().__init__(env)
+        super().__init__(env, seed=seed)
         # Learning parameters
         self.gamma = gamma
         self.epsilon = initial_epsilon
@@ -59,10 +58,6 @@ class PQL(MOAgent):
         self.final_epsilon = final_epsilon
 
         # Algorithm setup
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
-            self.rng = np.random.default_rng(seed)
         self.ref_point = ref_point
 
         self.num_actions = self.env.action_space.n
@@ -159,11 +154,11 @@ class PQL(MOAgent):
         Returns:
             int: The selected action.
         """
-        if self.rng.uniform(0, 1) < self.epsilon:
-            return self.rng.integers(self.num_actions)
+        if self.np_random.uniform(0, 1) < self.epsilon:
+            return self.np_random.integers(self.num_actions)
         else:
             action_scores = score_func(state)
-            return self.rng.choice(np.argwhere(action_scores == np.max(action_scores)).flatten())
+            return self.np_random.choice(np.argwhere(action_scores == np.max(action_scores)).flatten())
 
     def calc_non_dominated(self, state: int):
         """Get the non-dominated vectors in a given state.

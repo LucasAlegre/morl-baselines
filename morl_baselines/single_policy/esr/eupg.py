@@ -12,7 +12,7 @@ from torch.distributions import Categorical
 from morl_baselines.common.accrued_reward_buffer import AccruedRewardReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import mlp
-from morl_baselines.common.utils import layer_init, log_episode_info, seed_everything
+from morl_baselines.common.utils import layer_init, log_episode_info
 
 
 class PolicyNet(nn.Module):
@@ -109,16 +109,13 @@ class EUPG(MOPolicy, MOAgent):
             device: Device to use for NN. Can be "cpu", "cuda" or "auto".
             seed: Seed for the random number generator
         """
-        MOAgent.__init__(self, env, device)
+        MOAgent.__init__(self, env, device, seed=seed)
         MOPolicy.__init__(self, None, device)
 
         self.env = env
         # RL
         self.scalarization = scalarization
         self.gamma = gamma
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
 
         # Learning
         self.buffer_size = buffer_size

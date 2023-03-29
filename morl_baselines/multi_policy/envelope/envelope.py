@@ -23,7 +23,6 @@ from morl_baselines.common.utils import (
     log_episode_info,
     polyak_update,
     random_weights,
-    seed_everything,
 )
 
 
@@ -141,7 +140,7 @@ class Envelope(MOPolicy, MOAgent):
             seed: The seed for the random number generator.
             device: The device to use for training.
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
@@ -191,9 +190,6 @@ class Envelope(MOPolicy, MOAgent):
                 action_dtype=np.uint8,
             )
 
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
         self.log = log
         if log:
             self.setup_wandb(project_name, experiment_name, wandb_entity)
@@ -282,7 +278,9 @@ class Envelope(MOPolicy, MOAgent):
                 ) = self.__sample_batch_experiences()
 
             sampled_w = (
-                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w, dist="gaussian")).float().to(self.device)
+                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w, dist="gaussian", rng=self.np_random))
+                .float()
+                .to(self.device)
             )  # sample num_sample_w random weights
             w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = (
@@ -376,7 +374,7 @@ class Envelope(MOPolicy, MOAgent):
 
         Returns: an integer representing the action to take.
         """
-        if np.random.random() < self.epsilon:
+        if self.np_random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
             return self.max_action(obs, w)

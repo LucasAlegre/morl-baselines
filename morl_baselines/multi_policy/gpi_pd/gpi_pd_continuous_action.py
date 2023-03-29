@@ -27,7 +27,6 @@ from morl_baselines.common.utils import (
     log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
-    seed_everything,
     unique_tol,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
@@ -161,7 +160,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             seed (Optional[int], optional): The seed to use. Defaults to None.
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.tau = tau
@@ -240,10 +239,6 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         self.stacked_weight_support = []
 
         self._n_updates = 0
-
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
 
         self.log = log
         if self.log:

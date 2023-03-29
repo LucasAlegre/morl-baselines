@@ -5,16 +5,13 @@ from typing_extensions import override
 
 import gymnasium as gym
 import numpy as np
+from gymnasium.utils import seeding
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.model_based.tabular_model import TabularModel
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.scalarization import weighted_sum
-from morl_baselines.common.utils import (
-    linearly_decaying_value,
-    log_episode_info,
-    seed_everything,
-)
+from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
 
 
 class MOQLearning(MOPolicy, MOAgent):
@@ -72,8 +69,7 @@ class MOQLearning(MOPolicy, MOAgent):
         self.learning_rate = learning_rate
         self.id = id
         self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
+        self.np_random = seeding.np_random(self.seed)
 
         if self.id is not None:
             self.idstr = f"_{self.id}"
@@ -104,7 +100,7 @@ class MOQLearning(MOPolicy, MOAgent):
 
     def __act(self, obs: np.array):
         # epsilon-greedy
-        coin = np.random.rand()
+        coin = self.np_random.random()
         if coin < self.epsilon:
             return int(self.env.action_space.sample())
         else:

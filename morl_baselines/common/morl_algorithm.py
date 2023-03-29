@@ -8,6 +8,7 @@ import numpy as np
 import torch as th
 import wandb
 from gymnasium import spaces
+from gymnasium.utils import seeding
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.evaluation import (
@@ -160,19 +161,37 @@ class MOPolicy(ABC):
 class MOAgent(ABC):
     """An MORL Agent, can contain one or multiple MOPolicies. Contains helpers to extract features from the environment, setup logging etc."""
 
-    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto") -> None:
+    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto", seed: Optional[int] = None) -> None:
         """Initializes the agent.
 
         Args:
             env: (gym.Env): The environment
             device: (str): The device to use for training. Can be "auto", "cpu" or "cuda".
+            seed: (int): The seed to use for the random number generator
         """
         self.extract_env_info(env)
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
 
         self.global_step = 0
         self.num_episodes = 0
-        self.seed = None
+        self.seed = seed
+        self._np_random = None
+        self._np_random, _ = seeding.np_random(seed)
+
+    @property
+    def np_random(self) -> np.random.Generator:
+        """Returns the environment's internal :attr:`_np_random` that if not set will initialise with a random seed.
+
+        Returns:
+            Instances of `np.random.Generator`
+        """
+        if self._np_random is None:
+            self._np_random, _ = seeding.np_random()
+        return self._np_random
+
+    @np_random.setter
+    def np_random(self, value: np.random.Generator):
+        self._np_random = value
 
     def extract_env_info(self, env: Optional[gym.Env]) -> None:
         """Extracts all the features of the environment: observation space, action space, ...

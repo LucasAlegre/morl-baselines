@@ -14,7 +14,6 @@ from morl_baselines.common.utils import (
     equally_spaced_weights,
     log_all_multi_policy_metrics,
     random_weights,
-    seed_everything,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
@@ -69,7 +68,7 @@ class MPMOQLearning(MOAgent):
             seed: The seed to use for reproducibility.
             log: Whether to log or not.
         """
-        MOAgent.__init__(self, env)
+        MOAgent.__init__(self, env, seed=seed)
         # Learning
         self.scalarization = scalarization
         self.learning_rate = learning_rate
@@ -96,11 +95,6 @@ class MPMOQLearning(MOAgent):
         self.project_name = project_name
         self.experiment_name = experiment_name
         self.log = log
-
-        # Seed
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
 
         if self.log:
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
@@ -196,6 +190,7 @@ class MPMOQLearning(MOAgent):
                 )
             elif self.weight_selection_algo == "random":
                 w = random_weights(self.reward_dim)
+                print("aqui", w)
 
             new_agent = MOQLearning(
                 env=self.env,
@@ -231,13 +226,14 @@ class MPMOQLearning(MOAgent):
 
             value = policy_evaluation_mo(agent=new_agent, env=eval_env, w=w, rep=num_eval_episodes_for_front)[3]
             removed_inds = self.linear_support.add_solution(value, w)
-            self.delete_policies(removed_inds)
+            if self.weight_selection_algo != "random":
+                self.delete_policies(removed_inds)
 
             if self.log:
                 if self.use_gpi_policy:
                     front = [
-                        policy_evaluation_mo(agent=self, env=eval_env, w=w, rep=num_eval_episodes_for_front)[3]
-                        for w in eval_weights
+                        policy_evaluation_mo(agent=self, env=eval_env, w=w_eval, rep=num_eval_episodes_for_front)[3]
+                        for w_eval in eval_weights
                     ]
                 else:
                     front = self.linear_support.ccs

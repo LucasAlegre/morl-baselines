@@ -30,7 +30,6 @@ from morl_baselines.common.utils import (
     log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
-    seed_everything,
     unique_tol,
 )
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
@@ -172,7 +171,7 @@ class GPIPD(MOPolicy, MOAgent):
             seed: The seed for random number generators.
             device: The device to use.
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
@@ -262,9 +261,6 @@ class GPIPD(MOPolicy, MOAgent):
         self.dynamics_uncertainty_threshold = dynamics_uncertainty_threshold
         self.real_ratio = real_ratio
 
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
         # logging
         self.log = log
         if self.log:
@@ -566,7 +562,7 @@ class GPIPD(MOPolicy, MOAgent):
         return action
 
     def _act(self, obs: th.Tensor, w: th.Tensor) -> int:
-        if np.random.random() < self.epsilon:
+        if self.np_random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
             if self.use_gpi:
