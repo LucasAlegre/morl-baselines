@@ -178,6 +178,8 @@ def main():
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
         eval_env = mo_gym.make(args.env_id)
         print(f"Instantiating {args.algo} on {args.env_id}")
+        if args.algo == "ols":
+            args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"
         algo = ALGOS[args.algo](
             env=env,
             gamma=args.gamma,
