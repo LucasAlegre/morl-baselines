@@ -7,7 +7,11 @@ import numpy as np
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import log_all_multi_policy_metrics, seed_everything
+from morl_baselines.common.utils import (
+    linearly_decaying_value,
+    log_all_multi_policy_metrics,
+    seed_everything,
+)
 
 
 class PQL(MOAgent):
@@ -23,7 +27,7 @@ class PQL(MOAgent):
         ref_point: np.ndarray,
         gamma: float = 0.8,
         initial_epsilon: float = 1.0,
-        epsilon_decay: float = 0.99,
+        epsilon_decay_steps: int = 100000,
         final_epsilon: float = 0.1,
         seed: Optional[int] = None,
         project_name: str = "MORL-Baselines",
@@ -38,7 +42,7 @@ class PQL(MOAgent):
             ref_point: The reference point for the hypervolume metric.
             gamma: The discount factor.
             initial_epsilon: The initial epsilon value.
-            epsilon_decay: The epsilon decay rate.
+            epsilon_decay_steps: The number of steps to decay epsilon.
             final_epsilon: The final epsilon value.
             seed: The random seed.
             project_name: The name of the project used for logging.
@@ -51,7 +55,7 @@ class PQL(MOAgent):
         self.gamma = gamma
         self.epsilon = initial_epsilon
         self.initial_epsilon = initial_epsilon
-        self.epsilon_decay = epsilon_decay
+        self.epsilon_decay_steps = epsilon_decay_steps
         self.final_epsilon = final_epsilon
 
         # Algorithm setup
@@ -92,7 +96,7 @@ class PQL(MOAgent):
             "ref_point": list(self.ref_point),
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
-            "epsilon_decay": self.epsilon_decay,
+            "epsilon_decay_steps": self.epsilon_decay_steps,
             "final_epsilon": self.final_epsilon,
             "seed": self.seed,
         }
@@ -180,7 +184,7 @@ class PQL(MOAgent):
         eval_env: gym.Env,
         ref_point: Optional[np.ndarray] = None,
         known_pareto_front: Optional[List[np.ndarray]] = None,
-        log_every: Optional[int] = 100,
+        log_every: Optional[int] = 10000,
         action_eval: Optional[str] = "hypervolume",
     ):
         """Learn the Pareto front.
@@ -236,7 +240,13 @@ class PQL(MOAgent):
                         ref_front=known_pareto_front,
                     )
 
-            self.epsilon = max(self.final_epsilon, self.epsilon * self.epsilon_decay)
+            self.epsilon = linearly_decaying_value(
+                self.initial_epsilon,
+                self.epsilon_decay_steps,
+                self.global_step,
+                0,
+                self.final_epsilon,
+            )
 
         return self.get_local_pcs(state=0)
 
