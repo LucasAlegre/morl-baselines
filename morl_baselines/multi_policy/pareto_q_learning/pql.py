@@ -96,7 +96,7 @@ class PQL(MOAgent):
             "ref_point": list(self.ref_point),
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
-            "epsilon_decay": self.epsilon_decay,
+            "epsilon_decay_steps": self.epsilon_decay_steps,
             "final_epsilon": self.final_epsilon,
             "seed": self.seed,
         }
