@@ -69,7 +69,7 @@ class MOQLearning(MOPolicy, MOAgent):
         self.learning_rate = learning_rate
         self.id = id
         self.seed = seed
-        self.np_random = seeding.np_random(self.seed)
+        self.np_random, _ = seeding.np_random(self.seed)
 
         if self.id is not None:
             self.idstr = f"_{self.id}"

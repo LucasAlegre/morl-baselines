@@ -165,7 +165,7 @@ def random_weights(
         rng: random number generator
     """
     if rng is None:
-        rng = seeding.np_random(seed)
+        rng, _ = seeding.np_random(seed)
 
     if dist == "gaussian":
         w = rng.standard_normal((n, dim))

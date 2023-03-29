@@ -296,7 +296,7 @@ class MOPPO(MOPolicy):
         self.networks = networks
         self.device = device
         self.seed = seed
-        self.np_random = seeding.np_random(seed)
+        self.np_random, _ = seeding.np_random(seed)
 
         # PPO Parameters
         self.steps_per_iteration = steps_per_iteration
