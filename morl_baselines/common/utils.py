@@ -151,22 +151,23 @@ def equally_spaced_weights(dim: int, n: int, seed: int = 42) -> List[np.ndarray]
     return list(get_reference_directions("energy", dim, n, seed=seed))
 
 
-def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "dirichlet") -> np.ndarray:
+def random_weights(
+    dim: int, n: int = 1, dist: str = "dirichlet", seed: Optional[int] = None, rng: Optional[np.random.Generator] = None
+) -> np.ndarray:
     """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1.
 
     Args:
         dim: size of the weight vector
-        seed: random seed
         n : number of weight vectors to generate
         dist: distribution to use, either 'gaussian' or 'dirichlet'. Default is 'dirichlet' as it is equivalent to sampling uniformly from the weight simplex.
+        seed: random seed
+        rng: random number generator
     """
-    if seed is not None:
+    if rng is None:
         rng = np.random.default_rng(seed)
-    else:
-        rng = np.random
 
     if dist == "gaussian":
-        w = np.random.randn(n, dim)
+        w = rng.standard_normal((n, dim))
         w = np.abs(w) / np.linalg.norm(w, ord=1, axis=1, keepdims=True)
     elif dist == "dirichlet":
         w = rng.dirichlet(np.ones(dim), n)
@@ -318,6 +319,9 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
 
 def seed_everything(seed: int):
     """Set random seeds for reproducibility.
+
+    This function should be called only once per python process, preferably at the beginning of the main script.
+    It has global effects on the random state of the python process, so it should be used with care.
 
     Args:
         seed: random seed

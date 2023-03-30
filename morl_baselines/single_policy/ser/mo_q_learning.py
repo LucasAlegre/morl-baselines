@@ -10,11 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from morl_baselines.common.model_based.tabular_model import TabularModel
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.scalarization import weighted_sum
-from morl_baselines.common.utils import (
-    linearly_decaying_value,
-    log_episode_info,
-    seed_everything,
-)
+from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
 
 
 class MOQLearning(MOPolicy, MOAgent):
@@ -44,6 +40,7 @@ class MOQLearning(MOPolicy, MOAgent):
         log: bool = True,
         seed: Optional[int] = None,
         parent_writer: Optional[SummaryWriter] = None,
+        parent_rng: Optional[np.random.Generator] = None,
     ):
         """Initializes the MOQ-learning algorithm.
 
@@ -66,14 +63,17 @@ class MOQLearning(MOPolicy, MOAgent):
             log: Whether to log or not
             seed: The seed to use for the experiment
             parent_writer: The writer to use for logging. If None, a new writer is created.
+            parent_rng: The random number generator to use. If None, a new one is created.
         """
         MOAgent.__init__(self, env)
         MOPolicy.__init__(self, id)
         self.learning_rate = learning_rate
         self.id = id
         self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
+        if parent_rng is not None:
+            self.np_random = parent_rng
+        else:
+            self.np_random = np.random.default_rng(self.seed)
 
         if self.id is not None:
             self.idstr = f"_{self.id}"
@@ -104,7 +104,7 @@ class MOQLearning(MOPolicy, MOAgent):
 
     def __act(self, obs: np.array):
         # epsilon-greedy
-        coin = np.random.rand()
+        coin = self.np_random.random()
         if coin < self.epsilon:
             return int(self.env.action_space.sample())
         else:

@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import get_non_dominated_inds
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import log_all_multi_policy_metrics, seed_everything
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 
 
 def crowding_distance(points):
@@ -123,7 +123,7 @@ class PCN(MOAgent, MOPolicy):
             seed (Optional[int], optional): Seed for reproducibility. Defaults to None.
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
 
         self.experience_replay = []  # List of (distance, time_step, transition)
@@ -139,10 +139,6 @@ class PCN(MOAgent, MOPolicy):
             self.observation_dim, self.action_dim, self.reward_dim, self.scaling_factor, hidden_dim=self.hidden_dim
         ).to(self.device)
         self.opt = th.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
 
         self.log = log
         if log:
@@ -164,13 +160,13 @@ class PCN(MOAgent, MOPolicy):
         """Update PCN model."""
         batch = []
         # randomly choose episodes from experience buffer
-        s_i = np.random.choice(np.arange(len(self.experience_replay)), size=self.batch_size, replace=True)
+        s_i = self.np_random.choice(np.arange(len(self.experience_replay)), size=self.batch_size, replace=True)
         for i in s_i:
             # episode is tuple (return, transitions)
             ep = self.experience_replay[i][2]
             # choose random timestep from episode,
             # use it's return and leftover timesteps as desired return and horizon
-            t = np.random.randint(0, len(ep))
+            t = self.np_random.integers(0, len(ep))
             # reward contains return until end of episode
             s_t, a_t, r_t, h_t = ep[t].observation, ep[t].action, np.float32(ep[t].reward), np.float32(len(ep) - t)
             batch.append((s_t, a_t, r_t, h_t))
@@ -245,15 +241,15 @@ class PCN(MOAgent, MOPolicy):
         returns = np.array(returns)[nd_i]
         horizons = np.array(horizons)[nd_i]
         # pick random return from random best episode
-        r_i = np.random.randint(0, len(returns))
+        r_i = self.np_random.integers(0, len(returns))
         desired_horizon = np.float32(horizons[r_i] - 2)
         # mean and std per objective
         _, s = np.mean(returns, axis=0), np.std(returns, axis=0)
         # desired return is sampled from [M, M+S], to try to do better than mean return
         desired_return = returns[r_i].copy()
         # random objective
-        r_i = np.random.randint(0, len(desired_return))
-        desired_return[r_i] += np.random.uniform(high=s[r_i])
+        r_i = self.np_random.integers(0, len(desired_return))
+        desired_return[r_i] += self.np_random.uniform(high=s[r_i])
         desired_return = np.float32(desired_return)
         return desired_return, desired_horizon
 
@@ -264,7 +260,7 @@ class PCN(MOAgent, MOPolicy):
             th.tensor([desired_horizon]).unsqueeze(1).float().to(self.device),
         )
         log_probs = log_probs.detach().cpu().numpy()[0]
-        action = np.random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
+        action = self.np_random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
         return action
 
     def _run_episode(self, env, desired_return, desired_horizon, max_return):

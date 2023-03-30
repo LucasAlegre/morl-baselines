@@ -16,6 +16,7 @@ import numpy as np
 import requests
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
+from morl_baselines.common.utils import seed_everything
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
@@ -142,6 +143,8 @@ def autotag() -> str:
 def main():
     args = parse_args()
     print(args)
+
+    seed_everything(args.seed)
 
     if args.auto_tag:
         if "WANDB_TAGS" in os.environ:

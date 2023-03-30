@@ -18,7 +18,7 @@ from scipy.optimize import least_squares
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.common.performance_indicators import hypervolume, sparsity
-from morl_baselines.common.utils import log_all_multi_policy_metrics, seed_everything
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 from morl_baselines.single_policy.ser.mo_ppo import MOPPO, MOPPONet, make_env
 
 
@@ -364,7 +364,7 @@ class PGMORL(MOAgent):
             gae_lambda: lambda parameter for GAE
             device: device on which the code should run
         """
-        super().__init__(env, device=device)
+        super().__init__(env, device=device, seed=seed)
         # Env dimensions
         self.tmp_env = mo_gym.make(env_id)
         self.extract_env_info(self.tmp_env)
@@ -410,11 +410,6 @@ class PGMORL(MOAgent):
         self.clip_vloss = clip_vloss
         self.gae_lambda = gae_lambda
         self.gae = gae
-
-        # seeding
-        self.seed = seed
-        if self.seed is not None:
-            seed_everything(self.seed)
 
         # env setup
         if env is None:
@@ -470,6 +465,7 @@ class PGMORL(MOAgent):
                 target_kl=self.target_kl,
                 gae=self.gae,
                 gae_lambda=self.gae_lambda,
+                rng=self.np_random,
             )
             for i in range(self.pop_size)
         ]
@@ -547,7 +543,7 @@ class PGMORL(MOAgent):
     def __task_weight_selection(self, ref_point: np.ndarray):
         """Chooses agents and weights to train at the next iteration based on the current population and prediction model."""
         candidate_weights = generate_weights(self.delta_weight / 2.0)  # Generates more weights than agents
-        np.random.shuffle(candidate_weights)  # Randomize
+        self.np_random.shuffle(candidate_weights)  # Randomize
 
         current_front = deepcopy(self.archive.evaluations)
         population = self.population.individuals

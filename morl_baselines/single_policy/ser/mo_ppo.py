@@ -261,6 +261,7 @@ class MOPPO(MOPolicy):
         gae_lambda: float = 0.95,
         device: Union[th.device, str] = "auto",
         seed: int = 42,
+        rng: Optional[np.random.Generator] = None,
     ):
         """Multi-objective PPO.
 
@@ -287,6 +288,7 @@ class MOPPO(MOPolicy):
             gae_lambda: GAE lambda
             device: Device to use
             seed: Random seed
+            rng: Random number generator
         """
         super().__init__(id, device)
         self.id = id
@@ -295,6 +297,10 @@ class MOPPO(MOPolicy):
         self.networks = networks
         self.device = device
         self.seed = seed
+        if rng is not None:
+            self.np_random = rng
+        else:
+            self.np_random = np.random.default_rng(self.seed)
 
         # PPO Parameters
         self.steps_per_iteration = steps_per_iteration
@@ -492,7 +498,7 @@ class MOPPO(MOPolicy):
         clipfracs = []
         # Perform multiple passes on the batch (that is shuffled every time)
         for epoch in range(self.update_epochs):
-            np.random.shuffle(b_inds)
+            self.np_random.shuffle(b_inds)
             for start in range(0, self.batch_size, self.minibatch_size):
                 end = start + self.minibatch_size
                 # mb == minibatch

@@ -160,19 +160,21 @@ class MOPolicy(ABC):
 class MOAgent(ABC):
     """An MORL Agent, can contain one or multiple MOPolicies. Contains helpers to extract features from the environment, setup logging etc."""
 
-    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto") -> None:
+    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto", seed: Optional[int] = None) -> None:
         """Initializes the agent.
 
         Args:
             env: (gym.Env): The environment
             device: (str): The device to use for training. Can be "auto", "cpu" or "cuda".
+            seed: (int): The seed to use for the random number generator
         """
         self.extract_env_info(env)
         self.device = th.device("cuda" if th.cuda.is_available() else "cpu") if device == "auto" else device
 
         self.global_step = 0
         self.num_episodes = 0
-        self.seed = None
+        self.seed = seed
+        self.np_random = np.random.default_rng(self.seed)
 
     def extract_env_info(self, env: Optional[gym.Env]) -> None:
         """Extracts all the features of the environment: observation space, action space, ...
