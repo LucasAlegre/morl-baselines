@@ -244,9 +244,9 @@
 <section id="principle">
 <h2>Principle<a class="headerlink" href="#principle" title="Permalink to this heading">#</a></h2>
 <figure class="align-default">
-<img alt="PGMORL" src="algos/multi_policy/_static/_images/pgmorl.png" />
+<img alt="PGMORL" src="algos/_static/_images/pgmorl.png" />
 </figure>
-<p>The principle of this algorithm is to rely on multiple PPO agents to look for various tradeoffs. This algorithm keeps a population of PPO agents along with their current performances. At each iteration, the algorithm selects a few best agents in the population and assigns to each of these a weight vector that is used to train further. The weight vector is generated based on a prediction model computed from historical data gathered during the learning process.</p>
+<p>The principle of this algorithm is to rely on multiple PPO agents to look for various tradeoffs. This algorithm keeps a population of PPO agents along with their current performances. At each iteration, the algorithm selects a few best agents in the population and assigns to each of these a weight vector that is used to train further. The weight vector are generated based on a prediction model computed from historical data gathered during the learning process.</p>
 <section id="moppo">
 <h3>MOPPO<a class="headerlink" href="#moppo" title="Permalink to this heading">#</a></h3>
 <p>Our implementation of multi-objective PPO is essentially a refactor of <a class="reference external" href="https://github.com/vwxyzjn/cleanrl">cleanRL</a>. The main difference is that the value network returns a multi-objective value and this value is then scalarized using a weighted sum and the given weight vector.</p>
@@ -304,6 +304,53 @@
 <section id="weight-generator-prediction-model">
 <h3>Weight generator - prediction model<a class="headerlink" href="#weight-generator-prediction-model" title="Permalink to this heading">#</a></h3>
 <p>See section 3.3 of the paper for more details.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.pgmorl.pgmorl.</span></span><span class="sig-name descname"><span class="pre">PerformancePredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neighborhood_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.03</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A_bound_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A_bound_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor" title="Permalink to this definition">#</a></dt>
+<dd><p>Performance prediction model.</p>
+<p>Stores the performance deltas along with the used weights after each generation.
+Then, uses these stored samples to perform a regression for predicting the performance of using a given weight
+to train a given policy.
+Predicts: Weight &amp; performance -&gt; delta performance</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_before_pg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_after_pg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.add" title="Permalink to this definition">#</a></dt>
+<dd><p>Add a new sample to the performance predictor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>weight</strong> – The weight used to train the policy.</p></li>
+<li><p><strong>eval_before_pg</strong> – The evaluation before training the policy.</p></li>
+<li><p><strong>eval_after_pg</strong> – The evaluation after training the policy.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>None</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.predict_next_evaluation">
+<span class="sig-name descname"><span class="pre">predict_next_evaluation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight_candidate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy_eval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.predict_next_evaluation" title="Permalink to this definition">#</a></dt>
+<dd><p>Predict the next evaluation of the policy.</p>
+<p>Use a part of the collected data (determined by the neighborhood threshold) to predict the performance
+after using weight to train the policy whose current evaluation is policy_eval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>weight_candidate</strong> – weight candidate</p></li>
+<li><p><strong>policy_eval</strong> – current evaluation of the policy</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>the delta prediction, along with the predicted next evaluations</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="id1">
 <h3>PGMORL<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
@@ -408,7 +455,14 @@ Supplementary materials: <a class="reference external" href="https://people.csai
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#weight-generator-prediction-model">Weight generator - prediction model</a></li>
+<li><a class="reference internal" href="#weight-generator-prediction-model">Weight generator - prediction model</a><ul>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor"><code class="docutils literal notranslate"><span class="pre">PerformancePredictor</span></code></a><ul>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.add"><code class="docutils literal notranslate"><span class="pre">PerformancePredictor.add()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.predict_next_evaluation"><code class="docutils literal notranslate"><span class="pre">PerformancePredictor.predict_next_evaluation()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#id1">PGMORL</a><ul>
 <li><a class="reference internal" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PGMORL"><code class="docutils literal notranslate"><span class="pre">PGMORL</span></code></a><ul>
 <li><a class="reference internal" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PGMORL.get_config"><code class="docutils literal notranslate"><span class="pre">PGMORL.get_config()</span></code></a></li>
