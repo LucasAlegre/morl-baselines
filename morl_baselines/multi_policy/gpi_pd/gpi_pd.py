@@ -825,7 +825,7 @@ class GPIPD(MOPolicy, MOAgent):
             if self.log:
                 # Evaluation
                 gpi_returns_test_tasks = [
-                    policy_evaluation_mo(self, eval_env, w, rep=num_eval_episodes_for_front)[3] for w in eval_weights
+                    policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
                 ]
                 log_all_multi_policy_metrics(
                     current_front=gpi_returns_test_tasks,
@@ -837,7 +837,7 @@ class GPIPD(MOPolicy, MOAgent):
                 )
                 # This is the EU computed in the paper
                 mean_gpi_returns_test_tasks = np.mean(
-                    [np.dot(w, q) for w, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
+                    [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
                 wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
