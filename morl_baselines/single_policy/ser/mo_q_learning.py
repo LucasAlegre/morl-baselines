@@ -41,6 +41,7 @@ class MOQLearning(MOPolicy, MOAgent):
         log: bool = True,
         seed: Optional[int] = None,
         parent_writer: Optional[SummaryWriter] = None,
+        parent_rng: Optional[np.random.Generator] = None,
     ):
         """Initializes the MOQ-learning algorithm.
 
@@ -63,13 +64,17 @@ class MOQLearning(MOPolicy, MOAgent):
             log: Whether to log or not
             seed: The seed to use for the experiment
             parent_writer: The writer to use for logging. If None, a new writer is created.
+            parent_rng: The random number generator to use. If None, a new one is created.
         """
         MOAgent.__init__(self, env)
         MOPolicy.__init__(self, id)
         self.learning_rate = learning_rate
         self.id = id
         self.seed = seed
-        self.np_random, _ = seeding.np_random(self.seed)
+        if parent_rng is not None:
+            self.np_random = parent_rng
+        else:
+            self.np_random, _ = seeding.np_random(self.seed)
 
         if self.id is not None:
             self.idstr = f"_{self.id}"

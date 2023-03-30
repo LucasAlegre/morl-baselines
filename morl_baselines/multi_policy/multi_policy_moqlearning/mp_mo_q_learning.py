@@ -205,6 +205,7 @@ class MPMOQLearning(MOAgent):
                 dyna_updates=self.dyna_updates,
                 log=self.log,
                 parent_writer=self.writer,
+                parent_rng=self.np_random,
                 seed=self.seed,
             )
             if self.transfer_q_table and len(self.policies) > 0:

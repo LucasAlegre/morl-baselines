@@ -321,6 +321,9 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
 def seed_everything(seed: int):
     """Set random seeds for reproducibility.
 
+    This function should be called only once per python process, preferably at the beginning of the main script.
+    It has global effects on the random state of the python process, so it should be used with care.
+
     Args:
         seed: random seed
     """

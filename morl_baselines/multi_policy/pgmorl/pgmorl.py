@@ -465,6 +465,7 @@ class PGMORL(MOAgent):
                 target_kl=self.target_kl,
                 gae=self.gae,
                 gae_lambda=self.gae_lambda,
+                rng=self.np_random,
             )
             for i in range(self.pop_size)
         ]

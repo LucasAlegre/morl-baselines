@@ -262,6 +262,7 @@ class MOPPO(MOPolicy):
         gae_lambda: float = 0.95,
         device: Union[th.device, str] = "auto",
         seed: int = 42,
+        rng: Optional[np.random.Generator] = None,
     ):
         """Multi-objective PPO.
 
@@ -288,6 +289,7 @@ class MOPPO(MOPolicy):
             gae_lambda: GAE lambda
             device: Device to use
             seed: Random seed
+            rng: Random number generator
         """
         super().__init__(id, device)
         self.id = id
@@ -296,7 +298,10 @@ class MOPPO(MOPolicy):
         self.networks = networks
         self.device = device
         self.seed = seed
-        self.np_random, _ = seeding.np_random(seed)
+        if rng is not None:
+            self.np.random = rng
+        else:
+            self.np_random, _ = seeding.np_random(seed)
 
         # PPO Parameters
         self.steps_per_iteration = steps_per_iteration

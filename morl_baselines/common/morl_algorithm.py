@@ -175,23 +175,7 @@ class MOAgent(ABC):
         self.global_step = 0
         self.num_episodes = 0
         self.seed = seed
-        self._np_random = None
-        self._np_random, _ = seeding.np_random(seed)
-
-    @property
-    def np_random(self) -> np.random.Generator:
-        """Returns the environment's internal :attr:`_np_random` that if not set will initialise with a random seed.
-
-        Returns:
-            Instances of `np.random.Generator`
-        """
-        if self._np_random is None:
-            self._np_random, _ = seeding.np_random()
-        return self._np_random
-
-    @np_random.setter
-    def np_random(self, value: np.random.Generator):
-        self._np_random = value
+        self.np_random, _ = seeding.np_random(seed)
 
     def extract_env_info(self, env: Optional[gym.Env]) -> None:
         """Extracts all the features of the environment: observation space, action space, ...
