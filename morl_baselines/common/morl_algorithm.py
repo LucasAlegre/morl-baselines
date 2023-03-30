@@ -8,7 +8,6 @@ import numpy as np
 import torch as th
 import wandb
 from gymnasium import spaces
-from gymnasium.utils import seeding
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.evaluation import (
@@ -175,7 +174,7 @@ class MOAgent(ABC):
         self.global_step = 0
         self.num_episodes = 0
         self.seed = seed
-        self.np_random, _ = seeding.np_random(seed)
+        self.np_random = np.random.default_rng(self.seed)
 
     def extract_env_info(self, env: Optional[gym.Env]) -> None:
         """Extracts all the features of the environment: observation space, action space, ...

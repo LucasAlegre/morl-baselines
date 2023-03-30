@@ -8,7 +8,6 @@ import gymnasium as gym
 import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
-from gymnasium.utils import seeding
 from mo_gymnasium import MORecordEpisodeStatistics
 from torch import nn, optim
 from torch.distributions import Normal
@@ -299,9 +298,9 @@ class MOPPO(MOPolicy):
         self.device = device
         self.seed = seed
         if rng is not None:
-            self.np.random = rng
+            self.np_random = rng
         else:
-            self.np_random, _ = seeding.np_random(seed)
+            self.np_random = np.random.default_rng(self.seed)
 
         # PPO Parameters
         self.steps_per_iteration = steps_per_iteration

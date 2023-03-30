@@ -5,7 +5,6 @@ from typing_extensions import override
 
 import gymnasium as gym
 import numpy as np
-from gymnasium.utils import seeding
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.model_based.tabular_model import TabularModel
@@ -74,7 +73,7 @@ class MOQLearning(MOPolicy, MOAgent):
         if parent_rng is not None:
             self.np_random = parent_rng
         else:
-            self.np_random, _ = seeding.np_random(self.seed)
+            self.np_random = np.random.default_rng(self.seed)
 
         if self.id is not None:
             self.idstr = f"_{self.id}"

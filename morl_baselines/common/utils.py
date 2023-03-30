@@ -6,7 +6,6 @@ from typing import Iterable, List, Optional
 import numpy as np
 import torch as th
 import wandb
-from gymnasium.utils import seeding
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
@@ -165,7 +164,7 @@ def random_weights(
         rng: random number generator
     """
     if rng is None:
-        rng, _ = seeding.np_random(seed)
+        rng = np.random.default_rng(seed)
 
     if dist == "gaussian":
         w = rng.standard_normal((n, dim))
