@@ -2,9 +2,10 @@
 
 Some code for this algorithm has been adapted from the original code provided by the authors of the paper [GitHub](https://github.com/mit-gfx/PGMORL).
 
-## Limitations
-(!) Limited to 2 objectives for now.
-(!) The post-processing phase (Pareto analysis stage) has not been implemented yet.
+## Applicability and limitations
+* Supports continuous observation and continuous action spaces.
+* Limited to 2 objectives for now.
+* The post-processing phase (Pareto analysis stage) has not been implemented yet.
 
 ## Principle
 
@@ -16,6 +17,8 @@ The principle of this algorithm is to rely on multiple PPO agents to look for va
 
 ### MOPPO
 Our implementation of multi-objective PPO is essentially a refactor of [cleanRL](https://github.com/vwxyzjn/cleanrl). The main difference is that the value network returns a multi-objective value and this value is then scalarized using a weighted sum and the given weight vector.
+
+Note: it might be possible to enhance this algorithm by relying on something else than PPO.
 
 ```{eval-rst}
 .. autoclass:: morl_baselines.single_policy.ser.mo_ppo.MOPPO
