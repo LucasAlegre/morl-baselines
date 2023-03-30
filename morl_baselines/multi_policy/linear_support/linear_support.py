@@ -85,7 +85,7 @@ class LinearSupport:
 
                 if self.epsilon is None or priority >= self.epsilon:
                     # OLS does not try the same weight vector twice
-                    if not (algo == "ols" and any([np.allclose(wc, w) for (p, w) in self.visited_weights])):
+                    if not (algo == "ols" and any([np.allclose(wc, wv) for wv in self.visited_weights])):
                         self.queue.append((priority, wc))
 
             if len(self.queue) > 0:
