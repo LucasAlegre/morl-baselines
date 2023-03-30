@@ -9,7 +9,7 @@ Some code for this algorithm has been adapted from the original code provided by
 
 ## Principle
 
-```{figure} ../_static/_images/pgmorl.png
+```{figure} ../../_static/_images/pgmorl.png
    :alt: PGMORL
 ```
 
