@@ -188,6 +188,9 @@ class MPMOQLearning(MOAgent):
                     env=eval_env if self.weight_selection_algo == "gpi-ls" else None,
                     rep_eval=num_eval_episodes_for_front,
                 )
+                if w is None:
+                    print("OLS has no more corner weights to try. Using a random weight instead.")
+                    w = random_weights(self.reward_dim, rng=self.np_random)
             elif self.weight_selection_algo == "random":
                 w = random_weights(self.reward_dim, rng=self.np_random)
 
