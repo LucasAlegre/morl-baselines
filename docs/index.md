@@ -26,8 +26,8 @@ lastpage:
 ## Benchmarks
 
 ```{include} ../README.md
-:start-after: <!-- start benchmarks -->
-:end-before: <!-- end benchmarks -->
+:start-after: <!-- start benchmark -->
+:end-before: <!-- end benchmark -->
 ```
 
 ## Citing MORL-Baselines
