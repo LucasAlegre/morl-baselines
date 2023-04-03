@@ -23,6 +23,13 @@ lastpage:
 :end-before: <!-- end features -->
 ```
 
+## Benchmarks
+
+```{include} ../README.md
+:start-after: <!-- start benchmark -->
+:end-before: <!-- end benchmark -->
+```
+
 ## Citing MORL-Baselines
 ```{include} ../README.md
 :start-after: <!-- start citing -->
@@ -51,6 +58,7 @@ algos/performances
 :caption: Features
 
 features/pareto
+features/evaluations
 features/performance_indicators
 features/scalarization
 features/buffers

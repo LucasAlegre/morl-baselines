@@ -24,6 +24,20 @@ def hypervolume(ref_point: np.ndarray, points: List[npt.ArrayLike]) -> float:
     return HV(ref_point=ref_point * -1)(np.array(points) * -1)
 
 
+def igd(known_front: List[np.ndarray], current_estimate: List[np.ndarray]) -> float:
+    """Inverted generational distance metric. Requires to know the optimal front.
+
+    Args:
+        known_front: known pareto front for the problem
+        current_estimate: current pareto front
+
+    Return:
+        a float stating the average distance between a point in current_estimate and its nearest point in known_front
+    """
+    ind = IGD(np.array(known_front))
+    return ind(np.array(current_estimate))
+
+
 def sparsity(front: List[np.ndarray]) -> float:
     """Sparsity metric from PGMORL.
 
@@ -50,21 +64,7 @@ def sparsity(front: List[np.ndarray]) -> float:
     return sparsity_value
 
 
-def igd(known_front: List[np.ndarray], current_estimate: List[np.ndarray]) -> float:
-    """Inverted generational distance metric. Requires to know the front.
-
-    Args:
-        known_front: known pareto front for the problem
-        current_estimate: current pareto front
-
-    Return:
-        a float stating the average distance between a point in current_estimate and its nearest point in known_front
-    """
-    ind = IGD(np.array(known_front))
-    return ind(np.array(current_estimate))
-
-
-def expected_utility(front: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot) -> float:
+def expected_utility(front: List[np.ndarray], weights_set: List[np.ndarray], utility: Callable = np.dot) -> float:
     """Expected Utility Metric.
 
     Expected utility of the policies on the PF for various weights.

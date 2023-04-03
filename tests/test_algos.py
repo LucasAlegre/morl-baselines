@@ -5,6 +5,7 @@ import mo_gymnasium as mo_gym
 import numpy as np
 from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
+from morl_baselines.common.evaluation import eval_mo, eval_mo_reward_conditioned
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
@@ -33,19 +34,19 @@ def test_pql():
         ref_point,
         gamma=1.0,
         initial_epsilon=1.0,
-        epsilon_decay=0.997,
+        epsilon_decay_steps=5000,
         final_epsilon=0.2,
         seed=1,
         log=False,
     )
 
     # Training
-    pf = agent.train(num_episodes=1000, log_every=100, action_eval="hypervolume")
+    pf = agent.train(total_timesteps=1000, log_every=100, action_eval="hypervolume", ref_point=ref_point, eval_env=env)
     assert len(pf) > 0
 
     # Policy following
     target = np.array(pf.pop())
-    tracked = agent.track_policy(target)
+    tracked = agent.track_policy(target, env=env)
     assert np.all(tracked == target)
 
 
@@ -59,7 +60,7 @@ def test_eupg():
     agent = EUPG(env, scalarization=scalarization, gamma=0.99, log=False)
     agent.train(total_timesteps=10000, eval_env=eval_env, eval_freq=100)
 
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo_reward_conditioned(
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo_reward_conditioned(
         agent, env=eval_env, scalarization=scalarization
     )
     assert scalar_return > scalarized_disc_return
@@ -83,7 +84,7 @@ def test_moql():
         eval_env=eval_env,
     )
 
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(agent, env=eval_env, w=weights)
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo(agent, env=eval_env, w=weights)
     assert scalar_return != 0
     assert scalarized_disc_return != 0
     assert len(vec_ret) == 2
@@ -93,23 +94,20 @@ def test_moql():
 def test_mp_moql():
     env_id = "deep-sea-treasure-v0"
     env = mo_gym.make(env_id, dst_map=CONCAVE_MAP)
+    eval_env = mo_gym.make(env_id, dst_map=CONCAVE_MAP)
     scalarization = tchebicheff(tau=4.0, reward_dim=2)
 
     agent = MPMOQLearning(
         env,
-        ref_point=np.array([0.0, -25.0]),
         scalarization=scalarization,
-        num_timesteps=int(1e4),
-        weights_step_size=0.3,
         initial_epsilon=0.9,
         epsilon_decay_steps=int(1e3),
         log=False,
     )
-    agent.train()
+    agent.train(eval_env=eval_env, ref_point=np.array([0.0, -25.0]), total_timesteps=2000, timesteps_per_iteration=1000)
 
-    front, discounted_front = agent.eval_all_agents()
+    front = agent.linear_support.ccs
     assert len(front) > 0
-    assert len(discounted_front) > 0
 
 
 def test_ols():
@@ -153,12 +151,11 @@ def test_envelope():
     agent.train(
         total_timesteps=1000,
         eval_env=eval_env,
+        ref_point=np.array([0.0, 0.0, -200.0]),
         eval_freq=100,
     )
 
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
-        agent, env=eval_env, w=np.array([0.5, 0.4, 0.1])
-    )
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo(agent, env=eval_env, w=np.array([0.5, 0.4, 0.1]))
     assert scalar_return != 0
     assert scalarized_disc_return != 0
     assert len(vec_ret) == 3
@@ -182,9 +179,7 @@ def test_gpi_pd():
         eval_freq=100,
     )
 
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
-        agent, env=eval_env, w=np.array([0.5, 0.4, 0.1])
-    )
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo(agent, env=eval_env, w=np.array([0.5, 0.4, 0.1]))
     assert scalar_return != 0
     assert scalarized_disc_return != 0
     assert len(vec_ret) == 3
@@ -208,7 +203,7 @@ def test_gpi_pd_continuous_action():
         eval_freq=100,
     )
 
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(agent, env=eval_env, w=np.array([0.5, 0.5]))
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo(agent, env=eval_env, w=np.array([0.5, 0.5]))
     assert scalar_return != 0
     assert scalarized_disc_return != 0
     assert len(vec_ret) == 2
@@ -220,20 +215,20 @@ def test_pgmorl():
     env_id = "mo-mountaincarcontinuous-v0"
     algo = PGMORL(
         env_id=env_id,
+        origin=np.array([0.0, 0.0]),
         num_envs=4,
         pop_size=6,
         warmup_iterations=2,
         evolutionary_iterations=2,
         num_weight_candidates=5,
-        limit_env_steps=int(1e4),
         log=False,
     )
-    algo.train()
+    algo.train(total_timesteps=int(1e4), ref_point=np.array([0.0, 0.0]))
     env = make_env(env_id, 422, 1, "PGMORL_test", gamma=0.995)()  # idx != 0 to avoid taking videos
 
     # Execution of trained policies
     for a in algo.archive.individuals:
-        scalarized, discounted_scalarized, reward, discounted_reward = mo_gym.eval_mo(
+        scalarized, discounted_scalarized, reward, discounted_reward = eval_mo(
             agent=a, env=env, w=np.array([1.0, 1.0]), render=False
         )
         assert scalarized != 0
@@ -254,17 +249,17 @@ def test_pcn():
     )
 
     agent.train(
-        env,
+        total_timesteps=10,
+        ref_point=np.array([0, 0, -200.0]),
         num_er_episodes=1,
         max_buffer_size=50,
         num_model_updates=50,
-        total_time_steps=10,
         max_return=np.array([1.5, 1.5, -0.0]),
-        ref_point=np.array([0, 0, -200.0]),
+        eval_env=env,
     )
 
     agent.set_desired_return_and_horizon(np.array([1.5, 1.5, -0.0]), 100)
-    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = mo_gym.eval_mo(
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo(
         agent, env=env, w=np.array([0.4, 0.4, 0.2]), render=False
     )
     assert scalar_return != 0

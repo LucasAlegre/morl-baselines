@@ -1,7 +1,9 @@
 import mo_gymnasium as mo_gym
+import numpy as np
 
-from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
-from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
+from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
+    MPMOQLearning,
+)
 
 
 def main():
@@ -9,29 +11,30 @@ def main():
     GAMMA = 0.99
     env = mo_gym.MORecordEpisodeStatistics(mo_gym.make("deep-sea-treasure-v0"), gamma=GAMMA)
 
-    ols = LinearSupport(num_objectives=2, epsilon=0.0, verbose=True)
-    policies = []
-    while not ols.ended():
-        w = ols.next_weight()
+    eval_env = mo_gym.make("deep-sea-treasure-v0")
 
-        new_policy = MOQLearning(
-            env,
-            weights=w,
-            learning_rate=0.3,
-            gamma=GAMMA,
-            initial_epsilon=1,
-            final_epsilon=0.01,
-            epsilon_decay_steps=int(1e5),
-        )
-        new_policy.train(0, total_timesteps=int(2e5))
-
-        _, _, vec, discounted_vec = new_policy.policy_eval(eval_env=env, weights=w, writer=new_policy.writer)
-        policies.append(new_policy)
-
-        removed_inds = ols.add_solution(discounted_vec, w)
-
-        for ind in removed_inds:
-            policies.pop(ind)  # remove policies that are no longer needed
+    mp_moql = MPMOQLearning(
+        env,
+        learning_rate=0.3,
+        gamma=GAMMA,
+        use_gpi_policy=True,
+        dyna=True,
+        dyna_updates=5,
+        initial_epsilon=1,
+        final_epsilon=0.01,
+        epsilon_decay_steps=int(2e5),
+        weight_selection_algo="ols",
+        epsilon_ols=0.0,
+    )
+    mp_moql.train(
+        total_timesteps=15 * int(2e5),
+        eval_env=eval_env,
+        ref_point=np.array([0.0, -25.0]),
+        known_pareto_front=env.unwrapped.pareto_front(gamma=GAMMA),
+        timesteps_per_iteration=int(2e5),
+        eval_freq=100,
+        num_episodes_eval=1,
+    )
 
 
 if __name__ == "__main__":

@@ -11,15 +11,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import wandb as wb
-from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.evaluation import policy_evaluation_mo
+from morl_baselines.common.model_based.probabilistic_ensemble import (
+    ProbabilisticEnsemble,
+)
+from morl_baselines.common.model_based.utils import ModelEnv, visualize_eval
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.performance_indicators import (
-    expected_utility,
-    maximum_utility_loss,
-)
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
     equally_spaced_weights,
@@ -27,13 +27,11 @@ from morl_baselines.common.utils import (
     huber,
     layer_init,
     linearly_decaying_value,
+    log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
+    unique_tol,
 )
-from morl_baselines.multi_policy.gpi_pd.model.probabilistic_ensemble import (
-    ProbabilisticEnsemble,
-)
-from morl_baselines.multi_policy.gpi_pd.model.utils import ModelEnv, visualize_eval
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
@@ -121,9 +119,11 @@ class GPIPD(MOPolicy, MOAgent):
         dynamics_ensemble_size: int = 5,
         dynamics_num_elites: int = 2,
         real_ratio: float = 0.05,
-        project_name: str = "MORL Baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """Initialize the GPI-PD algorithm.
@@ -166,10 +166,12 @@ class GPIPD(MOPolicy, MOAgent):
             real_ratio: The ratio of real transitions to sample.
             project_name: The name of the project.
             experiment_name: The name of the experiment.
+            wandb_entity: The name of the wandb entity.
             log: Whether to log.
+            seed: The seed for random number generators.
             device: The device to use.
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
@@ -236,6 +238,8 @@ class GPIPD(MOPolicy, MOAgent):
         # model-based parameters
         self.dyna = dyna
         self.dynamics_net_arch = dynamics_net_arch
+        self.dynamics = None
+        self.dynamics_buffer = None
         if self.dyna:
             self.dynamics = ProbabilisticEnsemble(
                 input_dim=self.observation_dim + self.action_dim,
@@ -257,9 +261,10 @@ class GPIPD(MOPolicy, MOAgent):
         self.dynamics_uncertainty_threshold = dynamics_uncertainty_threshold
         self.real_ratio = real_ratio
 
+        # logging
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self):
         """Return the configuration of the agent."""
@@ -296,6 +301,7 @@ class GPIPD(MOPolicy, MOAgent):
             "real_ratio": self.real_ratio,
             "drop_rate": self.drop_rate,
             "layer_norm": self.layer_norm,
+            "seed": self.seed,
         }
 
     def save(self, save_replay_buffer=True, save_dir="weights/", filename=None):
@@ -556,7 +562,7 @@ class GPIPD(MOPolicy, MOAgent):
         return action
 
     def _act(self, obs: th.Tensor, w: th.Tensor) -> int:
-        if np.random.random() < self.epsilon:
+        if self.np_random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
             if self.use_gpi:
@@ -643,7 +649,8 @@ class GPIPD(MOPolicy, MOAgent):
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
         """Set the weight support set."""
-        self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
+        weights_no_repeats = unique_tol(weight_list)
+        self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeats]
 
     def train_iteration(
         self,
@@ -668,7 +675,7 @@ class GPIPD(MOPolicy, MOAgent):
             eval_freq (int): Number of timesteps between evaluations
             reset_learning_starts (bool): Whether to reset the learning starts
         """
-        self.weight_support = [th.tensor(z).float().to(self.device) for z in weight_support]
+        self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
 
         self.police_indices = []
@@ -735,32 +742,46 @@ class GPIPD(MOPolicy, MOAgent):
 
     def train(
         self,
+        total_timesteps: int,
         eval_env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
         timesteps_per_iter: int = 10000,
-        max_iter: int = 15,
         weight_selection_algo: str = "gpi-ls",
-        ref_front: Optional[List[np.ndarray]] = None,
     ):
         """Train agent.
 
         Args:
-            eval_env (gym.Env): Environment to evaluate on
-            timesteps_per_iter (int): Number of timesteps to train for per iteration
-            max_iter (int): Number of iterations to train for
-            weight_selection_algo (str): Weight selection algorithm to use
-            ref_front (Optional[List[np.ndarray]]): Reference front for computing maximum utiltiy loss
+            total_timesteps (int): Number of timesteps to train for.
+            eval_env (gym.Env): Environment to evaluate on.
+            ref_point (np.ndarray): Reference point for hypervolume calculation.
+            known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front if known.
+            num_eval_weights_for_front: Number of weights to evaluate for the Pareto front.
+            num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
+            timesteps_per_iter (int): Number of timesteps to train for per iteration.
+            weight_selection_algo (str): Weight selection algorithm to use.
         """
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+        max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
         weight_history = []
 
-        test_tasks = equally_spaced_weights(self.reward_dim, 100, seed=42)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
 
         for iter in range(1, max_iter + 1):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
                 if weight_selection_algo == "gpi-ls":
                     self.set_weight_support(linear_support.get_weight_support())
-                    w = linear_support.next_weight(algo="gpi-ls", gpi_agent=self, env=eval_env)
+                    use_gpi = self.use_gpi
+                    self.use_gpi = True
+                    w = linear_support.next_weight(
+                        algo="gpi-ls", gpi_agent=self, env=eval_env, rep_eval=num_eval_episodes_for_front
+                    )
+                    self.use_gpi = use_gpi
                 else:
                     w = linear_support.next_weight(algo="ols")
 
@@ -790,27 +811,31 @@ class GPIPD(MOPolicy, MOAgent):
             )
 
             if weight_selection_algo == "ols":
-                value = policy_evaluation_mo(self, eval_env, w, rep=5)
+                value = policy_evaluation_mo(self, eval_env, w, rep=num_eval_episodes_for_front)[3]
                 linear_support.add_solution(value, w)
             elif weight_selection_algo == "gpi-ls":
                 for wcw in M:
-                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)
+                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
-            # Evaluation
-            gpi_returns_test_tasks = [
-                policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
-            ]
-            mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
-            wb.log(
-                {"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}
-            )  # This is the EU computed in the paper
-            eu = expected_utility(gpi_returns_test_tasks, test_tasks)
-            wb.log({"eval/EU - GPI": eu, "iteration": iter})
-
-            if ref_front is not None:
-                mul = maximum_utility_loss(gpi_returns_test_tasks, ref_front, test_tasks)
-                wb.log({"eval/MUL - GPI": mul, "iteration": iter})
+            if self.log:
+                # Evaluation
+                gpi_returns_test_tasks = [
+                    policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
+                ]
+                log_all_multi_policy_metrics(
+                    current_front=gpi_returns_test_tasks,
+                    hv_ref_point=ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=known_pareto_front,
+                )
+                # This is the EU computed in the paper
+                mean_gpi_returns_test_tasks = np.mean(
+                    [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
+                )
+                wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 

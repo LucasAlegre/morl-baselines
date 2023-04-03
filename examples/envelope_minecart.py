@@ -1,4 +1,5 @@
 import mo_gymnasium as mo_gym
+import numpy as np
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
@@ -36,7 +37,7 @@ def main():
         tau=1,
         log=True,
         project_name="MORL-Baselines",
-        experiment_name="Envelope - minecart-v0",
+        experiment_name="Envelope",
     )
 
     agent.train(
@@ -44,6 +45,9 @@ def main():
         total_episodes=None,
         weight=None,
         eval_env=eval_env,
+        ref_point=np.array([0, 0, -200.0]),
+        known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
+        num_eval_weights_for_front=100,
         eval_freq=1000,
         reset_num_timesteps=False,
         reset_learning_starts=False,

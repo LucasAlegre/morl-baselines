@@ -2,31 +2,33 @@
 import os
 import random
 from itertools import chain
-from typing import List, Union
+from typing import List, Optional, Union
 
+import gymnasium
 import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import wandb as wb
-from mo_gymnasium.evaluation import policy_evaluation_mo
 
 from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.evaluation import policy_evaluation_mo
+from morl_baselines.common.model_based.probabilistic_ensemble import (
+    ProbabilisticEnsemble,
+)
+from morl_baselines.common.model_based.utils import ModelEnv, visualize_eval
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import mlp
-from morl_baselines.common.performance_indicators import expected_utility
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
     equally_spaced_weights,
     layer_init,
+    log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
+    unique_tol,
 )
-from morl_baselines.multi_policy.gpi_pd.model.probabilistic_ensemble import (
-    ProbabilisticEnsemble,
-)
-from morl_baselines.multi_policy.gpi_pd.model.utils import ModelEnv, visualize_eval
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
@@ -111,9 +113,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         dynamics_buffer_size: int = 200000,
         dynamics_min_uncertainty: float = 2.0,
         dynamics_real_ratio: float = 0.1,
-        project_name: str = "MORL Baselines",
+        project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD Continuous Action",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """GPI-PD algorithm with continuous actions.
@@ -151,10 +155,12 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             dynamics_real_ratio (float, optional): The ratio of real data to use for the dynamics model. Defaults to 0.1.
             project_name (str, optional): The name of the project. Defaults to "MORL Baselines".
             experiment_name (str, optional): The name of the experiment. Defaults to "GPI-PD Continuous Action".
+            wandb_entity (Optional[str], optional): The wandb entity. Defaults to None.
             log (bool, optional): Whether to log to wandb. Defaults to True.
+            seed (Optional[int], optional): The seed to use. Defaults to None.
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.tau = tau
@@ -209,6 +215,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         self.policy_optim = optim.Adam(list(self.policy.parameters()), lr=self.learning_rate)
 
         self.dyna = dyna
+        self.dynamics = None
+        self.dynamics_buffer = None
         if self.dyna:
             self.dynamics = ProbabilisticEnsemble(
                 input_dim=self.observation_dim + self.action_dim,
@@ -234,7 +242,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self):
         """Get the configuration of the agent."""
@@ -259,6 +267,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             "dynamics_rollout_len": self.dynamics_rollout_len,
             "dynamics_min_uncertainty": self.dynamics_min_uncertainty,
             "dynamics_real_ratio": self.dynamics_real_ratio,
+            "dynamics_train_freq": self.dynamics_train_freq,
+            "dynamics_rollout_starts": self.dynamics_rollout_starts,
+            "dynamics_rollout_freq": self.dynamics_rollout_freq,
+            "dynamics_rollout_batch_size": self.dynamics_rollout_batch_size,
+            "seed": self.seed,
         }
 
     def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
@@ -465,7 +478,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
         """Set the weight support set."""
-        self.weight_support = [th.tensor(w).float().to(self.device) for w in weight_list]
+        weights_no_repeat = unique_tol(weight_list)
+        self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeat]
         if len(self.weight_support) > 0:
             self.stacked_weight_support = th.stack(self.weight_support)
 
@@ -539,9 +553,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval(eval_env, weights=weight, writer=self.writer)
-                plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
-                wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
-                plot.close()
+
+                if self.dyna and self.global_step >= self.dynamics_rollout_starts:
+                    plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
+                    wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
+                    plot.close()
 
             if terminated or truncated:
                 obs, info = self.env.reset()
@@ -558,32 +574,46 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def train(
         self,
-        eval_env,
+        total_timesteps: int,
+        eval_env: gymnasium.Env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
         weight_selection_algo: str = "gpi-ls",
         timesteps_per_iter: int = 10000,
-        max_iter: int = 10,
         eval_freq: int = 1000,
     ):
         """Train the agent.
 
         Args:
+            total_timesteps (int): Total number of timesteps to train the agent for.
             eval_env (gym.Env): Environment to use for evaluation.
+            ref_point (np.ndarray): Reference point for hypervolume calculation.
+            known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front, if known.
+            num_eval_weights_for_front (int): Number of weights to evaluate for the Pareto front.
+            num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             weight_selection_algo (str): Weight selection algorithm to use.
             timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
-            max_iter (int): Maximum number of iterations to train the agent for.
             eval_freq (int): Number of timesteps between evaluations during an iteration.
         """
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+        max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 
-        test_tasks = equally_spaced_weights(self.reward_dim, n=100, seed=42)
+        eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
 
         for iter in range(1, max_iter + 1):
             if weight_selection_algo == "ols" or weight_selection_algo == "gpi-ls":
                 if weight_selection_algo == "gpi-ls":
                     self.set_weight_support(linear_support.get_weight_support())
+                    use_gpi = self.use_gpi
                     self.use_gpi = True
-                    w = linear_support.next_weight(algo="gpi-ls", gpi_agent=self, env=eval_env)
-                    self.use_gpi = False
+                    w = linear_support.next_weight(
+                        algo="gpi-ls", gpi_agent=self, env=eval_env, rep_eval=num_eval_episodes_for_front
+                    )
+                    self.use_gpi = use_gpi
                 else:
                     w = linear_support.next_weight(algo="ols")
 
@@ -610,24 +640,33 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             )
 
             if weight_selection_algo == "ols":
-                value = policy_evaluation_mo(self, eval_env, w, rep=5)
+                value = policy_evaluation_mo(self, eval_env, w, rep=num_eval_episodes_for_front)[3]
                 linear_support.add_solution(value, w)
             elif weight_selection_algo == "gpi-ls":
                 for wcw in M:
-                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=5)
+                    n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
-            # Evaluation
-            gpi_returns_test_tasks = [
-                policy_evaluation_mo(self, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks
-            ]
-            mean_gpi_returns_test_tasks = np.mean([np.dot(w, q) for w, q in zip(test_tasks, gpi_returns_test_tasks)], axis=0)
-            wb.log(
-                {"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}
-            )  # This is the EU computed in the paper
-            eu = expected_utility(gpi_returns_test_tasks, test_tasks)
-            wb.log({"eval/EU - GPI": eu, "iteration": iter})
+            if self.log:
+                # Evaluation
+                gpi_returns_test_tasks = [
+                    policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
+                ]
+                log_all_multi_policy_metrics(
+                    current_front=gpi_returns_test_tasks,
+                    hv_ref_point=ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=known_pareto_front,
+                )
+                # This is the EU computed in the paper
+                mean_gpi_returns_test_tasks = np.mean(
+                    [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
+                )
+                wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
+            # Checkpoint
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()

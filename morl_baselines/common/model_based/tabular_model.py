@@ -15,7 +15,7 @@ class TabularModel:
         Args:
             deterministic: If True, the model is deterministic and the next state and reward are stored directly.
             prioritize: If True, the transitions are stored in a prioritized buffer.
-            max_size: The maximum size of the buffer.
+            max_size: The maximum size of the prioritized buffer.
         """
         self.deterministic = deterministic
         self.model = dict()

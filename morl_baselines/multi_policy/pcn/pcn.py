@@ -12,12 +12,8 @@ import torch.nn.functional as F
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import get_non_dominated_inds
-from morl_baselines.common.performance_indicators import (
-    expected_utility,
-    hypervolume,
-    sparsity,
-)
-from morl_baselines.common.utils import random_weights
+from morl_baselines.common.performance_indicators import hypervolume
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 
 
 def crowding_distance(points):
@@ -106,7 +102,9 @@ class PCN(MOAgent, MOPolicy):
         hidden_dim: int = 64,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "PCN",
-        log: bool = False,
+        wandb_entity: Optional[str] = None,
+        log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ) -> None:
         """Initialize PCN agent.
@@ -120,10 +118,12 @@ class PCN(MOAgent, MOPolicy):
             hidden_dim (int, optional): Hidden dimension. Defaults to 64.
             project_name (str, optional): Name of the project for wandb. Defaults to "MORL-Baselines".
             experiment_name (str, optional): Name of the experiment for wandb. Defaults to "PCN".
-            log (bool, optional): Whether to log to wandb. Defaults to False.
+            wandb_entity (Optional[str], optional): Entity for wandb. Defaults to None.
+            log (bool, optional): Whether to log to wandb. Defaults to True.
+            seed (Optional[int], optional): Seed for reproducibility. Defaults to None.
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
 
         self.experience_replay = []  # List of (distance, time_step, transition)
@@ -142,29 +142,31 @@ class PCN(MOAgent, MOPolicy):
 
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self) -> dict:
         """Get configuration of PCN model."""
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "batch_size": self.batch_size,
             "gamma": self.gamma,
             "learning_rate": self.learning_rate,
             "hidden_dim": self.hidden_dim,
             "scaling_factor": self.scaling_factor,
+            "seed": self.seed,
         }
 
-    def update(self) -> None:
+    def update(self):
         """Update PCN model."""
         batch = []
         # randomly choose episodes from experience buffer
-        s_i = np.random.choice(np.arange(len(self.experience_replay)), size=self.batch_size, replace=True)
+        s_i = self.np_random.choice(np.arange(len(self.experience_replay)), size=self.batch_size, replace=True)
         for i in s_i:
             # episode is tuple (return, transitions)
             ep = self.experience_replay[i][2]
             # choose random timestep from episode,
             # use it's return and leftover timesteps as desired return and horizon
-            t = np.random.randint(0, len(ep))
+            t = self.np_random.integers(0, len(ep))
             # reward contains return until end of episode
             s_t, a_t, r_t, h_t = ep[t].observation, ep[t].action, np.float32(ep[t].reward), np.float32(len(ep) - t)
             batch.append((s_t, a_t, r_t, h_t))
@@ -239,15 +241,15 @@ class PCN(MOAgent, MOPolicy):
         returns = np.array(returns)[nd_i]
         horizons = np.array(horizons)[nd_i]
         # pick random return from random best episode
-        r_i = np.random.randint(0, len(returns))
+        r_i = self.np_random.integers(0, len(returns))
         desired_horizon = np.float32(horizons[r_i] - 2)
         # mean and std per objective
         _, s = np.mean(returns, axis=0), np.std(returns, axis=0)
         # desired return is sampled from [M, M+S], to try to do better than mean return
         desired_return = returns[r_i].copy()
         # random objective
-        r_i = np.random.randint(0, len(desired_return))
-        desired_return[r_i] += np.random.uniform(high=s[r_i])
+        r_i = self.np_random.integers(0, len(desired_return))
+        desired_return[r_i] += self.np_random.uniform(high=s[r_i])
         desired_return = np.float32(desired_return)
         return desired_return, desired_horizon
 
@@ -258,7 +260,7 @@ class PCN(MOAgent, MOPolicy):
             th.tensor([desired_horizon]).unsqueeze(1).float().to(self.device),
         )
         log_probs = log_probs.detach().cpu().numpy()[0]
-        action = np.random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
+        action = self.np_random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
         return action
 
     def _run_episode(self, env, desired_return, desired_horizon, max_return):
@@ -311,8 +313,7 @@ class PCN(MOAgent, MOPolicy):
                 transitions[i].reward += self.gamma * transitions[i + 1].reward
             e_returns.append(transitions[0].reward)
 
-        e_returns = np.array(e_returns)
-        distances = np.linalg.norm(np.array(returns) - e_returns, axis=-1)
+        distances = np.linalg.norm(np.array(returns) - np.array(e_returns), axis=-1)
         return e_returns, np.array(returns), distances
 
     def save(self, filename: str = "PCN_model", savedir: str = "weights"):
@@ -323,16 +324,31 @@ class PCN(MOAgent, MOPolicy):
 
     def train(
         self,
-        env: gym.Env,
+        total_timesteps: int,
+        eval_env: gym.Env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         num_er_episodes: int = 500,
-        total_time_steps: int = 1e7,
         num_step_episodes: int = 10,
         num_model_updates: int = 100,
-        max_return: float = 250.0,
+        max_return: np.ndarray = 250.0,
         max_buffer_size: int = 500,
-        ref_point: np.ndarray = np.array([0.0, 0.0]),
     ):
-        """Train PCN."""
+        """Train PCN.
+
+        Args:
+            total_timesteps: total number of time steps to train for
+            eval_env: environment for evaluation
+            ref_point: reference point for hypervolume calculation
+            known_pareto_front: Optimal pareto front for metrics calculation, if known.
+            num_er_episodes: number of episodes to fill experience replay buffer
+            num_step_episodes: number of steps per episode
+            num_model_updates: number of model updates per episode
+            max_return: maximum return for clipping desired return
+            max_buffer_size: maximum buffer size
+        """
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0
@@ -341,11 +357,11 @@ class PCN(MOAgent, MOPolicy):
         self.experience_replay = []
         for _ in range(num_er_episodes):
             transitions = []
-            obs, _ = env.reset()
+            obs, _ = self.env.reset()
             done = False
             while not done:
-                action = env.action_space.sample()
-                n_obs, reward, terminated, truncated, _ = env.step(action)
+                action = self.env.action_space.sample()
+                n_obs, reward, terminated, truncated, _ = self.env.step(action)
                 transitions.append(Transition(obs, action, np.float32(reward).copy(), n_obs, terminated))
                 done = terminated or truncated
                 obs = n_obs
@@ -353,7 +369,7 @@ class PCN(MOAgent, MOPolicy):
             # add episode in-place
             self._add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
 
-        while self.global_step < total_time_steps:
+        while self.global_step < total_timesteps:
             loss = []
             entropy = []
             for _ in range(num_model_updates):
@@ -379,7 +395,7 @@ class PCN(MOAgent, MOPolicy):
             returns = []
             horizons = []
             for _ in range(num_step_episodes):
-                transitions = self._run_episode(env, desired_return, desired_horizon, max_return)
+                transitions = self._run_episode(self.env, desired_return, desired_horizon, max_return)
                 self.global_step += len(transitions)
                 self._add_episode(transitions, max_size=max_buffer_size, step=self.global_step)
                 returns.append(transitions[0].reward)
@@ -405,17 +421,18 @@ class PCN(MOAgent, MOPolicy):
                 f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"
             )
 
-            if self.global_step >= (n_checkpoints + 1) * total_time_steps / 100:
+            if self.global_step >= (n_checkpoints + 1) * total_timesteps / 100:
                 self.save()
                 n_checkpoints += 1
                 n_points = 10
-                e_returns, _, _ = self.evaluate(env, max_return, n=n_points)
+                e_returns, _, _ = self.evaluate(eval_env, max_return, n=n_points)
 
                 if self.log:
-                    self.writer.add_scalar("eval/hypervolume", hypervolume(ref_point, e_returns), self.global_step)
-                    self.writer.add_scalar("eval/spartsity", sparsity(e_returns), self.global_step)
-                    self.writer.add_scalar(
-                        "eval/expected_utility",
-                        expected_utility(e_returns, weights_set=random_weights(dim=self.reward_dim, n=100, dist="dirichlet")),
-                        self.global_step,
+                    log_all_multi_policy_metrics(
+                        current_front=e_returns,
+                        hv_ref_point=ref_point,
+                        reward_dim=self.reward_dim,
+                        global_step=self.global_step,
+                        writer=self.writer,
+                        ref_front=known_pareto_front,
                     )

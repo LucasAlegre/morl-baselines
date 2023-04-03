@@ -7,6 +7,7 @@ import gymnasium as gym
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
+from morl_baselines.common.model_based.tabular_model import TabularModel
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.scalarization import weighted_sum
 from morl_baselines.common.utils import linearly_decaying_value, log_episode_info
@@ -31,10 +32,15 @@ class MOQLearning(MOPolicy, MOAgent):
         final_epsilon: float = 0.1,
         epsilon_decay_steps: int = None,
         learning_starts: int = 0,
+        dyna: bool = False,
+        dyna_updates: int = 5,
         project_name: str = "MORL-baselines",
-        experiment_name: str = "MO-Q-Learning",
+        experiment_name: str = "MO Q-Learning",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         parent_writer: Optional[SummaryWriter] = None,
+        parent_rng: Optional[np.random.Generator] = None,
     ):
         """Initializes the MOQ-learning algorithm.
 
@@ -49,15 +55,26 @@ class MOQLearning(MOPolicy, MOAgent):
             final_epsilon: The final epsilon value
             epsilon_decay_steps: The number of steps to decay epsilon over
             learning_starts: The number of steps to wait before starting to learn
+            dyna: Whether to use Dyna-Q or not
+            dyna_updates: The number of Dyna-Q updates to perform each step
             project_name: The name of the project used for logging
             experiment_name: The name of the experiment used for logging
+            wandb_entity: The entity to use for logging
             log: Whether to log or not
+            seed: The seed to use for the experiment
             parent_writer: The writer to use for logging. If None, a new writer is created.
+            parent_rng: The random number generator to use. If None, a new one is created.
         """
         MOAgent.__init__(self, env)
         MOPolicy.__init__(self, id)
         self.learning_rate = learning_rate
         self.id = id
+        self.seed = seed
+        if parent_rng is not None:
+            self.np_random = parent_rng
+        else:
+            self.np_random = np.random.default_rng(self.seed)
+
         if self.id is not None:
             self.idstr = f"_{self.id}"
         else:
@@ -68,25 +85,37 @@ class MOQLearning(MOPolicy, MOAgent):
         self.final_epsilon = final_epsilon
         self.epsilon_decay_steps = epsilon_decay_steps
         self.learning_starts = learning_starts
+        self.dyna = dyna
+        self.dyna_updates = dyna_updates
 
         self.weights = weights
         self.scalarization = scalarization
 
         self.q_table = dict()
 
+        if self.dyna:
+            self.model = TabularModel()
+
         self.log = log
         if parent_writer is not None:
             self.writer = parent_writer
         if self.log and parent_writer is None:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def __act(self, obs: np.array):
         # epsilon-greedy
-        coin = np.random.rand()
+        coin = self.np_random.random()
         if coin < self.epsilon:
             return int(self.env.action_space.sample())
         else:
             return self.eval(obs)
+
+    def scalarized_q_values(self, obs, w: np.ndarray) -> np.ndarray:
+        """Returns the scalarized Q values for each action, given observation and weights."""
+        t_obs = tuple(obs)
+        if t_obs not in self.q_table:
+            return np.zeros(self.action_dim)
+        return np.array([self.scalarization(state_action_value, w) for state_action_value in self.q_table[t_obs]])
 
     @override
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
@@ -101,9 +130,7 @@ class MOQLearning(MOPolicy, MOAgent):
 
     @override
     def update(self):
-        """
-        Updates the Q table
-        """
+        """Updates the Q table."""
         obs = tuple(self.obs)
         next_obs = tuple(self.next_obs)
         if obs not in self.q_table:
@@ -114,6 +141,19 @@ class MOQLearning(MOPolicy, MOAgent):
         max_q = self.q_table[next_obs][self.eval(self.next_obs)]
         td_error = self.reward + (1 - self.terminated) * self.gamma * max_q - self.q_table[obs][self.action]
         self.q_table[obs][self.action] += self.learning_rate * td_error
+
+        # Dyna updates
+        if self.dyna:
+            self.model.update(obs, self.action, self.reward, next_obs, self.terminated)
+            for _ in range(self.dyna_updates):
+                s, a, r, next_s, terminal = self.model.random_transition()
+                if s not in self.q_table:
+                    self.q_table[s] = np.zeros((self.action_dim, self.reward_dim))
+                if next_s not in self.q_table:
+                    self.q_table[next_s] = np.zeros((self.action_dim, self.reward_dim))
+                max_q = self.q_table[next_s][self.eval(next_s)]
+                model_td = r + (1 - terminal) * self.gamma * max_q - self.q_table[s][a]
+                self.q_table[s][a] += self.learning_rate * model_td
 
         if self.epsilon_decay_steps is not None:
             self.epsilon = linearly_decaying_value(
@@ -136,13 +176,17 @@ class MOQLearning(MOPolicy, MOAgent):
     @override
     def get_config(self) -> dict:
         return {
+            "env_id": self.env.unwrapped.spec.id,
             "alpha": self.learning_rate,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
             "final_epsilon": self.final_epsilon,
             "epsilon_decay_steps": self.epsilon_decay_steps,
+            "dyna": self.dyna,
+            "dyna_updates": self.dyna_updates,
             "weight": self.weights,
             "scalarization": self.scalarization.__name__,
+            "seed": self.seed,
         }
 
     def train(
@@ -183,7 +227,7 @@ class MOQLearning(MOPolicy, MOAgent):
             self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=self.weights, writer=self.writer)
+                self.policy_eval(eval_env, scalarization=self.scalarization, weights=self.weights, writer=self.writer)
 
             if self.terminated or self.truncated:
                 self.obs, _ = self.env.reset()
@@ -191,7 +235,6 @@ class MOQLearning(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and self.global_step % 1000 == 0:
-                    print("SPS:", int(self.global_step / (time.time() - start_time)))
                     self.writer.add_scalar(
                         f"charts{self.idstr}/SPS",
                         int(self.global_step / (time.time() - start_time)),
@@ -205,6 +248,7 @@ class MOQLearning(MOPolicy, MOAgent):
                             self.global_step,
                             self.id,
                             self.writer,
+                            verbose=False,
                         )
             else:
                 self.obs = self.next_obs

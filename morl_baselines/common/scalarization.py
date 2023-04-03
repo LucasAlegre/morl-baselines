@@ -3,12 +3,12 @@ import numpy as np
 from pymoo.decomposition.tchebicheff import Tchebicheff
 
 
-def weighted_sum(weights: np.ndarray, reward: np.ndarray) -> float:
+def weighted_sum(reward: np.ndarray, weights: np.ndarray) -> float:
     """Weighted sum scalarization (numpy dot product).
 
     Args:
-        weights: Weight vector
         reward: Reward vector
+        weights: Weight vector
 
     Returns:
         float: Weighted sum
@@ -31,7 +31,7 @@ def tchebicheff(tau: float, reward_dim: int):
     best_so_far = [float("-inf") for _ in range(reward_dim)]
     tch = Tchebicheff()
 
-    def thunk(weights: np.ndarray, reward: np.ndarray):
+    def thunk(reward: np.ndarray, weights: np.ndarray):
         for i, r in enumerate(reward):
             if best_so_far[i] < r + tau:
                 best_so_far[i] = r + tau

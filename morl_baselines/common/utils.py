@@ -1,12 +1,24 @@
 """General utils for the MORL baselines."""
 import math
 from typing import Callable, Iterable, List, Optional
+import os
+import random
+from typing import Iterable, List, Optional
 
 import numpy as np
 import torch as th
+import wandb
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
+
+from morl_baselines.common.performance_indicators import (
+    expected_utility,
+    hypervolume,
+    igd,
+    maximum_utility_loss,
+    sparsity,
+)
 
 
 @th.no_grad()
@@ -104,6 +116,21 @@ def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, fin
     return value
 
 
+def unique_tol(a: List[np.ndarray], tol=1e-4) -> List[np.ndarray]:
+    """Returns unique elements of a list of np.arrays, within a tolerance."""
+    if len(a) == 0:
+        return a
+    delete = np.array([False] * len(a))
+    a = np.array(a)
+    for i in range(len(a)):
+        if delete[i]:
+            continue
+        for j in range(i + 1, len(a)):
+            if np.allclose(a[i], a[j], tol):
+                delete[j] = True
+    return list(a[~delete])
+
+
 def extrema_weights(dim: int) -> List[np.ndarray]:
     """Generate weight vectors in the extrema of the weight simplex. That is, one element is 1 and the rest are 0.
 
@@ -113,7 +140,7 @@ def extrema_weights(dim: int) -> List[np.ndarray]:
     return list(np.eye(dim, dtype=np.float32))
 
 
-def equally_spaced_weights(dim: int, n: int, seed: Optional[int] = None) -> List[np.ndarray]:
+def equally_spaced_weights(dim: int, n: int, seed: int = 42) -> List[np.ndarray]:
     """Generate weight vectors that are equally spaced in the weight simplex.
 
     It uses the Riesz s-Energy method from pymoo: https://pymoo.org/misc/reference_directions.html
@@ -126,22 +153,23 @@ def equally_spaced_weights(dim: int, n: int, seed: Optional[int] = None) -> List
     return list(get_reference_directions("energy", dim, n, seed=seed))
 
 
-def random_weights(dim: int, seed: Optional[int] = None, n: int = 1, dist: str = "gaussian") -> np.ndarray:
+def random_weights(
+    dim: int, n: int = 1, dist: str = "dirichlet", seed: Optional[int] = None, rng: Optional[np.random.Generator] = None
+) -> np.ndarray:
     """Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1.
 
     Args:
         dim: size of the weight vector
-        seed: random seed
         n : number of weight vectors to generate
-        dist: distribution to use, either 'gaussian' or 'dirichlet'
+        dist: distribution to use, either 'gaussian' or 'dirichlet'. Default is 'dirichlet' as it is equivalent to sampling uniformly from the weight simplex.
+        seed: random seed
+        rng: random number generator
     """
-    if seed is not None:
+    if rng is None:
         rng = np.random.default_rng(seed)
-    else:
-        rng = np.random
 
     if dist == "gaussian":
-        w = np.random.randn(n, dim)
+        w = rng.standard_normal((n, dim))
         w = np.abs(w) / np.linalg.norm(w, ord=1, axis=1, keepdims=True)
     elif dist == "dirichlet":
         w = rng.dirichlet(np.ones(dim), n)
@@ -199,6 +227,7 @@ def log_episode_info(
     global_timestep: int,
     id: Optional[int] = None,
     writer: Optional[SummaryWriter] = None,
+    verbose: bool = True,
 ):
     """Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).
 
@@ -209,6 +238,7 @@ def log_episode_info(
         global_timestep: global timestep
         id: agent's id
         writer: wandb writer
+        verbose: whether to print the episode info
     """
     episode_ts = info["l"]
     episode_time = info["t"]
@@ -218,13 +248,14 @@ def log_episode_info(
         scal_return = scalarization(episode_return)
         disc_scal_return = scalarization(disc_episode_return)
     else:
-        scal_return = scalarization(weights, episode_return)
-        disc_scal_return = scalarization(weights, disc_episode_return)
+        scal_return = scalarization(episode_return, weights)
+        disc_scal_return = scalarization(disc_episode_return, weights)
 
-    print("Episode infos:")
-    print(f"Steps: {episode_ts}, Time: {episode_time}")
-    print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")
-    print(f"Scalarized Reward: {scal_return}, Discounted: {disc_scal_return}")
+    if verbose:
+        print("Episode infos:")
+        print(f"Steps: {episode_ts}, Time: {episode_time}")
+        print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")
+        print(f"Scalarized Reward: {scal_return}, Discounted: {disc_scal_return}")
 
     if writer is not None:
         if id is not None:
@@ -253,6 +284,59 @@ def log_episode_info(
             )
 
 
+def log_all_multi_policy_metrics(
+    current_front: List[np.ndarray],
+    hv_ref_point: np.ndarray,
+    reward_dim: int,
+    global_step: int,
+    writer: SummaryWriter,
+    n_sample_weights: int = 50,
+    ref_front: Optional[List[np.ndarray]] = None,
+):
+    """Logs all metrics for multi-policy training.
+
+    Logged metrics:
+    - hypervolume
+    - sparsity
+    - expected utility metric (EUM)
+    If a reference front is provided, also logs:
+    - Inverted generational distance (IGD)
+    - Maximum utility loss (MUL)
+
+    Args:
+        current_front (List) : current Pareto front approximation, computed in an evaluation step
+        hv_ref_point: reference point for hypervolume computation
+        reward_dim: number of objectives
+        global_step: global step for logging
+        writer: wandb writer
+        n_sample_weights: number of weights to sample for EUM and MUL computation
+        ref_front: reference front, if known
+    """
+    hv = hypervolume(hv_ref_point, current_front)
+    sp = sparsity(current_front)
+    eum = expected_utility(current_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
+
+    writer.add_scalar("eval/hypervolume", hv, global_step=global_step)
+    writer.add_scalar("eval/sparsity", sp, global_step=global_step)
+    writer.add_scalar("eval/eum", eum, global_step=global_step)
+    front = wandb.Table(
+        columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
+        data=[p.tolist() for p in current_front],
+    )
+    wandb.log({"eval/front": front}, step=global_step)
+
+    # If PF is known, log the additional metrics
+    if ref_front is not None:
+        generational_distance = igd(known_front=ref_front, current_estimate=current_front)
+        writer.add_scalar("eval/igd", generational_distance, global_step=global_step)
+        mul = maximum_utility_loss(
+            front=current_front,
+            reference_set=ref_front,
+            weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32),
+        )
+        writer.add_scalar("eval/mul", mul, global_step=global_step)
+
+
 def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, length: int = 300):
     """Render an episode and save it as a gif."""
     assert "rgb_array" in env.metadata["render_modes"], "Environment does not have rgb_array rendering."
@@ -272,3 +356,21 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
     clip = ImageSequenceClip(list(frames), fps=fps)
     clip.write_gif(fullpath + ".gif", fps=fps)
     print("Saved gif at: " + fullpath + ".gif")
+
+
+def seed_everything(seed: int):
+    """Set random seeds for reproducibility.
+
+    This function should be called only once per python process, preferably at the beginning of the main script.
+    It has global effects on the random state of the python process, so it should be used with care.
+
+    Args:
+        seed: random seed
+    """
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    th.manual_seed(seed)
+    th.cuda.manual_seed(seed)
+    th.backends.cudnn.deterministic = True
+    th.backends.cudnn.benchmark = True

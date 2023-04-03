@@ -94,10 +94,12 @@ class EUPG(MOPolicy, MOAgent):
         learning_rate: float = 1e-3,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "EUPG",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
         log_every: int = 100,
         parent_writer: Optional[SummaryWriter] = None,
         device: Union[th.device, str] = "auto",
+        seed: Optional[int] = None,
     ):
         """Initialize the EUPG algorithm.
 
@@ -112,12 +114,14 @@ class EUPG(MOPolicy, MOAgent):
             learning_rate: Learning rate (alpha)
             project_name: Name of the project (for logging)
             experiment_name: Name of the experiment (for logging)
+            wandb_entity: Entity to use for wandb
             log: Whether to log or not
             log_every: Log every n episodes
             parent_writer: Parent writer (for logging)
             device: Device to use for NN. Can be "cpu", "cuda" or "auto".
+            seed: Seed for the random number generator
         """
-        MOAgent.__init__(self, env, device)
+        MOAgent.__init__(self, env, device, seed=seed)
         MOPolicy.__init__(self, None, device)
 
         self.env = env
@@ -161,7 +165,7 @@ class EUPG(MOPolicy, MOAgent):
         if parent_writer is not None:
             self.writer = parent_writer
         if log and parent_writer is None:
-            self.setup_wandb(self.project_name, self.experiment_name)
+            self.setup_wandb(self.project_name, self.experiment_name, wandb_entity)
 
     def __deepcopy__(self, memo):
         """Deep copy the policy."""
@@ -233,7 +237,7 @@ class EUPG(MOPolicy, MOAgent):
         ) = self.buffer.get_all_data(to_tensor=True, device=self.device)
         # Scalarized episodic reward, our target :-)
         episodic_return = th.sum(rewards, dim=0)
-        scalarized_return = self.scalarization(self.weights, episodic_return.cpu().numpy())
+        scalarized_return = self.scalarization(episodic_return.cpu().numpy(), self.weights)
         scalarized_return = th.scalar_tensor(scalarized_return).to(self.device)
 
         # For each sample in the batch, get the distribution over actions
@@ -320,9 +324,10 @@ class EUPG(MOPolicy, MOAgent):
     @override
     def get_config(self) -> dict:
         return {
-            # "env_id": self.env.unwrapped.spec.id,
+            "env_id": self.env.unwrapped.spec.id,
             "learning_rate": self.learning_rate,
             "buffer_size": self.buffer_size,
             "gamma": self.gamma,
             "net_arch": self.net_arch,
+            "seed": self.seed,
         }

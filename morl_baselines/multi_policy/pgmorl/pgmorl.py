@@ -4,7 +4,6 @@ Some code in this file has been adapted from the original code provided by the a
 (!) Limited to 2 objectives for now.
 (!) The post-processing phase has not been implemented yet.
 """
-import random
 import time
 from copy import deepcopy
 from typing import List, Optional, Tuple, Union
@@ -19,6 +18,7 @@ from scipy.optimize import least_squares
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.common.performance_indicators import hypervolume, sparsity
+from morl_baselines.common.utils import log_all_multi_policy_metrics
 from morl_baselines.single_policy.ser.mo_ppo import MOPPO, MOPPONet, make_env
 
 
@@ -289,13 +289,12 @@ class PGMORL(MOAgent):
 
     def __init__(
         self,
-        env_id: str = "mo-halfcheetah-v4",
-        ref_point: np.ndarray = np.array([0.0, -5.0]),
+        env_id: str,
+        origin: np.ndarray,
         num_envs: int = 4,
         pop_size: int = 6,
         warmup_iterations: int = 80,
         steps_per_iteration: int = 2048,
-        limit_env_steps: int = int(5e6),
         evolutionary_iterations: int = 20,
         num_weight_candidates: int = 7,
         num_performance_buffer: int = 100,
@@ -307,8 +306,8 @@ class PGMORL(MOAgent):
         gamma: float = 0.995,
         project_name: str = "MORL-baselines",
         experiment_name: str = "PGMORL",
-        seed: int = 0,
-        torch_deterministic: bool = True,
+        wandb_entity: Optional[str] = None,
+        seed: Optional[int] = None,
         log: bool = True,
         net_arch: List = [64, 64],
         num_minibatches: int = 32,
@@ -330,12 +329,11 @@ class PGMORL(MOAgent):
 
         Args:
             env_id: environment id
-            ref_point: reference point for the hypervolume calculation
+            origin: reference point to make the objectives positive in the performance buffer
             num_envs: number of environments to use (VectorizedEnvs)
             pop_size: population size
             warmup_iterations: number of warmup iterations
             steps_per_iteration: number of steps per iteration
-            limit_env_steps: limit the number of environment steps
             evolutionary_iterations: number of evolutionary iterations
             num_weight_candidates: number of weight candidates
             num_performance_buffer: number of performance buffers
@@ -347,8 +345,8 @@ class PGMORL(MOAgent):
             gamma: discount factor
             project_name: name of the project. Usually MORL-baselines.
             experiment_name: name of the experiment. Usually PGMORL.
+            wandb_entity: wandb entity, defaults to None.
             seed: seed for the random number generator
-            torch_deterministic: whether to use deterministic torch operations
             log: whether to log the results
             net_arch: number of units per layer
             num_minibatches: number of minibatches
@@ -366,7 +364,7 @@ class PGMORL(MOAgent):
             gae_lambda: lambda parameter for GAE
             device: device on which the code should run
         """
-        super().__init__(env, device=device)
+        super().__init__(env, device=device, seed=seed)
         # Env dimensions
         self.tmp_env = mo_gym.make(env_id)
         self.extract_env_info(self.tmp_env)
@@ -375,7 +373,6 @@ class PGMORL(MOAgent):
         assert isinstance(self.action_space, gym.spaces.Box), "only continuous action space is supported"
         self.tmp_env.close()
         self.gamma = gamma
-        self.ref_point = ref_point
 
         # EA parameters
         self.pop_size = pop_size
@@ -386,16 +383,13 @@ class PGMORL(MOAgent):
         self.min_weight = min_weight
         self.max_weight = max_weight
         self.delta_weight = delta_weight
-        self.limit_env_steps = limit_env_steps
-        self.max_iterations = self.limit_env_steps // self.steps_per_iteration // self.num_envs
-        self.iteration = 0
         self.num_performance_buffer = num_performance_buffer
         self.performance_buffer_size = performance_buffer_size
         self.archive = ParetoArchive()
         self.population = PerformanceBuffer(
             num_bins=self.num_performance_buffer,
             max_size=self.performance_buffer_size,
-            origin=self.ref_point,
+            origin=origin,
         )
         self.predictor = PerformancePredictor()
 
@@ -417,26 +411,20 @@ class PGMORL(MOAgent):
         self.gae_lambda = gae_lambda
         self.gae = gae
 
-        # seeding
-        self.seed = seed
-        random.seed(self.seed)
-        np.random.seed(self.seed)
-        th.manual_seed(self.seed)
-        th.backends.cudnn.deterministic = torch_deterministic
-
         # env setup
         if env is None:
-            self.env = mo_gym.MOSyncVectorEnv(
-                # Video recording is disabled since broken for now
-                [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(1, self.num_envs + 1)]
-            )
+            if self.seed is not None:
+                envs = [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
+            else:
+                envs = [make_env(env_id, i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
+            self.env = mo_gym.MOSyncVectorEnv(envs)
         else:
             raise ValueError("Environments should be vectorized for PPO. You should provide an environment id instead.")
 
         # Logging
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
         else:
             self.writer = None
 
@@ -477,6 +465,7 @@ class PGMORL(MOAgent):
                 target_kl=self.target_kl,
                 gae=self.gae,
                 gae_lambda=self.gae_lambda,
+                rng=self.np_random,
             )
             for i in range(self.pop_size)
         ]
@@ -485,14 +474,10 @@ class PGMORL(MOAgent):
     def get_config(self) -> dict:
         return {
             "env_id": self.env_id,
-            "ref_point": self.ref_point,
             "num_envs": self.num_envs,
             "pop_size": self.pop_size,
             "warmup_iterations": self.warmup_iterations,
             "evolutionary_iterations": self.evolutionary_iterations,
-            "steps_per_iteration": self.steps_per_iteration,
-            "limit_env_steps": self.limit_env_steps,
-            "max_iterations": self.max_iterations,
             "num_weight_candidates": self.num_weight_candidates,
             "num_performance_buffer": self.num_performance_buffer,
             "performance_buffer_size": self.performance_buffer_size,
@@ -518,11 +503,17 @@ class PGMORL(MOAgent):
             "gae_lambda": self.gae_lambda,
         }
 
-    def __train_all_agents(self):
+    def __train_all_agents(self, iteration: int, max_iterations: int):
         for i, agent in enumerate(self.agents):
-            agent.train(self.start_time, self.iteration, self.max_iterations)
+            agent.train(self.start_time, iteration, max_iterations)
 
-    def __eval_all_agents(self, evaluations_before_train: List[np.ndarray], add_to_prediction: bool = True):
+    def __eval_all_agents(
+        self,
+        evaluations_before_train: List[np.ndarray],
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        add_to_prediction: bool = True,
+    ):
         """Evaluates all agents and store their current performances on the buffer and pareto archive."""
         for i, agent in enumerate(self.agents):
             _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], weights=agent.weights, writer=self.writer)
@@ -540,15 +531,19 @@ class PGMORL(MOAgent):
         if self.log:
             print("Current pareto archive:")
             print(self.archive.evaluations)
-            hv = hypervolume(self.ref_point, self.archive.evaluations)
-            sp = sparsity(self.archive.evaluations)
-            self.writer.add_scalar("charts/hypervolume", hv, self.iteration)
-            self.writer.add_scalar("charts/sparsity", sp, self.iteration)
+            log_all_multi_policy_metrics(
+                current_front=self.archive.evaluations,
+                hv_ref_point=ref_point,
+                reward_dim=self.reward_dim,
+                global_step=self.global_step,
+                writer=self.writer,
+                ref_front=known_pareto_front,
+            )
 
-    def __task_weight_selection(self):
+    def __task_weight_selection(self, ref_point: np.ndarray):
         """Chooses agents and weights to train at the next iteration based on the current population and prediction model."""
         candidate_weights = generate_weights(self.delta_weight / 2.0)  # Generates more weights than agents
-        np.random.shuffle(candidate_weights)  # Randomize
+        self.np_random.shuffle(candidate_weights)  # Randomize
 
         current_front = deepcopy(self.archive.evaluations)
         population = self.population.individuals
@@ -582,7 +577,7 @@ class PGMORL(MOAgent):
                 )
                 # optimization criterion is a hypervolume - sparsity
                 mixture_metrics = [
-                    hypervolume(self.ref_point, current_front + [predicted_eval]) - sparsity(current_front + [predicted_eval])
+                    hypervolume(ref_point, current_front + [predicted_eval]) - sparsity(current_front + [predicted_eval])
                     for predicted_eval in predicted_evals
                 ]
                 # Best among all the weights for the current candidate
@@ -615,28 +610,39 @@ class PGMORL(MOAgent):
                 f"current eval: {best_eval} - estimated next: {best_predicted_eval} - deltas {(best_predicted_eval - best_eval)}"
             )
 
-    def train(self):
+    def train(
+        self,
+        total_timesteps: int,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+    ):
         """Trains the agents."""
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+        max_iterations = total_timesteps // self.steps_per_iteration // self.num_envs
+        iteration = 0
         # Init
         current_evaluations = [np.zeros(self.reward_dim) for _ in range(len(self.agents))]
-        self.__eval_all_agents(current_evaluations, add_to_prediction=False)
+        self.__eval_all_agents(
+            current_evaluations, ref_point=ref_point, known_pareto_front=known_pareto_front, add_to_prediction=False
+        )
         self.start_time = time.time()
 
         # Warmup
         for i in range(1, self.warmup_iterations + 1):
-            print(f"Warmup iteration #{self.iteration}")
+            print(f"Warmup iteration #{iteration}")
             if self.log:
                 self.writer.add_scalar("charts/warmup_iterations", i)
-            self.__train_all_agents()
-            self.iteration += 1
-        self.__eval_all_agents(current_evaluations)
+            self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
+            iteration += 1
+        self.__eval_all_agents(current_evaluations, ref_point=ref_point, known_pareto_front=known_pareto_front)
 
         # Evolution
-        max_iterations = max(self.max_iterations, self.warmup_iterations + self.evolutionary_iterations)
+        max_iterations = max(max_iterations, self.warmup_iterations + self.evolutionary_iterations)
         evolutionary_generation = 1
-        while self.iteration < max_iterations:
+        while iteration < max_iterations:
             # Every evolutionary iterations, change the task - weight assignments
-            self.__task_weight_selection()
+            self.__task_weight_selection(ref_point=ref_point)
             print(f"Evolutionary generation #{evolutionary_generation}")
             if self.log:
                 self.writer.add_scalar("charts/evolutionary_generation", evolutionary_generation)
@@ -644,14 +650,14 @@ class PGMORL(MOAgent):
             for _ in range(self.evolutionary_iterations):
                 # Run training of every agent for evolutionary iterations.
                 if self.log:
-                    print(f"Evolutionary iteration #{self.iteration - self.warmup_iterations}")
+                    print(f"Evolutionary iteration #{iteration - self.warmup_iterations}")
                     self.writer.add_scalar(
                         "charts/evolutionary_iterations",
-                        self.iteration - self.warmup_iterations,
+                        iteration - self.warmup_iterations,
                     )
-                self.__train_all_agents()
-                self.iteration += 1
-            self.__eval_all_agents(current_evaluations)
+                self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
+                iteration += 1
+            self.__eval_all_agents(current_evaluations, ref_point=ref_point, known_pareto_front=known_pareto_front)
             evolutionary_generation += 1
 
         print("Done training!")

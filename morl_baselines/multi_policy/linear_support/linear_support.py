@@ -7,8 +7,8 @@ import cdd
 import cvxpy as cp
 import numpy as np
 from gymnasium.core import Env
-from mo_gymnasium.evaluation import policy_evaluation_mo
 
+from morl_baselines.common.evaluation import policy_evaluation_mo
 from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.utils import extrema_weights
@@ -33,9 +33,9 @@ class LinearSupport:
         self,
         num_objectives: int,
         epsilon: float = 0.0,
-        verbose: bool = False,
+        verbose: bool = True,
     ):
-        """Initialize LS.
+        """Initialize Linear Support.
 
         Args:
             num_objectives (int): Number of objectives
@@ -80,12 +80,12 @@ class LinearSupport:
                 elif algo == "gpi-ls":
                     if gpi_agent is None:
                         raise ValueError("GPI-LS requires passing a GPI agent.")
-                    gpi_expanded_set = [policy_evaluation_mo(gpi_agent, env, wc, rep=rep_eval) for wc in W_corner]
+                    gpi_expanded_set = [policy_evaluation_mo(gpi_agent, env, wc, rep=rep_eval)[3] for wc in W_corner]
                     priority = self.gpi_ls_priority(wc, gpi_expanded_set)
 
                 if self.epsilon is None or priority >= self.epsilon:
                     # OLS does not try the same weight vector twice
-                    if not (algo == "ols" and any([np.allclose(wc, w) for (p, w) in self.visited_weights])):
+                    if not (algo == "ols" and any([np.allclose(wc, wv) for wv in self.visited_weights])):
                         self.queue.append((priority, wc))
 
             if len(self.queue) > 0:
@@ -99,9 +99,14 @@ class LinearSupport:
             print("CCS:", self.ccs, "CCS size:", len(self.ccs))
 
         if len(self.queue) == 0:
+            if self.verbose:
+                print("There are no corner weights in the queue. Returning None.")
             return None
         else:
-            return self.queue.pop(0)[1]
+            next_w = self.queue.pop(0)[1]
+            if self.verbose:
+                print("Next weight:", next_w)
+            return next_w
 
     def get_weight_support(self) -> List[np.ndarray]:
         """Returns the weight support of the CCS.
@@ -149,7 +154,7 @@ class LinearSupport:
 
         if self.is_dominated(value):
             if self.verbose:
-                print("Value is dominated. Discarding.")
+                print(f"Value {value} is dominated. Discarding.")
             return [len(self.ccs)]
 
         removed_indx = self.remove_obsolete_values(value)
@@ -232,28 +237,26 @@ class LinearSupport:
         return W_del
 
     def remove_obsolete_values(self, value: np.ndarray) -> List[int]:
-        """Removes the values vectors which are dominated by the new value for all visited weight vectors.
+        """Removes the values vectors which are no longer optimal for any weight vector after adding the new value vector.
 
         Args:
-            value: New value vector
+            value (np.ndarray): New value vector
 
         Returns:
-             the indices of the removed values.
+            The indices of the removed values.
         """
         removed_indx = []
         for i in reversed(range(len(self.ccs))):
-            best_in_all = True
-            for j in range(len(self.visited_weights)):
-                w = self.visited_weights[j]
-                if np.dot(value, w) < np.dot(self.ccs[i], w):
-                    best_in_all = False
-                    break
-
-            if best_in_all:
+            weights_optimal = [
+                w
+                for w in self.visited_weights
+                if np.dot(self.ccs[i], w) == self.max_scalarized_value(w) and np.dot(value, w) < np.dot(self.ccs[i], w)
+            ]
+            if len(weights_optimal) == 0:
+                print("removed value", self.ccs[i])
                 removed_indx.append(i)
                 self.ccs.pop(i)
                 self.weight_support.pop(i)
-
         return removed_indx
 
     def max_value_lp(self, w_new: np.ndarray) -> float:

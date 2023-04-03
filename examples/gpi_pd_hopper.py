@@ -1,5 +1,6 @@
 import fire
 import mo_gymnasium as mo_gym
+import numpy as np
 
 from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
     GPIPDContinuousAction,
@@ -35,15 +36,17 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 15000):
         dynamics_min_uncertainty=2.0,
         dyna=gpi_pd,
         per=gpi_pd,
-        project_name="MORL Baselines",
-        experiment_name="GPI-PD - Hopper",
+        project_name="MORL-Baselines",
+        experiment_name="GPI-PD",
         log=True,
     )
 
     agent.train(
+        total_timesteps=10 * timesteps_per_iter,
         eval_env=eval_env,
+        ref_point=np.array([-100.0, -100.0]),
+        known_pareto_front=None,
         weight_selection_algo=algo,
-        max_iter=10,
         timesteps_per_iter=timesteps_per_iter,
     )
 

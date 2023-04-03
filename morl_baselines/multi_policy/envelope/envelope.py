@@ -15,9 +15,11 @@ from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import NatureCNN, mlp
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import (
+    equally_spaced_weights,
     get_grad_norm,
     layer_init,
     linearly_decaying_value,
+    log_all_multi_policy_metrics,
     log_episode_info,
     polyak_update,
     random_weights,
@@ -102,7 +104,9 @@ class Envelope(MOPolicy, MOAgent):
         homotopy_decay_steps: int = None,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "Envelope",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
+        seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
     ):
         """Envelope Q-learning algorithm.
@@ -131,10 +135,12 @@ class Envelope(MOPolicy, MOAgent):
             homotopy_decay_steps: The number of steps to decay the homotopy parameter over.
             project_name: The name of the project, for wandb logging.
             experiment_name: The name of the experiment, for wandb logging.
+            wandb_entity: The entity of the project, for wandb logging.
             log: Whether to log to wandb.
+            seed: The seed for the random number generator.
             device: The device to use for training.
         """
-        MOAgent.__init__(self, env, device=device)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
@@ -186,7 +192,7 @@ class Envelope(MOPolicy, MOAgent):
 
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name)
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     @override
     def get_config(self):
@@ -210,6 +216,7 @@ class Envelope(MOPolicy, MOAgent):
             "final_homotopy_lambda": self.final_homotopy_lambda,
             "homotopy_decay_steps": self.homotopy_decay_steps,
             "learning_starts": self.learning_starts,
+            "seed": self.seed,
         }
 
     def save(self, save_replay_buffer: bool = True, save_dir: str = "weights/", filename: Optional[str] = None):
@@ -271,7 +278,9 @@ class Envelope(MOPolicy, MOAgent):
                 ) = self.__sample_batch_experiences()
 
             sampled_w = (
-                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w)).float().to(self.device)
+                th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w, dist="gaussian", rng=self.np_random))
+                .float()
+                .to(self.device)
             )  # sample num_sample_w random weights
             w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = (
@@ -365,7 +374,7 @@ class Envelope(MOPolicy, MOAgent):
 
         Returns: an integer representing the action to take.
         """
-        if np.random.random() < self.epsilon:
+        if self.np_random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
             return self.max_action(obs, w)
@@ -450,39 +459,52 @@ class Envelope(MOPolicy, MOAgent):
     def train(
         self,
         total_timesteps: int,
+        eval_env: Optional[gym.Env] = None,
+        ref_point: Optional[np.ndarray] = None,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
         weight: Optional[np.ndarray] = None,
         total_episodes: Optional[int] = None,
         reset_num_timesteps: bool = True,
-        eval_env: Optional[gym.Env] = None,
-        eval_freq: int = 1000,
+        eval_freq: int = 10000,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
         reset_learning_starts: bool = False,
     ):
         """Train the agent.
 
         Args:
             total_timesteps: total number of timesteps to train for.
+            eval_env: environment to use for evaluation. If None, it is ignored.
+            ref_point: reference point for the hypervolume computation.
+            known_pareto_front: known pareto front for the hypervolume computation.
             weight: weight vector. If None, it is randomly sampled every episode (as done in the paper).
             total_episodes: total number of episodes to train for. If None, it is ignored.
             reset_num_timesteps: whether to reset the number of timesteps. Useful when training multiple times.
-            eval_env: environment to use for evaluation. If None, it is ignored.
-            eval_freq: policy evaluation frequency.
+            eval_freq: policy evaluation frequency (in number of steps).
+            num_eval_weights_for_front: number of weights to sample for creating the pareto front when evaluating.
+            num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
         """
+        if eval_env is not None:
+            assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
+        if self.log:
+            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
         if reset_learning_starts:  # Resets epsilon-greedy exploration
             self.learning_starts = self.global_step
 
         num_episodes = 0
+        eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
         obs, _ = self.env.reset()
 
-        w = weight if weight is not None else random_weights(self.reward_dim, 1)
+        w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian")
         tensor_w = th.tensor(w).float().to(self.device)
 
         for _ in range(1, total_timesteps + 1):
             if total_episodes is not None and num_episodes == total_episodes:
                 break
-            self.global_step += 1
 
             if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
@@ -490,26 +512,37 @@ class Envelope(MOPolicy, MOAgent):
                 action = self.act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
+            self.global_step += 1
 
             self.replay_buffer.add(obs, action, vec_reward, next_obs, terminated)
-
             if self.global_step >= self.learning_starts:
                 self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=w, writer=self.writer)
+                current_front = [
+                    self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, writer=None)[3]
+                    for ew in eval_weights
+                ]
+                log_all_multi_policy_metrics(
+                    current_front=current_front,
+                    hv_ref_point=ref_point,
+                    reward_dim=self.reward_dim,
+                    global_step=self.global_step,
+                    writer=self.writer,
+                    ref_front=known_pareto_front,
+                )
 
             if terminated or truncated:
                 obs, _ = self.env.reset()
                 num_episodes += 1
                 self.num_episodes += 1
 
-                if weight is None:
-                    w = random_weights(self.reward_dim, 1)
-                    tensor_w = th.tensor(w).float().to(self.device)
-
                 if self.log and "episode" in info.keys():
                     log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer)
+
+                if weight is None:
+                    w = random_weights(self.reward_dim, 1, dist="gaussian")
+                    tensor_w = th.tensor(w).float().to(self.device)
 
             else:
                 obs = next_obs
