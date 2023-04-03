@@ -46,6 +46,7 @@ ENVS_WITH_KNOWN_PARETO_FRONT = [
     "deep-sea-treasure-v0",
     "minecart-v0",
     "resource-gathering-v0",
+    "fruit-tree-v0",
 ]
 
 

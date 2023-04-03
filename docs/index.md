@@ -23,6 +23,13 @@ lastpage:
 :end-before: <!-- end features -->
 ```
 
+## Benchmarks
+
+```{include} ../README.md
+:start-after: <!-- start benchmarks -->
+:end-before: <!-- end benchmarks -->
+```
+
 ## Citing MORL-Baselines
 ```{include} ../README.md
 :start-after: <!-- start citing -->
