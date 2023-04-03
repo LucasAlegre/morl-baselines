@@ -63,6 +63,14 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 
 <!-- end algos-list -->
 
+## Benchmarking
+
+<!-- start benchmark -->
+MORL-Baselines participates to [Open RL Benchmark](https://github.com/openrlbenchmark/openrlbenchmark) which contains tracked experiments from popular RL libraries such as [cleanRL](https://github.com/vwxyzjn/cleanrl) and [Stable Baselines 3](https://github.com/DLR-RM/stable-baselines3).
+
+We are currently running experiments of our algorithms on various environments from [MO-Gymnasium](https://www.github.com/Farama-Foundation/mo-gymnasium). The results can be found here: https://wandb.ai/openrlbenchmark/MORL-Baselines.
+<!-- end benchmark -->
+
 ## Structure
 
 <!-- start structure -->
