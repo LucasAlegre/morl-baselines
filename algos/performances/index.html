@@ -296,30 +296,12 @@ If a reference front is provided, also logs:
 </section>
 <section id="benchmarking-script">
 <h2>Benchmarking script<a class="headerlink" href="#benchmarking-script" title="Permalink to this heading">#</a></h2>
-<p>It is possible to run algorithms from a CLI and configure the parameters accordingly. The script is located in <code class="docutils literal notranslate"><span class="pre">benchmark/launch_experiment.py</span></code>. Here is the documentation:</p>
+<p>It is possible to run algorithms from a CLI and configure the parameters accordingly. The script is located in <code class="docutils literal notranslate"><span class="pre">benchmark/launch_experiment.py</span></code>.</p>
 </section>
 <section id="algorithms">
 <h2>Algorithms<a class="headerlink" href="#algorithms" title="Permalink to this heading">#</a></h2>
 <p>Below are the algorithms that we want to test along with the environments from their original papers which are supported in MO-Gymnasium.</p>
-<section id="id1">
-<h3>Single-policy algorithms<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
-<ul class="simple">
-<li><p>MOQ-Learning (discrete/discrete): DST, MO-MountainCar;</p></li>
-<li><p>EUPG (discrete/discrete): Fishwood;</p></li>
-</ul>
-</section>
-<section id="id2">
-<h3>Multi-policy algorithms<a class="headerlink" href="#id2" title="Permalink to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Envelope Q-Learning (continuous/discrete): DST, Fruit-tree, Mario;</p></li>
-<li><p>Pareto Q-Learning (discrete/discrete): DST;</p></li>
-<li><p>PGMORL (continuous/continuous): Half-Cheetah, 2-obj Hopper. Note: the original paper tweaked the environments to have positive rewards only. We feel that such a modification is no good practice and we will use the official environments from MO-Gymnasium instead. Hence, our version of PGMORL cannot be compared to the original paper.</p></li>
-<li><p>MPMOQLearning (discrete/discrete): DST, MO-MountainCar;</p></li>
-<li><p>GPI-LS, GPI-PD (<em>/</em>): DST, Minecart, MO-Hopper;</p></li>
-<li><p>OLS - it is a weight generation method, not a full algorithm.</p></li>
-<li><p>PCN (continuous/discrete): DST, MineCart;</p></li>
-</ul>
-</section>
+<p>This <a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/issues/43">issue</a> tracks the current performance assessment of the algorithms.</p>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this heading">#</a></h2>
@@ -396,11 +378,7 @@ If a reference front is provided, also logs:
 </li>
 <li><a class="reference internal" href="#storage">Storage</a></li>
 <li><a class="reference internal" href="#benchmarking-script">Benchmarking script</a></li>
-<li><a class="reference internal" href="#algorithms">Algorithms</a><ul>
-<li><a class="reference internal" href="#id1">Single-policy algorithms</a></li>
-<li><a class="reference internal" href="#id2">Multi-policy algorithms</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#algorithms">Algorithms</a></li>
 <li><a class="reference internal" href="#references">References</a></li>
 </ul>
 </li>
