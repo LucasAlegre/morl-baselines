@@ -293,7 +293,7 @@ class LinearSupport:
         try:
             result = prob.solve(verbose=False)
         except SolverError:
-            print("SCS solver error, trying another one.")
+            print("ECOS solver error, trying another one.")
             result = prob.solve(solver=cp.SCS, verbose=False)
         return result
 
