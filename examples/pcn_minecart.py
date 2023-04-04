@@ -24,6 +24,7 @@ def main():
     )
 
     agent.train(
+        eval_env=make_env(),
         total_timesteps=int(1e7),
         ref_point=np.array([0, 0, -200.0]),
         num_er_episodes=20,
