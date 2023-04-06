@@ -39,6 +39,7 @@ ALGOS = {
     "pcn": PCN,
     "pql": PQL,
     "ols": MPMOQLearning,
+    "gpi-ls": MPMOQLearning,
 }
 
 ENVS_WITH_KNOWN_PARETO_FRONT = [
@@ -184,6 +185,8 @@ def main():
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"
+        elif args.algo == "gpi-ls":
+            args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (GPI-LS)"
         algo = ALGOS[args.algo](
             env=env,
             gamma=args.gamma,
