@@ -8,7 +8,7 @@ import numpy as np
 import torch as th
 import wandb
 from gymnasium import spaces
-from mo_gym import MOSyncVectorEnv
+from mo_gymnasium.utils import MOSyncVectorEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.evaluation import (
