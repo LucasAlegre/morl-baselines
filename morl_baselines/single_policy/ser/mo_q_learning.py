@@ -32,8 +32,14 @@ class MOQLearning(MOPolicy, MOAgent):
         final_epsilon: float = 0.1,
         epsilon_decay_steps: int = None,
         learning_starts: int = 0,
+        use_gpi_policy: bool = False,
         dyna: bool = False,
         dyna_updates: int = 5,
+        model: Optional[TabularModel] = None,
+        gpi_pd: bool = False,
+        min_priority: float = 0.0001,
+        alpha: float = 0.6,
+        parent=None,
         project_name: str = "MORL-baselines",
         experiment_name: str = "MO Q-Learning",
         wandb_entity: Optional[str] = None,
@@ -45,23 +51,29 @@ class MOQLearning(MOPolicy, MOAgent):
         """Initializes the MOQ-learning algorithm.
 
         Args:
-            env: The environment to train on
-            id: The id of the policy
-            weights: The weights to use for the scalarization function
-            scalarization: The scalarization function to use
-            learning_rate: The learning rate
-            gamma: The discount factor
-            initial_epsilon: The initial epsilon value
-            final_epsilon: The final epsilon value
-            epsilon_decay_steps: The number of steps to decay epsilon over
-            learning_starts: The number of steps to wait before starting to learn
-            dyna: Whether to use Dyna-Q or not
-            dyna_updates: The number of Dyna-Q updates to perform each step
-            project_name: The name of the project used for logging
-            experiment_name: The name of the experiment used for logging
-            wandb_entity: The entity to use for logging
-            log: Whether to log or not
-            seed: The seed to use for the experiment
+            env: The environment to train on.
+            id: The id of the policy.
+            weights: The weights to use for the scalarization function.
+            scalarization: The scalarization function to use.
+            learning_rate: The learning rate.
+            gamma: The discount factor.
+            initial_epsilon: The initial epsilon value.
+            final_epsilon: The final epsilon value.
+            epsilon_decay_steps: The number of steps to decay epsilon over.
+            learning_starts: The number of steps to wait before starting to learn.
+            use_gpi_policy: Whether to use Generalized Policy Improvement (GPI) or not.
+            dyna: Whether to use Dyna-Q or not.
+            dyna_updates: The number of Dyna-Q updates to perform each step.
+            model: The model to use for Dyna. If None and dyna==True, a new one is created.
+            gpi_pd: Whether to use the GPI-PD method to prioritize Dyna updates.
+            min_priority: The minimum priority to use for GPI-PD.
+            alpha: The alpha value to use to smooth GPI-PD priorities.
+            parent: The parent MPMOQLearning class in the case of multi-policy training.
+            project_name: The name of the project used for logging.
+            experiment_name: The name of the experiment used for logging.
+            wandb_entity: The entity to use for logging.
+            log: Whether to log or not.
+            seed: The seed to use for the experiment.
             parent_writer: The writer to use for logging. If None, a new writer is created.
             parent_rng: The random number generator to use. If None, a new one is created.
         """
@@ -85,16 +97,23 @@ class MOQLearning(MOPolicy, MOAgent):
         self.final_epsilon = final_epsilon
         self.epsilon_decay_steps = epsilon_decay_steps
         self.learning_starts = learning_starts
+        self.use_gpi_policy = use_gpi_policy
         self.dyna = dyna
         self.dyna_updates = dyna_updates
+        self.gpi_pd = gpi_pd
+        self.min_priority = min_priority
+        self.alpha = alpha
+        self.parent = parent
 
         self.weights = weights
         self.scalarization = scalarization
 
         self.q_table = dict()
 
-        if self.dyna:
-            self.model = TabularModel()
+        if model is not None:
+            self.model = model
+        else:
+            self.model = TabularModel(prioritize=self.gpi_pd) if self.dyna else None
 
         self.log = log
         if parent_writer is not None:
@@ -102,13 +121,13 @@ class MOQLearning(MOPolicy, MOAgent):
         if self.log and parent_writer is None:
             self.setup_wandb(project_name, experiment_name, wandb_entity)
 
-    def __act(self, obs: np.array):
+    def __act(self, obs: np.array) -> int:
         # epsilon-greedy
         coin = self.np_random.random()
         if coin < self.epsilon:
             return int(self.env.action_space.sample())
         else:
-            return self.eval(obs)
+            return self.eval(obs, self.weights)
 
     def scalarized_q_values(self, obs, w: np.ndarray) -> np.ndarray:
         """Returns the scalarized Q values for each action, given observation and weights."""
@@ -117,8 +136,25 @@ class MOQLearning(MOPolicy, MOAgent):
             return np.zeros(self.action_dim)
         return np.array([self.scalarization(state_action_value, w) for state_action_value in self.q_table[t_obs]])
 
+    def _gpi_pd_priority(
+        self, obs: np.ndarray, action: int, reward: np.ndarray, next_obs: np.ndarray, terminal: bool, weights: np.ndarray
+    ) -> float:
+        """Computes the priority of GPI-PD for a given transition.
+
+        priority = |r.w + gamma * max_a' max_pi' Q^pi'(s', a').w - Q^pi(s, a).w|
+        """
+        priority = (
+            np.dot(reward, weights)
+            + (1 - terminal) * self.gamma * self.parent.max_scalar_q_values(next_obs, weights)
+            - np.dot(self.q_table[tuple(obs)][action], weights)
+        )
+        priority = np.max(np.abs(priority), self.min_priority) ** self.alpha
+        return priority
+
     @override
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
+        if self.use_gpi_policy:
+            return self.parent.eval(obs, w)
         """Greedily chooses best action using the scalarization method"""
         t_obs = tuple(obs)
         if t_obs not in self.q_table:
@@ -138,22 +174,33 @@ class MOQLearning(MOPolicy, MOAgent):
         if next_obs not in self.q_table:
             self.q_table[next_obs] = np.zeros((self.action_dim, self.reward_dim))
 
-        max_q = self.q_table[next_obs][self.eval(self.next_obs)]
+        max_q = self.q_table[next_obs][self.eval(self.next_obs, self.weights)]
         td_error = self.reward + (1 - self.terminated) * self.gamma * max_q - self.q_table[obs][self.action]
         self.q_table[obs][self.action] += self.learning_rate * td_error
 
         # Dyna updates
         if self.dyna:
-            self.model.update(obs, self.action, self.reward, next_obs, self.terminated)
+            if self.gpi_pd:
+                priority = self._gpi_pd_priority(obs, self.action, self.reward, next_obs, self.terminated, self.weights)
+            else:
+                priority = None
+
+            self.model.update(obs, self.action, self.reward, next_obs, self.terminated, priority)
             for _ in range(self.dyna_updates):
-                s, a, r, next_s, terminal = self.model.random_transition()
+                if self.gpi_pd:
+                    s, a, r, next_s, terminal, ind = self.model.random_transition()
+                else:
+                    s, a, r, next_s, terminal = self.model.random_transition()
                 if s not in self.q_table:
                     self.q_table[s] = np.zeros((self.action_dim, self.reward_dim))
                 if next_s not in self.q_table:
                     self.q_table[next_s] = np.zeros((self.action_dim, self.reward_dim))
-                max_q = self.q_table[next_s][self.eval(next_s)]
+                max_q = self.q_table[next_s][self.eval(next_s, self.weights)]
                 model_td = r + (1 - terminal) * self.gamma * max_q - self.q_table[s][a]
                 self.q_table[s][a] += self.learning_rate * model_td
+                if self.gpi_pd:
+                    priority = self._gpi_pd_priority(s, a, r, next_s, terminal, self.weights)
+                    self.model.update_priority(ind, priority)
 
         if self.epsilon_decay_steps is not None:
             self.epsilon = linearly_decaying_value(
@@ -177,13 +224,17 @@ class MOQLearning(MOPolicy, MOAgent):
     def get_config(self) -> dict:
         return {
             "env_id": self.env.unwrapped.spec.id,
-            "alpha": self.learning_rate,
+            "learning_rate": self.learning_rate,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
             "final_epsilon": self.final_epsilon,
             "epsilon_decay_steps": self.epsilon_decay_steps,
+            "use_gpi_policy": self.use_gpi_policy,
             "dyna": self.dyna,
             "dyna_updates": self.dyna_updates,
+            "gpi_pd": self.gpi_pd,
+            "min_priority": self.min_priority,
+            "alpha": self.alpha,
             "weight": self.weights,
             "scalarization": self.scalarization.__name__,
             "seed": self.seed,
