@@ -40,6 +40,7 @@ class MPMOQLearning(MOAgent):
         transfer_q_table: bool = True,
         dyna: bool = False,
         dyna_updates: int = 5,
+        gpi_pd: bool = False,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "MultiPolicy MO Q-Learning",
         wandb_entity: Optional[str] = None,
@@ -58,10 +59,11 @@ class MPMOQLearning(MOAgent):
             epsilon_decay_steps: The number of steps for epsilon decay.
             weight_selection_algo: The algorithm to use for weight selection. Options: "random", "ols", "gpi-ls"
             epsilon_ols: The epsilon value for the optimistic linear support.
-            use_gpi_policy: Whether to use the Generalized Policy Improvement (GPI) or not.
+            use_gpi_policy: Whether to use Generalized Policy Improvement (GPI) or not.
             transfer_q_table: Whether to reuse a Q-table from a previous learned policy when initializing a new policy.
             dyna: Whether to use Dyna-Q or not.
             dyna_updates: The number of Dyna-Q updates to perform.
+            gpi_pd: Whether to use the GPI-PD method to prioritize Dyna updates.
             project_name: The name of the project for logging.
             experiment_name: The name of the experiment for logging.
             wandb_entity: The entity to use for logging.
@@ -79,6 +81,7 @@ class MPMOQLearning(MOAgent):
         self.use_gpi_policy = use_gpi_policy
         self.dyna = dyna
         self.dyna_updates = dyna_updates
+        self.gpi_pd = gpi_pd
         self.transfer_q_table = transfer_q_table
         # Linear support
         self.policies = []
@@ -105,7 +108,7 @@ class MPMOQLearning(MOAgent):
     def get_config(self) -> dict:
         return {
             "env_id": self.env.unwrapped.spec.id,
-            "alpha": self.learning_rate,
+            "learning_rate": self.learning_rate,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
             "final_epsilon": self.final_epsilon,
@@ -117,6 +120,7 @@ class MPMOQLearning(MOAgent):
             "transfer_q_table": self.transfer_q_table,
             "dyna": self.dyna,
             "dyna_updates": self.dyna_updates,
+            "gpi_pd": self.gpi_pd,
             "seed": self.seed,
         }
 
@@ -135,6 +139,10 @@ class MPMOQLearning(MOAgent):
         q_vals = np.stack([policy.scalarized_q_values(state, w) for policy in self.policies])
         _, action = np.unravel_index(np.argmax(q_vals), q_vals.shape)
         return int(action)
+
+    def max_scalar_q_value(self, state: np.ndarray, w: np.ndarray) -> float:
+        """Get the maximum Q-value over all policies for the given state and weights."""
+        return np.max([policy.scalarized_q_values(state, w) for policy in self.policies])
 
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
         """If use_gpi is True, return the action given by the GPI policy. Otherwise, chooses the best policy for w and follows it."""
@@ -204,8 +212,12 @@ class MPMOQLearning(MOAgent):
                 initial_epsilon=self.initial_epsilon,
                 final_epsilon=self.final_epsilon,
                 epsilon_decay_steps=self.epsilon_decay_steps,
+                use_gpi_policy=self.use_gpi_policy,
                 dyna=self.dyna,
                 dyna_updates=self.dyna_updates,
+                model=self.policies[-1].model if self.dyna else None,  # The model is shared between agents
+                gpi_pd=self.gpi_pd,
+                parent=self,
                 log=self.log,
                 parent_writer=self.writer,
                 parent_rng=self.np_random,
