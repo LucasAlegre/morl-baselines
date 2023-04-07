@@ -8,6 +8,7 @@ import numpy as np
 import torch as th
 import wandb
 from gymnasium import spaces
+from mo_gym import MOSyncVectorEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.evaluation import (
@@ -231,7 +232,8 @@ class MOAgent(ABC):
             None
         """
         self.experiment_name = experiment_name
-        self.full_experiment_name = f"{self.env.spec.id}__{experiment_name}__{self.seed}__{int(time.time())}"
+        env_id = self.env.spec.id if not isinstance(self.env, MOSyncVectorEnv) else self.env.envs[0].spec.id
+        self.full_experiment_name = f"{env_id}__{experiment_name}__{self.seed}__{int(time.time())}"
         import wandb
 
         config = self.get_config()
