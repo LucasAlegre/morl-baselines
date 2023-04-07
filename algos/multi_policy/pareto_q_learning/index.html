@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -227,7 +227,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -235,151 +235,6 @@
         <article role="main">
           <section id="pareto-q-learning">
 <h1>Pareto Q-Learning<a class="headerlink" href="#pareto-q-learning" title="Permalink to this heading">#</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.pareto_q_learning.pql.</span></span><span class="sig-name descname"><span class="pre">PQL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_epsilon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_decay_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_epsilon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'MORL-Baselines'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Pareto</span> <span class="pre">Q-Learning'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL" title="Permalink to this definition">#</a></dt>
-<dd><p>Pareto Q-learning.</p>
-<p>Tabular method relying on pareto pruning.
-Paper: K. Van Moffaert and A. Nowé, “Multi-objective reinforcement learning using sets of pareto dominating policies,” The Journal of Machine Learning Research, vol. 15, no. 1, pp. 3483–3512, 2014.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.calc_non_dominated">
-<span class="sig-name descname"><span class="pre">calc_non_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.calc_non_dominated" title="Permalink to this definition">#</a></dt>
-<dd><p>Get the non-dominated vectors in a given state.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>state</strong> (<em>int</em>) – The current state.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Set</strong> – A set of Pareto non-dominated vectors.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_config">
-<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_config" title="Permalink to this definition">#</a></dt>
-<dd><p>Get the configuration dictionary.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>Dict</strong> – A dictionary of parameters and values.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_local_pcs">
-<span class="sig-name descname"><span class="pre">get_local_pcs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_local_pcs" title="Permalink to this definition">#</a></dt>
-<dd><p>Collect the local PCS in a given state.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>state</strong> (<em>int</em>) – The state to get a local PCS for. (Default value = 0)</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Set</strong> – A set of Pareto optimal vectors.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_q_set">
-<span class="sig-name descname"><span class="pre">get_q_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_q_set" title="Permalink to this definition">#</a></dt>
-<dd><p>Compute the Q-set for a given state-action pair.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>state</strong> (<em>int</em>) – The current state.</p></li>
-<li><p><strong>action</strong> (<em>int</em>) – The action.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>A set of Q vectors.</strong></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.score_hypervolume">
-<span class="sig-name descname"><span class="pre">score_hypervolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.score_hypervolume" title="Permalink to this definition">#</a></dt>
-<dd><p>Compute the action scores based upon the hypervolume metric.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>state</strong> (<em>int</em>) – The current state.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ndarray</strong> – A score per action.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.score_pareto_cardinality">
-<span class="sig-name descname"><span class="pre">score_pareto_cardinality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.score_pareto_cardinality" title="Permalink to this definition">#</a></dt>
-<dd><p>Compute the action scores based upon the Pareto cardinality metric.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>state</strong> (<em>int</em>) – The current state.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ndarray</strong> – A score per action.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.select_action">
-<span class="sig-name descname"><span class="pre">select_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.select_action" title="Permalink to this definition">#</a></dt>
-<dd><p>Select an action in the current state.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>state</strong> (<em>int</em>) – The current state.</p></li>
-<li><p><strong>score_func</strong> (<em>callable</em>) – A function that returns a score per action.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>int</strong> – The selected action.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.track_policy">
-<span class="sig-name descname"><span class="pre">track_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.track_policy" title="Permalink to this definition">#</a></dt>
-<dd><p>Track a policy from its return vector.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>vec</strong> (<em>array_like</em>) – The return vector to track.</p></li>
-<li><p><strong>env</strong> (<em>gym.Env</em>) – The environment to track the policy in.</p></li>
-<li><p><strong>tol</strong> (<em>float</em><em>, </em><em>optional</em>) – The tolerance for the return vector. (Default value = 1e-3)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.pareto_q_learning.pql.PQL.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_pareto_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_every</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_eval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hypervolume'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.train" title="Permalink to this definition">#</a></dt>
-<dd><p>Learn the Pareto front.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>total_timesteps</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of episodes to train for.</p></li>
-<li><p><strong>eval_env</strong> (<em>gym.Env</em>) – The environment to evaluate the policies on.</p></li>
-<li><p><strong>eval_ref_point</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – The reference point for the hypervolume metric during evaluation. If none, use the same ref point as training.</p></li>
-<li><p><strong>known_pareto_front</strong> (<em>List</em><em>[</em><em>ndarray</em><em>]</em><em>, </em><em>optional</em>) – The optimal Pareto front, if known.</p></li>
-<li><p><strong>log_every</strong> (<em>int</em><em>, </em><em>optional</em>) – Log the results every number of timesteps. (Default value = 1000)</p></li>
-<li><p><strong>action_eval</strong> (<em>str</em><em>, </em><em>optional</em>) – The action evaluation function name. (Default value = ‘hypervolume’)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Set</strong> – The final Pareto front.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
         </article>
@@ -425,38 +280,8 @@ Paper: K. Van Moffaert and A. Nowé, “Multi-objective reinforcement learning u
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Pareto Q-Learning</a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL"><code class="docutils literal notranslate"><span class="pre">PQL</span></code></a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.calc_non_dominated"><code class="docutils literal notranslate"><span class="pre">PQL.calc_non_dominated()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_config"><code class="docutils literal notranslate"><span class="pre">PQL.get_config()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_local_pcs"><code class="docutils literal notranslate"><span class="pre">PQL.get_local_pcs()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_q_set"><code class="docutils literal notranslate"><span class="pre">PQL.get_q_set()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.score_hypervolume"><code class="docutils literal notranslate"><span class="pre">PQL.score_hypervolume()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.score_pareto_cardinality"><code class="docutils literal notranslate"><span class="pre">PQL.score_pareto_cardinality()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.select_action"><code class="docutils literal notranslate"><span class="pre">PQL.select_action()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.track_policy"><code class="docutils literal notranslate"><span class="pre">PQL.track_policy()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.train"><code class="docutils literal notranslate"><span class="pre">PQL.train()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

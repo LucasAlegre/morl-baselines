@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -227,7 +227,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -235,71 +235,6 @@
         <article role="main">
           <section id="moq-learning">
 <h1>MOQ-Learning<a class="headerlink" href="#moq-learning" title="Permalink to this heading">#</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="morl_baselines.single_policy.ser.mo_q_learning.MOQLearning">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.single_policy.ser.mo_q_learning.</span></span><span class="sig-name descname"><span class="pre">MOQLearning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">array([0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">0.5])</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization=&lt;function</span> <span class="pre">weighted_sum&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_decay_steps:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_starts:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_gpi_policy:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyna:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyna_updates:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model:</span> <span class="pre">~morl_baselines.common.model_based.tabular_model.TabularModel</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpi_pd:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_priority:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MORL-baselines'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MO</span> <span class="pre">Q-Learning'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_writer:</span> <span class="pre">~torch.utils.tensorboard.writer.SummaryWriter</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_rng:</span> <span class="pre">~numpy.random._generator.Generator</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning" title="Permalink to this definition">#</a></dt>
-<dd><p>Scalarized Q learning for single policy multi-objective reinforcement learning.</p>
-<p>Maintains one Q-table per objective, rely on a scalarization function to choose the moves.
-Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.eval">
-<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.eval" title="Permalink to this definition">#</a></dt>
-<dd><p>Gives the best action for the given observation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>obs</strong> (<em>np.array</em>) – Observation</p></li>
-<li><p><strong>w</strong> (<em>optional np.array</em>) – weight for scalarization</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>np.array or int</strong> – Action</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.get_config">
-<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.get_config" title="Permalink to this definition">#</a></dt>
-<dd><p>Generates dictionary of the algorithm parameters configuration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>dict</strong> – Config</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.scalarized_q_values">
-<span class="sig-name descname"><span class="pre">scalarized_q_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.scalarized_q_values" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns the scalarized Q values for each action, given observation and weights.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_num_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Env</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.train" title="Permalink to this definition">#</a></dt>
-<dd><p>Learning for the agent.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>start_time</strong> – time when the training started</p></li>
-<li><p><strong>total_timesteps</strong> – max number of timesteps to learn</p></li>
-<li><p><strong>reset_num_timesteps</strong> – whether to reset timesteps or not when recalling learn</p></li>
-<li><p><strong>eval_env</strong> – other environment to launch greedy evaluations</p></li>
-<li><p><strong>eval_freq</strong> – number of timesteps between each policy evaluation</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.update">
-<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.update" title="Permalink to this definition">#</a></dt>
-<dd><p>Updates the Q table.</p>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
         </article>
@@ -345,34 +280,8 @@ Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinf
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">MOQ-Learning</a><ul>
-<li><a class="reference internal" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning"><code class="docutils literal notranslate"><span class="pre">MOQLearning</span></code></a><ul>
-<li><a class="reference internal" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.eval"><code class="docutils literal notranslate"><span class="pre">MOQLearning.eval()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.get_config"><code class="docutils literal notranslate"><span class="pre">MOQLearning.get_config()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.scalarized_q_values"><code class="docutils literal notranslate"><span class="pre">MOQLearning.scalarized_q_values()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.train"><code class="docutils literal notranslate"><span class="pre">MOQLearning.train()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.single_policy.ser.mo_q_learning.MOQLearning.update"><code class="docutils literal notranslate"><span class="pre">MOQLearning.update()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
