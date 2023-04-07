@@ -121,7 +121,7 @@ class MOQLearning(MOPolicy, MOAgent):
         if self.log and parent_writer is None:
             self.setup_wandb(project_name, experiment_name, wandb_entity)
 
-    def __act(self, obs: np.array):
+    def __act(self, obs: np.array) -> int:
         # epsilon-greedy
         coin = self.np_random.random()
         if coin < self.epsilon:
@@ -135,6 +135,21 @@ class MOQLearning(MOPolicy, MOAgent):
         if t_obs not in self.q_table:
             return np.zeros(self.action_dim)
         return np.array([self.scalarization(state_action_value, w) for state_action_value in self.q_table[t_obs]])
+
+    def _gpi_pd_priority(
+        self, obs: np.ndarray, action: int, reward: np.ndarray, next_obs: np.ndarray, terminal: bool, weights: np.ndarray
+    ) -> float:
+        """Computes the priority of GPI-PD for a given transition.
+
+        priority = |r.w + gamma * max_a' max_pi' Q^pi'(s', a').w - Q^pi(s, a).w|
+        """
+        priority = (
+            np.dot(reward, weights)
+            + (1 - terminal) * self.gamma * self.parent.max_scalar_q_values(next_obs, weights)
+            - np.dot(self.q_table[tuple(obs)][action], weights)
+        )
+        priority = np.max(np.abs(priority), self.min_priority) ** self.alpha
+        return priority
 
     @override
     def eval(self, obs: np.array, w: Optional[np.ndarray] = None) -> int:
@@ -166,12 +181,7 @@ class MOQLearning(MOPolicy, MOAgent):
         # Dyna updates
         if self.dyna:
             if self.gpi_pd:
-                priority = (
-                    np.dot(self.reward, self.weights)
-                    + (1 - self.terminated) * self.gamma * self.parent.max_scalar_q_value(self.next_obs, self.weights)
-                    - np.dot(self.q_table[obs][self.action], self.weights)
-                )
-                priority = max(np.abs(priority), self.min_priority) ** self.alpha
+                priority = self._gpi_pd_priority(obs, self.action, self.reward, next_obs, self.terminated, self.weights)
             else:
                 priority = None
 
@@ -189,12 +199,7 @@ class MOQLearning(MOPolicy, MOAgent):
                 model_td = r + (1 - terminal) * self.gamma * max_q - self.q_table[s][a]
                 self.q_table[s][a] += self.learning_rate * model_td
                 if self.gpi_pd:
-                    priority = (
-                        np.dot(r, self.weights)
-                        + (1 - terminal) * self.gamma * self.parent.max_scalar_q_value(next_s, self.weights)
-                        - np.dot(self.q_table[s][a], self.weights)
-                    )
-                    priority = max(np.abs(priority), self.min_priority) ** self.alpha
+                    priority = self._gpi_pd_priority(s, a, r, next_s, terminal, self.weights)
                     self.model.update_priority(ind, priority)
 
         if self.epsilon_decay_steps is not None:
