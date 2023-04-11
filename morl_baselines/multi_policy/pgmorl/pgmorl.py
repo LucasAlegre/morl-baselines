@@ -509,6 +509,7 @@ class PGMORL(MOAgent):
 
     def __eval_all_agents(
         self,
+        eval_env: gym.Env,
         evaluations_before_train: List[np.ndarray],
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
@@ -516,7 +517,7 @@ class PGMORL(MOAgent):
     ):
         """Evaluates all agents and store their current performances on the buffer and pareto archive."""
         for i, agent in enumerate(self.agents):
-            _, _, _, discounted_reward = agent.policy_eval(self.env.envs[0], weights=agent.np_weights, writer=self.writer)
+            _, _, _, discounted_reward = agent.policy_eval(eval_env, weights=agent.np_weights, writer=self.writer)
             # Storing current results
             self.population.add(agent, discounted_reward)
             self.archive.add(agent, discounted_reward)
@@ -613,6 +614,7 @@ class PGMORL(MOAgent):
     def train(
         self,
         total_timesteps: int,
+        eval_env: gym.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
     ):
@@ -624,7 +626,11 @@ class PGMORL(MOAgent):
         # Init
         current_evaluations = [np.zeros(self.reward_dim) for _ in range(len(self.agents))]
         self.__eval_all_agents(
-            current_evaluations, ref_point=ref_point, known_pareto_front=known_pareto_front, add_to_prediction=False
+            eval_env=eval_env,
+            evaluations_before_train=current_evaluations,
+            ref_point=ref_point,
+            known_pareto_front=known_pareto_front,
+            add_to_prediction=False,
         )
         self.start_time = time.time()
 
@@ -635,7 +641,12 @@ class PGMORL(MOAgent):
                 self.writer.add_scalar("charts/warmup_iterations", i)
             self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
             iteration += 1
-        self.__eval_all_agents(current_evaluations, ref_point=ref_point, known_pareto_front=known_pareto_front)
+        self.__eval_all_agents(
+            eval_env=eval_env,
+            evaluations_before_train=current_evaluations,
+            ref_point=ref_point,
+            known_pareto_front=known_pareto_front,
+        )
 
         # Evolution
         max_iterations = max(max_iterations, self.warmup_iterations + self.evolutionary_iterations)
@@ -657,7 +668,12 @@ class PGMORL(MOAgent):
                     )
                 self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
                 iteration += 1
-            self.__eval_all_agents(current_evaluations, ref_point=ref_point, known_pareto_front=known_pareto_front)
+            self.__eval_all_agents(
+                eval_env=eval_env,
+                evaluations_before_train=current_evaluations,
+                ref_point=ref_point,
+                known_pareto_front=known_pareto_front,
+            )
             evolutionary_generation += 1
 
         print("Done training!")
