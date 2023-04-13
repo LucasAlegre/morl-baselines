@@ -1,6 +1,7 @@
 """General utils for the MORL baselines."""
 import os
 import random
+from functools import lru_cache
 from typing import Iterable, List, Optional
 
 import numpy as np
@@ -138,6 +139,7 @@ def extrema_weights(dim: int) -> List[np.ndarray]:
     return list(np.eye(dim, dtype=np.float32))
 
 
+@lru_cache
 def equally_spaced_weights(dim: int, n: int, seed: int = 42) -> List[np.ndarray]:
     """Generate weight vectors that are equally spaced in the weight simplex.
 
