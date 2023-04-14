@@ -104,7 +104,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         per: bool = False,
         min_priority: float = 0.1,
         alpha: float = 0.6,
-        dyna: bool = False,
+        dyna: bool = True,
         dynamics_train_freq: int = 250,
         dynamics_rollout_len: int = 5,
         dynamics_rollout_starts: int = 1000,

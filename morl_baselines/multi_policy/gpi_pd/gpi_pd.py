@@ -100,7 +100,7 @@ class GPIPD(MOPolicy, MOAgent):
         gamma: float = 0.99,
         max_grad_norm: Optional[float] = None,
         use_gpi: bool = True,
-        dyna: bool = False,
+        dyna: bool = True,
         per: bool = True,
         gpi_pd: bool = True,
         alpha_per: float = 0.6,
