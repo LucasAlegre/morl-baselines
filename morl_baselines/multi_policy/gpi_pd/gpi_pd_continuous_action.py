@@ -161,7 +161,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.tau = tau
         self.gamma = gamma

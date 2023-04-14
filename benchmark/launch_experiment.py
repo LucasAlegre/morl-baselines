@@ -189,6 +189,10 @@ def main():
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"
         elif args.algo == "gpi-ls":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (GPI-LS)"
+        elif args.algo == "gpi_pd_continuous" and "dyna" in args.init_hyperparams and not args.init_hyperparams["dyna"]:
+            args.init_hyperparams["experiment_name"] = "GPI-LS Continuous Action"
+        elif args.algo == "gpi_pd" and "dyna" in args.init_hyperparams and not args.init_hyperparams["dyna"]:
+            args.init_hyperparams["experiment_name"] = "GPI-LS"
         algo = ALGOS[args.algo](
             env=env,
             gamma=args.gamma,
