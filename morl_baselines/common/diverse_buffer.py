@@ -429,7 +429,6 @@ class DiverseMemory:
         # Move trace to secondary memory if enough space was freed
         if write_indices is not None and len(write_indices) >= len(trace):
             for i, (w, t) in enumerate(zip(write_indices, trace)):
-
                 self.tree.data[w] = t
 
                 idx = w + self.tree.capacity - 1
