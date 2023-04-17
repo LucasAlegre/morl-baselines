@@ -7,7 +7,6 @@ from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning impor
 
 
 def main():
-
     GAMMA = 0.99
     env = mo_gym.MORecordEpisodeStatistics(mo_gym.make("deep-sea-treasure-v0"), gamma=GAMMA)
 
