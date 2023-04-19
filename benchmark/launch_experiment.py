@@ -18,9 +18,10 @@ from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.utils import seed_everything
 from morl_baselines.multi_policy.envelope.envelope import Envelope
-from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD, GPILS
+from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPILS, GPIPD
 from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
-    GPIPDContinuousAction, GPILSContinuousAction
+    GPILSContinuousAction,
+    GPIPDContinuousAction,
 )
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
