@@ -18,9 +18,9 @@ from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.utils import seed_everything
 from morl_baselines.multi_policy.envelope.envelope import Envelope
-from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
+from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD, GPILS
 from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
-    GPIPDContinuousAction,
+    GPIPDContinuousAction, GPILSContinuousAction
 )
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
@@ -35,6 +35,8 @@ ALGOS = {
     "envelope": Envelope,
     "gpi_pd_continuous": GPIPDContinuousAction,
     "gpi_pd_discrete": GPIPD,
+    "gpi_ls_continuous": GPILSContinuousAction,
+    "gpi_ls_discrete": GPILS,
     "mpmoql": MPMOQLearning,
     "pcn": PCN,
     "pql": PQL,
@@ -189,10 +191,7 @@ def main():
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"
         elif args.algo == "gpi-ls":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (GPI-LS)"
-        elif args.algo == "gpi_pd_continuous" and "dyna" in args.init_hyperparams and not args.init_hyperparams["dyna"]:
-            args.init_hyperparams["experiment_name"] = "GPI-LS Continuous Action"
-        elif args.algo == "gpi_pd" and "dyna" in args.init_hyperparams and not args.init_hyperparams["dyna"]:
-            args.init_hyperparams["experiment_name"] = "GPI-LS"
+
         algo = ALGOS[args.algo](
             env=env,
             gamma=args.gamma,

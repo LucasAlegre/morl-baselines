@@ -840,3 +840,11 @@ class GPIPD(MOPolicy, MOAgent):
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
+
+
+class GPILS(GPIPD):
+    """Model-free version of GPI-PD."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize GPI-LS deactivating the dynamics model."""
+        super().__init__(dyna=False, experiment_name="GPI-LS", *args, **kwargs)

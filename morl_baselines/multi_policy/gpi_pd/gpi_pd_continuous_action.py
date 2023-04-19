@@ -670,3 +670,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
+
+
+class GPILSContinuousAction(GPIPDContinuousAction):
+    """Model-free version of GPI-PD with continuous actions."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the agent deactivating the dynamics model."""
+        super().__init__(dyna=False, experiment_name="GPI-LS Continuous Action", *args, **kwargs)
