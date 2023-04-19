@@ -100,7 +100,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         use_gpi: bool = True,
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
-        per: bool = False,
+        per: bool = True,
         min_priority: float = 0.1,
         alpha: float = 0.6,
         dyna: bool = True,
@@ -311,19 +311,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         if load_replay_buffer and "replay_buffer" in params:
             self.replay_buffer = params["replay_buffer"]
 
-    def _sample_batch_experiences(self, deactivate_per=False):
+    def _sample_batch_experiences(self):
         if not self.dyna or self.global_step < self.dynamics_rollout_starts or len(self.dynamics_buffer) == 0:
-            if deactivate_per:
-                return self.replay_buffer.sample_uniform(self.batch_size, to_tensor=True, device=self.device)
             return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
         else:
             num_real_samples = int(self.batch_size * self.dynamics_real_ratio)  # % of real world data
-            if self.per and not deactivate_per:
+            if self.per:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(
                     num_real_samples, to_tensor=True, device=self.device
                 )
             else:
-                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample_uniform(
+                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample(
                     num_real_samples, to_tensor=True, device=self.device
                 )
             (m_obs, m_actions, m_rewards, m_next_obs, m_dones) = self.dynamics_buffer.sample(
@@ -336,7 +334,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 th.cat([s_next_obs, m_next_obs], dim=0),
                 th.cat([s_dones, m_dones], dim=0),
             )
-            if self.per and not deactivate_per:
+            if self.per:
                 return experience_tuples + (idxes,)
             return experience_tuples
 
