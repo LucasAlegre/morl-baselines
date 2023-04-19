@@ -94,31 +94,31 @@ class GPIPD(MOPolicy, MOAgent):
         buffer_size: int = int(1e6),
         net_arch: List = [256, 256, 256, 256],
         num_nets: int = 2,
-        batch_size: int = 256,
+        batch_size: int = 128,
         learning_starts: int = 100,
-        gradient_updates: int = 1,
+        gradient_updates: int = 20,
         gamma: float = 0.99,
         max_grad_norm: Optional[float] = None,
         use_gpi: bool = True,
-        dyna: bool = False,
+        dyna: bool = True,
         per: bool = True,
         gpi_pd: bool = True,
         alpha_per: float = 0.6,
-        min_priority: float = 1.0,
+        min_priority: float = 0.01,
         drop_rate: float = 0.01,
         layer_norm: bool = True,
         dynamics_normalize_inputs: bool = False,
-        dynamics_uncertainty_threshold: float = 0.5,
+        dynamics_uncertainty_threshold: float = 1.5,
         dynamics_train_freq: Callable = lambda timestep: 250,
         dynamics_rollout_len: int = 1,
         dynamics_rollout_starts: int = 5000,
         dynamics_rollout_freq: int = 250,
-        dynamics_rollout_batch_size: int = 10000,
-        dynamics_buffer_size: int = 400000,
-        dynamics_net_arch: List = [200, 200, 200, 200],
+        dynamics_rollout_batch_size: int = 25000,
+        dynamics_buffer_size: int = 100000,
+        dynamics_net_arch: List = [256, 256, 256],
         dynamics_ensemble_size: int = 5,
         dynamics_num_elites: int = 2,
-        real_ratio: float = 0.05,
+        real_ratio: float = 0.5,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD",
         wandb_entity: Optional[str] = None,
@@ -172,7 +172,7 @@ class GPIPD(MOPolicy, MOAgent):
             device: The device to use.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -840,3 +840,11 @@ class GPIPD(MOPolicy, MOAgent):
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
+
+
+class GPILS(GPIPD):
+    """Model-free version of GPI-PD."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize GPI-LS deactivating the dynamics model."""
+        super().__init__(dyna=False, experiment_name="GPI-LS", *args, **kwargs)

@@ -90,26 +90,26 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         learning_rate: float = 3e-4,
         gamma: float = 0.99,
         tau: float = 0.005,
-        buffer_size: int = int(4e5),
+        buffer_size: int = 400000,
         net_arch: List = [256, 256],
-        dynamics_net_arch: List = [200, 200, 200, 200],
         batch_size: int = 128,
         num_q_nets: int = 2,
         delay_policy_update: int = 2,
         learning_starts: int = 100,
-        gradient_updates: int = 1,
+        gradient_updates: int = 20,
         use_gpi: bool = True,
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
-        per: bool = False,
+        per: bool = True,
         min_priority: float = 0.1,
         alpha: float = 0.6,
-        dyna: bool = False,
+        dyna: bool = True,
+        dynamics_net_arch: List = [200, 200, 200, 200],
         dynamics_train_freq: int = 250,
         dynamics_rollout_len: int = 5,
         dynamics_rollout_starts: int = 1000,
         dynamics_rollout_freq: int = 250,
-        dynamics_rollout_batch_size: int = 10000,
+        dynamics_rollout_batch_size: int = 50000,
         dynamics_buffer_size: int = 200000,
         dynamics_min_uncertainty: float = 2.0,
         dynamics_real_ratio: float = 0.1,
@@ -161,7 +161,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.tau = tau
         self.gamma = gamma
@@ -311,19 +311,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         if load_replay_buffer and "replay_buffer" in params:
             self.replay_buffer = params["replay_buffer"]
 
-    def _sample_batch_experiences(self, deactivate_per=False):
+    def _sample_batch_experiences(self):
         if not self.dyna or self.global_step < self.dynamics_rollout_starts or len(self.dynamics_buffer) == 0:
-            if deactivate_per:
-                return self.replay_buffer.sample_uniform(self.batch_size, to_tensor=True, device=self.device)
             return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
         else:
             num_real_samples = int(self.batch_size * self.dynamics_real_ratio)  # % of real world data
-            if self.per and not deactivate_per:
+            if self.per:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(
                     num_real_samples, to_tensor=True, device=self.device
                 )
             else:
-                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample_uniform(
+                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample(
                     num_real_samples, to_tensor=True, device=self.device
                 )
             (m_obs, m_actions, m_rewards, m_next_obs, m_dones) = self.dynamics_buffer.sample(
@@ -336,7 +334,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 th.cat([s_next_obs, m_next_obs], dim=0),
                 th.cat([s_dones, m_dones], dim=0),
             )
-            if self.per and not deactivate_per:
+            if self.per:
                 return experience_tuples + (idxes,)
             return experience_tuples
 
@@ -670,3 +668,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
+
+
+class GPILSContinuousAction(GPIPDContinuousAction):
+    """Model-free version of GPI-PD with continuous actions."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the agent deactivating the dynamics model."""
+        super().__init__(dyna=False, experiment_name="GPI-LS Continuous Action", *args, **kwargs)
