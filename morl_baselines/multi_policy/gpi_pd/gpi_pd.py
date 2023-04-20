@@ -254,6 +254,10 @@ class GPIPD(MOPolicy, MOAgent):
                 self.observation_shape, 1, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
             )
         self.dynamics_train_freq = dynamics_train_freq
+        self.dynamics_buffer_size = dynamics_buffer_size
+        self.dynamics_normalize_inputs = dynamics_normalize_inputs
+        self.dynamics_num_elites = dynamics_num_elites
+        self.dynamics_ensemble_size = dynamics_ensemble_size
         self.dynamics_rollout_len = dynamics_rollout_len
         self.dynamics_rollout_starts = dynamics_rollout_starts
         self.dynamics_rollout_freq = dynamics_rollout_freq
@@ -294,10 +298,10 @@ class GPIPD(MOPolicy, MOAgent):
             "dynamics_rollout_starts": self.dynamics_rollout_starts,
             "dynamics_rollout_freq": self.dynamics_rollout_freq,
             "dynamics_rollout_batch_size": self.dynamics_rollout_batch_size,
-            "dynamics_buffer_size": self.dynamics_buffer.max_size,
-            "dynamics_normalize_inputs": self.dynamics.normalize_inputs,
-            "dynamics_ensemble_size": self.dynamics.ensemble_size,
-            "dynamics_num_elites": self.dynamics.num_elites,
+            "dynamics_buffer_size": self.dynamics_buffer_size,
+            "dynamics_normalize_inputs": self.dynamics_normalize_inputs,
+            "dynamics_ensemble_size": self.dynamics_ensemble_size,
+            "dynamics_num_elites": self.dynamics_num_elites,
             "real_ratio": self.real_ratio,
             "drop_rate": self.drop_rate,
             "layer_norm": self.layer_norm,
