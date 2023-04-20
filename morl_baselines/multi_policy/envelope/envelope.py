@@ -499,7 +499,7 @@ class Envelope(MOPolicy, MOAgent):
         eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
         obs, _ = self.env.reset()
 
-        w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian")
+        w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian", rng=self.np_random)
         tensor_w = th.tensor(w).float().to(self.device)
 
         for _ in range(1, total_timesteps + 1):
@@ -538,10 +538,10 @@ class Envelope(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer)
+                    log_episode_info(info["episode"], np.dot, w, self.global_step, writer=self.writer)
 
                 if weight is None:
-                    w = random_weights(self.reward_dim, 1, dist="gaussian")
+                    w = random_weights(self.reward_dim, 1, dist="gaussian", rng=self.np_random)
                     tensor_w = th.tensor(w).float().to(self.device)
 
             else:
