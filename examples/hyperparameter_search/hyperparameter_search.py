@@ -14,9 +14,14 @@ from morl_baselines.multi_policy.envelope.envelope import Envelope
 
 Worker = collections.namedtuple("Worker", ("queue", "process"))
 WorkerInitData = collections.namedtuple(
-    "WorkerInitData", ("num", "sweep_id", "sweep_run_name", "config")
+    "WorkerInitData", ("sweep_id", "seed", "config")
 )
 WorkerDoneData = collections.namedtuple("WorkerDoneData", ("hypervolume"))
+
+# TODO:
+# Define an array of seeds on top level and reuse them for each sweep iteration
+# Use seed_everything() to set the seed for each worker
+# Move a function to reset the wandb environment variables to common
 
 def reset_wandb_env():
     exclude = {
@@ -35,6 +40,9 @@ def train(sweep_q, worker_q):
     # Get the worker data
     worker_data = worker_q.get()
     config = worker_data.config
+    seed = worker_data.seed
+    group = worker_data.sweep_id
+    print(config, seed, group)
 
     def make_env():
         env = mo_gym.make("minecart-v0")
@@ -45,11 +53,8 @@ def train(sweep_q, worker_q):
     env = make_env()
     eval_env = make_env()
 
-    # Set the seed
-    seed = random.randint(0, 1000000)
-
     # Create the agent
-    agent = Envelope(env, **config, seed=seed, group=worker_data.sweep_id)
+    agent = Envelope(env, **config, seed=seed, group=group)
 
     # Launch the agent training
     print("Training started")
@@ -78,6 +83,9 @@ def main():
     # Set the number of seeds
     num_seeds = 3
 
+    # Create an array of seeds
+    seeds = [random.randint(0, 1000000) for _ in range(num_seeds)]
+
     # Get the sweep id
     sweep_run = wandb.init()
     sweep_run_name = sweep_run.name or sweep_run.id or "unknown"
@@ -98,12 +106,13 @@ def main():
     metrics = []
     for num in range(num_seeds):
         print("Starting worker {}".format(num))
+        seed = seeds[num]
+        print(seed)
         worker = workers[num]
         worker.queue.put(
             WorkerInitData(
                 sweep_id=sweep_id,
-                num=num,
-                sweep_run_name=sweep_run_name,
+                seed=seed,
                 config=dict(sweep_run.config),
             )
         )
@@ -121,7 +130,7 @@ def main():
     wandb.finish()
 
 # Set up the default hyperparameters
-with open('./sweep-config.yaml') as file:
+with open('./sweep_config.yaml') as file:
     sweep_config = yaml.load(file, Loader=yaml.FullLoader)
 
 # Set up the sweep
