@@ -42,7 +42,6 @@ def train(sweep_q, worker_q):
     config = worker_data.config
     seed = worker_data.seed
     group = worker_data.sweep_id
-    print(config, seed, group)
 
     def make_env():
         env = mo_gym.make("minecart-v0")
@@ -107,7 +106,6 @@ def main():
     for num in range(num_seeds):
         print("Starting worker {}".format(num))
         seed = seeds[num]
-        print(seed)
         worker = workers[num]
         worker.queue.put(
             WorkerInitData(
