@@ -340,3 +340,13 @@ def seed_everything(seed: int):
     th.cuda.manual_seed(seed)
     th.backends.cudnn.deterministic = True
     th.backends.cudnn.benchmark = True
+
+def reset_wandb_env():
+    exclude = {
+        "WANDB_PROJECT",
+        "WANDB_ENTITY",
+        "WANDB_API_KEY",
+    }
+    for k, v in os.environ.items():
+        if k.startswith("WANDB_") and k not in exclude:
+            del os.environ[k]

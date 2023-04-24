@@ -2,8 +2,6 @@ import multiprocessing
 import collections
 import random
 import yaml
-import os
-import time
 
 import wandb
 import numpy as np
@@ -11,6 +9,7 @@ import mo_gymnasium as mo_gym
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
+from morl_baselines.common.utils import reset_wandb_env
 
 Worker = collections.namedtuple("Worker", ("queue", "process"))
 WorkerInitData = collections.namedtuple(
@@ -18,18 +17,14 @@ WorkerInitData = collections.namedtuple(
 )
 WorkerDoneData = collections.namedtuple("WorkerDoneData", ("hypervolume"))
 
-# TODO:
-# Move a function to reset the wandb environment variables to common
+# Set the number of seeds
+num_seeds = 3
 
-def reset_wandb_env():
-    exclude = {
-        "WANDB_PROJECT",
-        "WANDB_ENTITY",
-        "WANDB_API_KEY",
-    }
-    for k, v in os.environ.items():
-        if k.startswith("WANDB_") and k not in exclude:
-            del os.environ[k]
+# Create an array of seeds
+seeds = [random.randint(0, 1000000) for _ in range(num_seeds)]
+
+# Set the count of the sweep agent
+count = 5
 
 def train(sweep_q, worker_q):
     # Reset the wandb environment variables
@@ -78,12 +73,6 @@ def train(sweep_q, worker_q):
     sweep_q.put(WorkerDoneData(hypervolume=hypervolume))
 
 def main():
-    # Set the number of seeds
-    num_seeds = 3
-
-    # Create an array of seeds
-    seeds = [random.randint(0, 1000000) for _ in range(num_seeds)]
-
     # Get the sweep id
     sweep_run = wandb.init()
 
@@ -133,5 +122,5 @@ with open('./sweep_config.yaml') as file:
 sweep_id = wandb.sweep(sweep=sweep_config, project="MORL-Baselines")
 
 # Run the sweep agent
-wandb.agent(sweep_id, function=main, count=5)
+wandb.agent(sweep_id, function=main, count=count)
 

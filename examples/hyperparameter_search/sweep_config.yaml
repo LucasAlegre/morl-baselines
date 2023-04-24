@@ -45,5 +45,3 @@ parameters:
     value: 1000
   tau:
     value: 1
-
-# program: hyperparameter_search.py

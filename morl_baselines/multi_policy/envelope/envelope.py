@@ -507,6 +507,9 @@ class Envelope(MOPolicy, MOAgent):
         tensor_w = th.tensor(w).float().to(self.device)
 
         for _ in range(1, total_timesteps + 1):
+
+            print(f"Step: {self.global_step}", end="\r")
+
             if total_episodes is not None and num_episodes == total_episodes:
                 break
 
