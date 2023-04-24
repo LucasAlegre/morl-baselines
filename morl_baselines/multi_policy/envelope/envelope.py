@@ -471,6 +471,7 @@ class Envelope(MOPolicy, MOAgent):
         num_eval_weights_for_front: int = 100,
         num_eval_episodes_for_front: int = 5,
         reset_learning_starts: bool = False,
+        verbose: Optional[bool] = False,
     ):
         """Train the agent.
 
@@ -486,6 +487,7 @@ class Envelope(MOPolicy, MOAgent):
             num_eval_weights_for_front: number of weights to sample for creating the pareto front when evaluating.
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
+            verbose: whether to print the episode info.
         """
         if eval_env is not None:
             assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
@@ -540,7 +542,7 @@ class Envelope(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer)
+                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer, verbose=verbose)
 
                 if weight is None:
                     w = random_weights(self.reward_dim, 1, dist="gaussian")

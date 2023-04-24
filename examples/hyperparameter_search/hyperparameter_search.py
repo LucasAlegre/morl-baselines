@@ -66,6 +66,7 @@ def train(sweep_q, worker_q):
         eval_freq=100000,
         reset_num_timesteps=False,
         reset_learning_starts=False,
+        verbose=False
     )
     print("Training finished")
 
@@ -91,7 +92,6 @@ def main():
     sweep_q = multiprocessing.Queue()
     workers = []
     for num in range(num_seeds):
-        print("Spinning up worker {}".format(num))
         q = multiprocessing.Queue()
         p = multiprocessing.Process(
             target=train, kwargs=dict(sweep_q=sweep_q, worker_q=q)
@@ -101,7 +101,7 @@ def main():
 
     metrics = []
     for num in range(num_seeds):
-        print("Starting worker {}".format(num))
+        print("Spinning up worker {}".format(num))
         seed = seeds[num]
         worker = workers[num]
         worker.queue.put(
