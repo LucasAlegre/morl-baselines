@@ -85,7 +85,6 @@ def main():
 
     # Get the sweep id
     sweep_run = wandb.init()
-    sweep_run_name = sweep_run.name or sweep_run.id or "unknown"
 
     # Spin up workers before calling wandb.init()
     # Workers will be blocked on a queue waiting to start
