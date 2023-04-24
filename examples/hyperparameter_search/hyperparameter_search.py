@@ -19,8 +19,6 @@ WorkerInitData = collections.namedtuple(
 WorkerDoneData = collections.namedtuple("WorkerDoneData", ("hypervolume"))
 
 # TODO:
-# Define an array of seeds on top level and reuse them for each sweep iteration
-# Use seed_everything() to set the seed for each worker
 # Move a function to reset the wandb environment variables to common
 
 def reset_wandb_env():
@@ -39,9 +37,9 @@ def train(sweep_q, worker_q):
 
     # Get the worker data
     worker_data = worker_q.get()
-    config = worker_data.config
     seed = worker_data.seed
     group = worker_data.sweep_id
+    config = worker_data.config
 
     def make_env():
         env = mo_gym.make("minecart-v0")
@@ -65,7 +63,7 @@ def train(sweep_q, worker_q):
         ref_point=np.array([0, 0, -200.0]),
         known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
         num_eval_weights_for_front=100,
-        eval_freq=50000,
+        eval_freq=100000,
         reset_num_timesteps=False,
         reset_learning_starts=False,
     )
@@ -114,11 +112,12 @@ def main():
                 config=dict(sweep_run.config),
             )
         )
-        # get metric from worker
+
+        # Get metric from worker
         result = sweep_q.get()
-        # wait for worker to finish
+        # Wait for worker to finish
         worker.process.join()
-        # log metric to sweep_run
+        # Log metric to sweep_run
         metrics.append(result.hypervolume)
 
     print("Metrics: {}".format(metrics))
