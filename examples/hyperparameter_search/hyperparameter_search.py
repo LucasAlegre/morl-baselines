@@ -2,6 +2,7 @@ import multiprocessing
 import collections
 import random
 import yaml
+import os
 
 import wandb
 import numpy as np
@@ -114,8 +115,11 @@ def main():
     sweep_run.log(dict(hypervolume=sum(metrics) / len(metrics)))
     wandb.finish()
 
+# Load the sweep config
+config_file = os.path.join(os.path.dirname(__file__), 'sweep_config.yaml')
+
 # Set up the default hyperparameters
-with open('./sweep_config.yaml') as file:
+with open(config_file) as file:
     sweep_config = yaml.load(file, Loader=yaml.FullLoader)
 
 # Set up the sweep
