@@ -1,7 +1,7 @@
-import collections
 import random
 import yaml
 import os
+from dataclasses import dataclass
 from concurrent.futures import ProcessPoolExecutor
 
 import wandb
@@ -12,10 +12,15 @@ from mo_gymnasium.utils import MORecordEpisodeStatistics
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.common.utils import reset_wandb_env
 
-WorkerInitData = collections.namedtuple(
-    "WorkerInitData", ("sweep_id", "seed", "config")
-)
-WorkerDoneData = collections.namedtuple("WorkerDoneData", ("hypervolume"))
+@dataclass
+class WorkerInitData:
+    sweep_id: str
+    seed: int
+    config: dict
+
+@dataclass
+class WorkerDoneData:
+    hypervolume: float
 
 # Set the number of seeds
 num_seeds = 3
@@ -26,7 +31,7 @@ seeds = [random.randint(0, 1000000) for _ in range(num_seeds)]
 # Set the count of the sweep agent
 count = 5
 
-def train(worker_data):
+def train(worker_data: WorkerInitData) -> WorkerDoneData:
     # Reset the wandb environment variables
     reset_wandb_env()
 
@@ -49,14 +54,14 @@ def train(worker_data):
     # Launch the agent training
     print("Training started")
     agent.train(
-        total_timesteps=1000,
+        total_timesteps=100000,
         total_episodes=None,
         weight=None,
         eval_env=eval_env,
         ref_point=np.array([0, 0, -200.0]),
         known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
-        num_eval_weights_for_front=5,
-        eval_freq=1000,
+        num_eval_weights_for_front=100,
+        eval_freq=100000,
         reset_num_timesteps=False,
         reset_learning_starts=False,
         verbose=False
