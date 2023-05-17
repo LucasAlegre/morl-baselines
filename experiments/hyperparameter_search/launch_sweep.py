@@ -1,7 +1,8 @@
+import argparse
 import random
 import yaml
 import os
-from dataclasses import dataclass
+
 from concurrent.futures import ProcessPoolExecutor
 
 import wandb
@@ -11,6 +12,8 @@ from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.common.utils import reset_wandb_env
+
+from morl_baselines.common.experiments import ALGOS, ENVS_WITH_KNOWN_PARETO_FRONT, StoreDict
 
 @dataclass
 class WorkerInitData:
@@ -23,14 +26,39 @@ class WorkerInitData:
 class WorkerDoneData:
     hypervolume: float
 
-# Set the number of seeds
-num_seeds = 3
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--algo", type=str, help="Name of the algorithm to run", choices=ALGOS.keys(), required=True)
+    parser.add_argument("--env-id", type=str, help="MO-Gymnasium id of the environment to run", required=True)
+    parser.add_argument("--num-timesteps", type=int, help="Number of timesteps to train for", required=True)
+    parser.add_argument("--gamma", type=float, help="Discount factor to apply to the environment and algorithm", required=True)
+    parser.add_argument(
+        "--ref-point", type=float, nargs="+", help="Reference point to use for the hypervolume calculation", required=True
+    )
 
-# Create an array of seeds
-seeds = [random.randint(0, 1000000) for _ in range(num_seeds)]
+    # parser.add_argument("--seed", type=int, help="Random seed to use", default=42)
+    # parser.add_argument("--sweep-id", type=str, help="Sweep id to use for the sweep", required=False)
 
-# Set the count of the sweep agent
-count = 5
+    parser.add_argument("--wandb-entity", type=str, help="Wandb entity to use for the sweep", required=False)
+    parser.add_argument("--project-name", type=str, help="Project name to use for the sweep", default="MORL-Baselines")
+
+    parser.add_argument("--sweep-count", type=int, help="Number of times to run the sweep", default=10)
+    parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
+
+    parser.add_argument(
+        "--train-hyperparams",
+        type=str,
+        nargs="+",
+        action=StoreDict,
+        help="Override hyperparameters to use for the train method algorithm. Example: --train-hyperparams num_eval_weights_for_front:10 timesteps_per_iter:10000",
+        default={},
+    )
+
+    args = parser.parse_args()
+
+    parser.add_argument("--config-name", type=str, help="Name of the config to use for the sweep.", default=f"{args.algo}.yaml")
+
+    return args
 
 def train(worker_data: WorkerInitData) -> WorkerDoneData:
     # Reset the wandb environment variables
@@ -56,14 +84,14 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     # Launch the agent training
     print(f"Worker {worker_num}: Seed {seed}. Training agent...")
     agent.train(
-        total_timesteps=100000,
+        total_timesteps=1000,
         total_episodes=None,
         weight=None,
         eval_env=eval_env,
         ref_point=np.array([0, 0, -200.0]),
         known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
-        num_eval_weights_for_front=100,
-        eval_freq=100000,
+        num_eval_weights_for_front=5,
+        eval_freq=1000,
         reset_num_timesteps=False,
         reset_learning_starts=False,
         verbose=False
@@ -82,9 +110,9 @@ def main():
     # Spin up workers before calling wandb.init()
     # Workers will be blocked on a queue waiting to start
 
-    with ProcessPoolExecutor(max_workers=num_seeds) as executor:
+    with ProcessPoolExecutor(max_workers=args.num_seeds) as executor:
         futures = []
-        for num in range(num_seeds):
+        for num in range(args.num_seeds):
             # print("Spinning up worker {}".format(num))
             seed = seeds[num]
             futures.append(executor.submit(train, WorkerInitData(
@@ -108,15 +136,21 @@ def main():
     sweep_run.log(dict(hypervolume=average_hypervolume))
     wandb.finish()
 
+args = parse_args()
+print(args)
+
+# Create an array of seeds
+seeds = [random.randint(0, 1000000) for _ in range(args.num_seeds)]
+
 # Load the sweep config
-config_file = os.path.join(os.path.dirname(__file__), 'sweep_config.yaml')
+config_file = os.path.join(os.path.dirname(__file__), "configs" args.config_name)
 
 # Set up the default hyperparameters
 with open(config_file) as file:
     sweep_config = yaml.load(file, Loader=yaml.FullLoader)
 
 # Set up the sweep
-sweep_id = wandb.sweep(sweep=sweep_config, project="MORL-Baselines")
+sweep_id = wandb.sweep(sweep=sweep_config, entity=args.wandb_entity, project=args.project_name)
 
 # Run the sweep agent
-wandb.agent(sweep_id, function=main, count=count)
+wandb.agent(sweep_id, function=main, count=args.sweep_count)
