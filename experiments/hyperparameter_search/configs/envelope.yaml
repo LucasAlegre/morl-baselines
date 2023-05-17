@@ -21,6 +21,8 @@ parameters:
     max: 100000
   max_grad_norm:
     value: 0.1
+  gamma:
+    value: 0.98
   batch_size:
     value: 64
   net_arch:
