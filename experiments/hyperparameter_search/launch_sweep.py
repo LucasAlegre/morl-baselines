@@ -79,7 +79,6 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
         algo = ALGOS[args.algo](
             env_id=args.env_id,
             origin=np.array(args.ref_point),
-            gamma=config["gamma"],
             wandb_entity=args.wandb_entity,
             **config,
             seed=seed,
@@ -104,7 +103,6 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
 
         algo = ALGOS[args.algo](
             env=env,
-            gamma=config["gamma"],
             wandb_entity=args.wandb_entity,
             **config,
             seed=seed,
