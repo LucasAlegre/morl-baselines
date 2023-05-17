@@ -2,6 +2,7 @@ import argparse
 import random
 import yaml
 import os
+from dataclasses import dataclass
 
 from concurrent.futures import ProcessPoolExecutor
 
@@ -10,7 +11,6 @@ import numpy as np
 import mo_gymnasium as mo_gym
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.common.utils import reset_wandb_env
 
 from morl_baselines.common.experiments import ALGOS, ENVS_WITH_KNOWN_PARETO_FRONT, StoreDict
@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument("--algo", type=str, help="Name of the algorithm to run", choices=ALGOS.keys(), required=True)
     parser.add_argument("--env-id", type=str, help="MO-Gymnasium id of the environment to run", required=True)
     parser.add_argument("--num-timesteps", type=int, help="Number of timesteps to train for", required=True)
-    parser.add_argument("--gamma", type=float, help="Discount factor to apply to the environment and algorithm", required=True)
+    # parser.add_argument("--gamma", type=float, help="Discount factor to apply to the environment and algorithm", required=True)
     parser.add_argument(
         "--ref-point", type=float, nargs="+", help="Reference point to use for the hypervolume calculation", required=True
     )
@@ -57,6 +57,9 @@ def parse_args():
     args = parser.parse_args()
 
     parser.add_argument("--config-name", type=str, help="Name of the config to use for the sweep.", default=f"{args.algo}.yaml")
+    parser.add_argument("--eval-freq", type=int, help="The frequency of evaluation", default=args.num_timesteps)
+
+    args = parser.parse_args()
 
     return args
 
@@ -69,39 +72,67 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     config = worker_data.config
     worker_num = worker_data.worker_num
 
-    def make_env():
-        env = mo_gym.make("minecart-v0")
-        env = MORecordEpisodeStatistics(env, gamma=0.98)
-        return env
+    if args.algo == "pgmorl":
+        # PGMORL creates its own environments because it requires wrappers
+        print(f"Worker {worker_num}: Seed {seed}. Instantiating {args.algo} on {args.env_id}")
+        eval_env = mo_gym.make(args.env_id)
+        algo = ALGOS[args.algo](
+            env_id=args.env_id,
+            origin=np.array(args.ref_point),
+            gamma=config["gamma"],
+            wandb_entity=args.wandb_entity,
+            **config,
+            seed=seed,
+            group=group
+        )
+        print(algo.get_config())
 
-    # Create the environments
-    env = make_env()
-    eval_env = make_env()
+        # Launch the agent training
+        print(f"Worker {worker_num}: Seed {seed}. Training agent...")
+        algo.train(
+            total_timesteps=args.num_timesteps,
+            eval_env=eval_env,
+            ref_point=np.array(args.ref_point),
+            known_pareto_front=None,
+            **args.train_hyperparams,
+        )
 
-    # Create the agent
-    agent = Envelope(env, **config, seed=seed, group=group)
+    else:
+        print(f"Worker {worker_num}: Seed {seed}. Instantiating {args.algo} on {args.env_id}")
+        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=config["gamma"])
+        eval_env = mo_gym.make(args.env_id)
 
-    # Launch the agent training
-    print(f"Worker {worker_num}: Seed {seed}. Training agent...")
-    agent.train(
-        total_timesteps=1000,
-        total_episodes=None,
-        weight=None,
-        eval_env=eval_env,
-        ref_point=np.array([0, 0, -200.0]),
-        known_pareto_front=env.unwrapped.pareto_front(gamma=0.98),
-        num_eval_weights_for_front=5,
-        eval_freq=1000,
-        reset_num_timesteps=False,
-        reset_learning_starts=False,
-        verbose=False
-    )
+        algo = ALGOS[args.algo](
+            env=env,
+            gamma=config["gamma"],
+            wandb_entity=args.wandb_entity,
+            **config,
+            seed=seed,
+            group=group
+        )
 
-    # Get the hypervolume from the wandb run
-    hypervolume = wandb.run.summary["eval/hypervolume"]
-    print(f"Worker {worker_num}: Seed {seed}. Hypervolume: {hypervolume}")
+        if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
+            known_pareto_front = env.unwrapped.pareto_front(gamma=config["gamma"])
+        else:
+            known_pareto_front = None
 
-    return WorkerDoneData(hypervolume=hypervolume)
+        print(algo.get_config())
+
+        # Launch the agent training
+        print(f"Worker {worker_num}: Seed {seed}. Training agent...")
+        algo.train(
+            total_timesteps=args.num_timesteps,
+            eval_env=eval_env,
+            ref_point=np.array(args.ref_point),
+            known_pareto_front=known_pareto_front,
+            **args.train_hyperparams,
+        )
+
+        # Get the hypervolume from the wandb run
+        hypervolume = wandb.run.summary["eval/hypervolume"]
+        print(f"Worker {worker_num}: Seed {seed}. Hypervolume: {hypervolume}")
+
+        return WorkerDoneData(hypervolume=hypervolume)
 
 def main():
     # Get the sweep id
@@ -109,7 +140,6 @@ def main():
 
     # Spin up workers before calling wandb.init()
     # Workers will be blocked on a queue waiting to start
-
     with ProcessPoolExecutor(max_workers=args.num_seeds) as executor:
         futures = []
         for num in range(args.num_seeds):
@@ -143,7 +173,7 @@ print(args)
 seeds = [random.randint(0, 1000000) for _ in range(args.num_seeds)]
 
 # Load the sweep config
-config_file = os.path.join(os.path.dirname(__file__), "configs" args.config_name)
+config_file = os.path.join(os.path.dirname(__file__), "configs", args.config_name)
 
 # Set up the default hyperparameters
 with open(config_file) as file:
