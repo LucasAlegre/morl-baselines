@@ -30,8 +30,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--algo", type=str, help="Name of the algorithm to run", choices=ALGOS.keys(), required=True)
     parser.add_argument("--env-id", type=str, help="MO-Gymnasium id of the environment to run", required=True)
-    parser.add_argument("--num-timesteps", type=int, help="Number of timesteps to train for", required=True)
-    # parser.add_argument("--gamma", type=float, help="Discount factor to apply to the environment and algorithm", required=True)
+    parser.add_argument("--gamma", type=float, help="Discount factor to apply to the environment and algorithm", required=True)
     parser.add_argument(
         "--ref-point", type=float, nargs="+", help="Reference point to use for the hypervolume calculation", required=True
     )
@@ -57,7 +56,6 @@ def parse_args():
     args = parser.parse_args()
 
     parser.add_argument("--config-name", type=str, help="Name of the config to use for the sweep.", default=f"{args.algo}.yaml")
-    parser.add_argument("--eval-freq", type=int, help="The frequency of evaluation", default=args.num_timesteps)
 
     args = parser.parse_args()
 
@@ -98,11 +96,12 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
 
     else:
         print(f"Worker {worker_num}: Seed {seed}. Instantiating {args.algo} on {args.env_id}")
-        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=config["gamma"])
+        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
         eval_env = mo_gym.make(args.env_id)
 
         algo = ALGOS[args.algo](
             env=env,
+            gamma=args.gamma,
             wandb_entity=args.wandb_entity,
             **config,
             seed=seed,
@@ -110,16 +109,15 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
         )
 
         if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
-            known_pareto_front = env.unwrapped.pareto_front(gamma=config["gamma"])
+            known_pareto_front = env.unwrapped.pareto_front(gamma=args.gamma)
         else:
             known_pareto_front = None
 
-        print(algo.get_config())
+        # print(algo.get_config())
 
         # Launch the agent training
         print(f"Worker {worker_num}: Seed {seed}. Training agent...")
         algo.train(
-            total_timesteps=args.num_timesteps,
             eval_env=eval_env,
             ref_point=np.array(args.ref_point),
             known_pareto_front=known_pareto_front,
