@@ -13,11 +13,11 @@ parameters:
     max: 1
   final_epsilon:
     distribution: uniform
-    min: 0.01
-    max: 0.2
+    min: 0.02
+    max: 0.15
   epsilon_decay_steps:
     distribution: uniform
-    min: 10000
+    min: 80000
     max: 100000
   max_grad_norm:
     value: 0.1
