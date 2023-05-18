@@ -34,9 +34,6 @@ def parse_args():
         "--ref-point", type=float, nargs="+", help="Reference point to use for the hypervolume calculation", required=True
     )
 
-    # parser.add_argument("--seed", type=int, help="Random seed to use", default=42)
-    # parser.add_argument("--sweep-id", type=str, help="Sweep id to use for the sweep", required=False)
-
     parser.add_argument("--wandb-entity", type=str, help="Wandb entity to use for the sweep", required=False)
     parser.add_argument("--project-name", type=str, help="Project name to use for the sweep", default="MORL-Baselines")
 
@@ -161,7 +158,7 @@ def main():
     wandb.finish()
 
 args = parse_args()
-print(args)
+# print(args)
 
 # Create an array of seeds
 seeds = [random.randint(0, 1000000) for _ in range(args.num_seeds)]
