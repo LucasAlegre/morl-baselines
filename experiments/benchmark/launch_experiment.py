@@ -17,17 +17,6 @@ import requests
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.utils import seed_everything
-from morl_baselines.multi_policy.envelope.envelope import Envelope
-from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
-from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
-    GPIPDContinuousAction,
-)
-from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
-    MPMOQLearning,
-)
-from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
-from morl_baselines.multi_policy.pcn.pcn import PCN
-from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 
 from morl_baselines.common.experiments import ALGOS, ENVS_WITH_KNOWN_PARETO_FRONT, StoreDict
 
