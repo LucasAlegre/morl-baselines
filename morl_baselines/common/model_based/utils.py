@@ -89,7 +89,7 @@ class ModelEnv:
             self.termination_func = termination_fn_hopper
         elif env_id == "HalfCheetah-v2" or env_id == "mo-halfcheetah-v4":
             self.termination_func = termination_fn_false
-        elif env_id == "LunarLanderContinuous-v2":
+        elif env_id == "LunarLanderContinuous-v2" or env_id.startswith("mo-lunar-lander"):
             self.termination_func = termination_fn_false
         elif env_id == "ReacherMultiTask-v0" or env_id.startswith("mo-reacher-v"):
             self.termination_func = termination_fn_false
