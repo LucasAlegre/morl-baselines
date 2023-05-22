@@ -85,7 +85,7 @@ class ModelEnv:
         """
         self.model = model
         self.rew_dim = rew_dim
-        if env_id == "Hopper-v2" or env_id == "Hopper-v4" or env_id == "mo-hopper-v4":
+        if env_id == "Hopper-v2" or env_id == "Hopper-v4" or env_id == "mo-hopper-v4" or env_id == "mo-hopper-2d-v4":
             self.termination_func = termination_fn_hopper
         elif env_id == "HalfCheetah-v2" or env_id == "mo-halfcheetah-v4":
             self.termination_func = termination_fn_false
