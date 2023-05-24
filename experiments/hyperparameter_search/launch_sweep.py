@@ -151,7 +151,7 @@ def main():
 
     # Compute the average hypervolume
     average_hypervolume = sum(metrics) / len(metrics)
-    print("Average hypervolume: {}".format(average_hypervolume))
+    print(f"Average hypervolume of the sweep {sweep_id}: {average_hypervolume}")
 
     # Log the average hypervolume to the sweep run
     sweep_run.log(dict(hypervolume=average_hypervolume))
