@@ -250,7 +250,6 @@ def log_all_multi_policy_metrics(
     hv_ref_point: np.ndarray,
     reward_dim: int,
     global_step: int,
-    writer: SummaryWriter,
     n_sample_weights: int = 50,
     ref_front: Optional[List[np.ndarray]] = None,
 ):
@@ -277,9 +276,13 @@ def log_all_multi_policy_metrics(
     sp = sparsity(current_front)
     eum = expected_utility(current_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
 
-    writer.add_scalar("eval/hypervolume", hv, global_step=global_step)
-    writer.add_scalar("eval/sparsity", sp, global_step=global_step)
-    writer.add_scalar("eval/eum", eum, global_step=global_step)
+    # print hypervolume
+    print(f"Hypervolume: {hv}")
+
+    wandb.log({"eval/hypervolume": hv}, step=global_step)
+    wandb.log({"eval/sparsity": sp}, step=global_step)
+    wandb.log({"eval/eum": eum}, step=global_step)
+
     front = wandb.Table(
         columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
         data=[p.tolist() for p in current_front],
@@ -288,20 +291,22 @@ def log_all_multi_policy_metrics(
 
     # This is a workaround for hyperparameter sweeps to work
     # This updates the summary with the current value of the hypervolume
-    wandb.run.summary.update({"eval/hypervolume": hv})
-    print(f"Hypervolume: {hv}")
+    # wandb.run.summary.update({"eval/hypervolume": hv})
+    # print(f"Hypervolume: {hv}")
 
     # If PF is known, log the additional metrics
     if ref_front is not None:
         generational_distance = igd(known_front=ref_front, current_estimate=current_front)
-        writer.add_scalar("eval/igd", generational_distance, global_step=global_step)
+
+        wandb.log({"eval/igd": generational_distance}, step=global_step)
+
         mul = maximum_utility_loss(
             front=current_front,
             reference_set=ref_front,
             weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32),
         )
-        writer.add_scalar("eval/mul", mul, global_step=global_step)
 
+        wandb.log({"eval/mul": mul}, step=global_step)
 
 def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, length: int = 300):
     """Render an episode and save it as a gif."""

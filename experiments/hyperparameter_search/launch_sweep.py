@@ -78,7 +78,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
             seed=seed,
             group=group
         )
-        print(algo.get_config())
+        # print(algo.get_config())
 
         # Launch the agent training
         print(f"Worker {worker_num}: Seed {seed}. Training agent...")

@@ -828,7 +828,6 @@ class GPIPD(MOPolicy, MOAgent):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
-                    writer=self.writer,
                     ref_front=known_pareto_front,
                 )
                 # This is the EU computed in the paper
