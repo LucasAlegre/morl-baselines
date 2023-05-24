@@ -289,11 +289,6 @@ def log_all_multi_policy_metrics(
     )
     wandb.log({"eval/front": front}, step=global_step)
 
-    # This is a workaround for hyperparameter sweeps to work
-    # This updates the summary with the current value of the hypervolume
-    # wandb.run.summary.update({"eval/hypervolume": hv})
-    # print(f"Hypervolume: {hv}")
-
     # If PF is known, log the additional metrics
     if ref_front is not None:
         generational_distance = igd(known_front=ref_front, current_estimate=current_front)
