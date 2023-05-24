@@ -276,9 +276,6 @@ def log_all_multi_policy_metrics(
     sp = sparsity(current_front)
     eum = expected_utility(current_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
 
-    # print hypervolume
-    print(f"Hypervolume: {hv}")
-
     wandb.log({"eval/hypervolume": hv}, step=global_step)
     wandb.log({"eval/sparsity": sp}, step=global_step)
     wandb.log({"eval/eum": eum}, step=global_step)
