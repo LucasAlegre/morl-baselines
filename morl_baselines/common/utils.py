@@ -289,9 +289,7 @@ def log_all_multi_policy_metrics(
     # If PF is known, log the additional metrics
     if ref_front is not None:
         generational_distance = igd(known_front=ref_front, current_estimate=current_front)
-
         wandb.log({"eval/igd": generational_distance}, step=global_step)
-
         mul = maximum_utility_loss(
             front=current_front,
             reference_set=ref_front,
