@@ -33,7 +33,6 @@ dependencies = [
     "imageio",
     "moviepy",
     "seaborn",
-    "tensorboard",
     "cvxpy",
     "fire",
 ]
