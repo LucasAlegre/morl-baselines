@@ -9,6 +9,7 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+import wandb
 
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import get_non_dominated_inds
@@ -388,9 +389,10 @@ class PCN(MOAgent, MOPolicy):
             if self.log:
                 hv = hypervolume(ref_point, leaves_r)
                 hv_est = hv
-                self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
-                self.writer.add_scalar("train/loss", np.mean(loss), self.global_step)
-                self.writer.add_scalar("train/entropy", np.mean(entropy), self.global_step)
+                wandb.log(
+                    {"train/hypervolume": hv_est, "train/loss": np.mean(loss), "train/entropy": np.mean(entropy)},
+                    step=self.global_step,
+                )
 
             returns = []
             horizons = []
@@ -403,19 +405,25 @@ class PCN(MOAgent, MOPolicy):
 
             total_episodes += num_step_episodes
             if self.log:
-                self.writer.add_scalar("train/episode", total_episodes, self.global_step)
-                self.writer.add_scalar("train/horizon_desired", desired_horizon, self.global_step)
-                self.writer.add_scalar(
-                    "train/mean_horizon_distance", np.linalg.norm(np.mean(horizons) - desired_horizon), self.global_step
+                wandb.log(
+                    {
+                        "train/episode": total_episodes,
+                        "train/horizon_desired": desired_horizon,
+                        "train/mean_horizon_distance": np.linalg.norm(np.mean(horizons) - desired_horizon),
+                    },
+                    step=self.global_step,
                 )
 
                 for i in range(self.reward_dim):
-                    self.writer.add_scalar(f"train/desired_return_{i}", desired_return[i], self.global_step)
-                    self.writer.add_scalar(f"train/mean_return_{i}", np.mean(np.array(returns)[:, i]), self.global_step)
-                    self.writer.add_scalar(
-                        f"train/mean_return_distance_{i}",
-                        np.linalg.norm(np.mean(np.array(returns)[:, i]) - desired_return[i]),
-                        self.global_step,
+                    wandb.log(
+                        {
+                            f"train/desired_return_{i}": desired_return[i],
+                            f"train/mean_return_{i}": np.mean(np.array(returns)[:, i]),
+                            f"train/mean_return_distance_{i}": np.linalg.norm(
+                                np.mean(np.array(returns)[:, i]) - desired_return[i]
+                            ),
+                        },
+                        step=self.global_step,
                     )
             print(
                 f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"
@@ -433,6 +441,5 @@ class PCN(MOAgent, MOPolicy):
                         hv_ref_point=ref_point,
                         reward_dim=self.reward_dim,
                         global_step=self.global_step,
-                        writer=self.writer,
                         ref_front=known_pareto_front,
                     )

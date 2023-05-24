@@ -101,8 +101,6 @@ class MPMOQLearning(MOAgent):
 
         if self.log:
             self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
-        else:
-            self.writer = None
 
     @override
     def get_config(self) -> dict:
@@ -219,7 +217,6 @@ class MPMOQLearning(MOAgent):
                 gpi_pd=self.gpi_pd,
                 parent=self,
                 log=self.log,
-                parent_writer=self.writer,
                 parent_rng=self.np_random,
                 seed=self.seed,
             )
@@ -257,9 +254,8 @@ class MPMOQLearning(MOAgent):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
-                    writer=self.writer,
                     ref_front=known_pareto_front,
                 )
 
-        if self.writer is not None:
+        if self.log:
             self.close_wandb()

@@ -9,7 +9,6 @@ import torch as th
 import wandb
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import nn
-from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.performance_indicators import (
     expected_utility,
@@ -187,7 +186,6 @@ def log_episode_info(
     weights: Optional[np.ndarray],
     global_timestep: int,
     id: Optional[int] = None,
-    writer: Optional[SummaryWriter] = None,
     verbose: bool = True,
 ):
     """Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).
@@ -198,7 +196,6 @@ def log_episode_info(
         weights: weights to be used in the scalarization
         global_timestep: global timestep
         id: agent's id
-        writer: wandb writer
         verbose: whether to print the episode info
     """
     episode_ts = info["l"]
@@ -218,31 +215,28 @@ def log_episode_info(
         print(f"Total Reward: {episode_return}, Discounted: {disc_episode_return}")
         print(f"Scalarized Reward: {scal_return}, Discounted: {disc_scal_return}")
 
-    if writer is not None:
-        if id is not None:
-            idstr = "_" + str(id)
-        else:
-            idstr = ""
-        writer.add_scalar(f"charts{idstr}/timesteps_per_episode", episode_ts, global_timestep)
-        writer.add_scalar(f"charts{idstr}/episode_time", episode_time, global_timestep)
-        writer.add_scalar(f"metrics{idstr}/scalarized_episode_return", scal_return, global_timestep)
-        writer.add_scalar(
-            f"metrics{idstr}/discounted_scalarized_episode_return",
-            disc_scal_return,
-            global_timestep,
-        )
+    if id is not None:
+        idstr = "_" + str(id)
+    else:
+        idstr = ""
+    wandb.log(
+        {
+            f"charts{idstr}/timesteps_per_episode": episode_ts,
+            f"charts{idstr}/episode_time": episode_time,
+            f"metrics{idstr}/scalarized_episode_return": scal_return,
+            f"metrics{idstr}/discounted_scalarized_episode_return": disc_scal_return,
+        },
+        step=global_timestep,
+    )
 
-        for i in range(episode_return.shape[0]):
-            writer.add_scalar(
-                f"metrics{idstr}/episode_return_obj_{i}",
-                episode_return[i],
-                global_timestep,
-            )
-            writer.add_scalar(
-                f"metrics{idstr}/disc_episode_return_obj_{i}",
-                disc_episode_return[i],
-                global_timestep,
-            )
+    for i in range(episode_return.shape[0]):
+        wandb.log(
+            {
+                f"metrics{idstr}/episode_return_obj_{i}": episode_return[i],
+                f"metrics{idstr}/disc_episode_return_obj_{i}": disc_episode_return[i],
+            },
+            step=global_timestep,
+        )
 
 
 def log_all_multi_policy_metrics(
@@ -250,7 +244,6 @@ def log_all_multi_policy_metrics(
     hv_ref_point: np.ndarray,
     reward_dim: int,
     global_step: int,
-    writer: SummaryWriter,
     n_sample_weights: int = 50,
     ref_front: Optional[List[np.ndarray]] = None,
 ):
@@ -269,7 +262,6 @@ def log_all_multi_policy_metrics(
         hv_ref_point: reference point for hypervolume computation
         reward_dim: number of objectives
         global_step: global step for logging
-        writer: wandb writer
         n_sample_weights: number of weights to sample for EUM and MUL computation
         ref_front: reference front, if known
     """
@@ -277,9 +269,7 @@ def log_all_multi_policy_metrics(
     sp = sparsity(current_front)
     eum = expected_utility(current_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
 
-    writer.add_scalar("eval/hypervolume", hv, global_step=global_step)
-    writer.add_scalar("eval/sparsity", sp, global_step=global_step)
-    writer.add_scalar("eval/eum", eum, global_step=global_step)
+    wandb.log({"eval/hypervolume": hv, "eval/sparsity": sp, "eval/eum": eum}, step=global_step)
     front = wandb.Table(
         columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
         data=[p.tolist() for p in current_front],
@@ -289,13 +279,12 @@ def log_all_multi_policy_metrics(
     # If PF is known, log the additional metrics
     if ref_front is not None:
         generational_distance = igd(known_front=ref_front, current_estimate=current_front)
-        writer.add_scalar("eval/igd", generational_distance, global_step=global_step)
         mul = maximum_utility_loss(
             front=current_front,
             reference_set=ref_front,
             weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32),
         )
-        writer.add_scalar("eval/mul", mul, global_step=global_step)
+        wandb.log({"eval/igd": generational_distance, "eval/mul": mul}, step=global_step)
 
 
 def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, length: int = 300):

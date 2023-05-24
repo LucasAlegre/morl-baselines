@@ -10,7 +10,7 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import wandb as wb
+import wandb
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.evaluation import policy_evaluation_mo
@@ -402,11 +402,11 @@ class GPIPD(MOPolicy, MOAgent):
                 obs = next_obs_pred[nonterm_mask]
 
         if self.log:
-            self.writer.add_scalar("dynamics/uncertainty_mean", uncertainties.mean(), self.global_step)
-            self.writer.add_scalar("dynamics/uncertainty_max", uncertainties.max(), self.global_step)
-            self.writer.add_scalar("dynamics/uncertainty_min", uncertainties.min(), self.global_step)
-            self.writer.add_scalar("dynamics/model_buffer_size", len(self.dynamics_buffer), self.global_step)
-            self.writer.add_scalar("dynamics/imagined_transitions", num_added_imagined_transitions, self.global_step)
+            wandb.log({"dynamics/uncertainty_mean": uncertainties.mean()}, step=self.global_step)
+            wandb.log({"dynamics/uncertainty_max": uncertainties.max()}, step=self.global_step)
+            wandb.log({"dynamics/uncertainty_min": uncertainties.min()}, step=self.global_step)
+            wandb.log({"dynamics/model_buffer_size": len(self.dynamics_buffer)}, step=self.global_step)
+            wandb.log({"dynamics/imagined_transitions": num_added_imagined_transitions}, step=self.global_step)
 
     def update(self, weight: th.Tensor):
         """Update the parameters of the networks."""
@@ -486,7 +486,7 @@ class GPIPD(MOPolicy, MOAgent):
             self.q_optim.zero_grad()
             critic_loss.backward()
             if self.log and self.global_step % 100 == 0:
-                self.writer.add_scalar("losses/grad_norm", get_grad_norm(self.q_nets[0].parameters()).item(), self.global_step)
+                wandb.log({"losses/grad_norm": get_grad_norm(self.q_nets[0].parameters()).item()}, step=self.global_step)
             if self.max_grad_norm is not None:
                 for psi_net in self.q_nets:
                     th.nn.utils.clip_grad_norm_(psi_net.parameters(), self.max_grad_norm)
@@ -524,16 +524,16 @@ class GPIPD(MOPolicy, MOAgent):
 
         if self.log and self.global_step % 100 == 0:
             if self.per:
-                self.writer.add_scalar("metrics/mean_priority", np.mean(priority), self.global_step)
-                self.writer.add_scalar("metrics/max_priority", np.max(priority), self.global_step)
-                self.writer.add_scalar("metrics/mean_td_error_w", per.abs().mean().item(), self.global_step)
+                wandb.log({"metrics/mean_priority": np.mean(priority)}, step=self.global_step)
+                wandb.log({"metrics/max_priority": np.max(priority)}, step=self.global_step)
+                wandb.log({"metrics/mean_td_error_w": per.abs().mean().item()}, step=self.global_step)
             if self.gpi_pd:
-                self.writer.add_scalar("metrics/mean_gpriority", np.mean(gpriority), self.global_step)
-                self.writer.add_scalar("metrics/max_gpriority", np.max(gpriority), self.global_step)
-                self.writer.add_scalar("metrics/mean_gtd_error_w", gper.abs().mean().item(), self.global_step)
-                self.writer.add_scalar("metrics/mean_absolute_diff_gtd_td", (gper - per).abs().mean().item(), self.global_step)
-            self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.global_step)
-            self.writer.add_scalar("metrics/epsilon", self.epsilon, self.global_step)
+                wandb.log({"metrics/mean_gpriority": np.mean(gpriority)}, step=self.global_step)
+                wandb.log({"metrics/max_gpriority": np.max(gpriority)}, step=self.global_step)
+                wandb.log({"metrics/mean_gtd_error_w": gper.abs().mean().item()}, step=self.global_step)
+                wandb.log({"metrics/mean_absolute_diff_gtd_td": (gper - per).abs().mean().item()}, step=self.global_step)
+            wandb.log({"losses/critic_loss": np.mean(critic_losses)}, step=self.global_step)
+            wandb.log({"metrics/epsilon": self.epsilon}, step=self.global_step)
 
     @th.no_grad()
     def gpi_action(self, obs: th.Tensor, w: th.Tensor, return_policy_index=False, include_w=False):
@@ -714,7 +714,7 @@ class GPIPD(MOPolicy, MOAgent):
                         Y = np.hstack((m_rewards, m_next_obs - m_obs))
                         mean_holdout_loss = self.dynamics.fit(X, Y)
                         if self.log:
-                            self.writer.add_scalar("dynamics/mean_holdout_loss", mean_holdout_loss, self.global_step)
+                            wandb.log({"dynamics/mean_holdout_loss": mean_holdout_loss}, step=self.global_step)
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
                         self._rollout_dynamics(tensor_w)
@@ -722,11 +722,11 @@ class GPIPD(MOPolicy, MOAgent):
                 self.update(tensor_w)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=weight, writer=self.writer)
+                self.policy_eval(eval_env, weights=weight, log=self.log)
 
                 if self.dyna and self.global_step >= self.dynamics_rollout_starts:
                     plot = visualize_eval(self, eval_env, self.dynamics, weight, compound=False, horizon=1000)
-                    wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
+                    wandb.log({"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step})
                     plot.close()
 
             if terminated or truncated:
@@ -734,8 +734,8 @@ class GPIPD(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, weight, self.global_step, writer=self.writer)
-                    wb.log({"metrics/policy_index": np.array(self.police_indices), "global_step": self.global_step})
+                    log_episode_info(info["episode"], np.dot, weight, self.global_step)
+                    wandb.log({"metrics/policy_index": np.array(self.police_indices), "global_step": self.global_step})
                     self.police_indices = []
 
                 if change_w_every_episode:
@@ -832,14 +832,13 @@ class GPIPD(MOPolicy, MOAgent):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
-                    writer=self.writer,
                     ref_front=known_pareto_front,
                 )
                 # This is the EU computed in the paper
                 mean_gpi_returns_test_tasks = np.mean(
                     [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
-                wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
+                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
