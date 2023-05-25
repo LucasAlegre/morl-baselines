@@ -332,7 +332,7 @@ class PCN(MOAgent, MOPolicy):
         num_step_episodes: int = 10,
         num_model_updates: int = 50,
         max_return: np.ndarray = 100.0,
-        max_buffer_size: int = 1000,
+        max_buffer_size: int = 100,
     ):
         """Train PCN.
 
