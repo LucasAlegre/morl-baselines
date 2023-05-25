@@ -13,6 +13,7 @@ import gymnasium as gym
 import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
+import wandb
 from scipy.optimize import least_squares
 
 from morl_baselines.common.morl_algorithm import MOAgent
@@ -425,8 +426,6 @@ class PGMORL(MOAgent):
         self.log = log
         if self.log:
             self.setup_wandb(project_name, experiment_name, wandb_entity)
-        else:
-            self.writer = None
 
         self.networks = [
             MOPPONet(
@@ -447,7 +446,7 @@ class PGMORL(MOAgent):
                 self.networks[i],
                 weights[i],
                 self.env,
-                self.writer,
+                log=self.log,
                 gamma=self.gamma,
                 device=self.device,
                 seed=self.seed,
@@ -517,7 +516,7 @@ class PGMORL(MOAgent):
     ):
         """Evaluates all agents and store their current performances on the buffer and pareto archive."""
         for i, agent in enumerate(self.agents):
-            _, _, _, discounted_reward = agent.policy_eval(eval_env, weights=agent.np_weights, writer=self.writer)
+            _, _, _, discounted_reward = agent.policy_eval(eval_env, weights=agent.np_weights, log=self.log)
             # Storing current results
             self.population.add(agent, discounted_reward)
             self.archive.add(agent, discounted_reward)
@@ -537,7 +536,6 @@ class PGMORL(MOAgent):
                 hv_ref_point=ref_point,
                 reward_dim=self.reward_dim,
                 global_step=self.global_step,
-                writer=self.writer,
                 ref_front=known_pareto_front,
             )
 
@@ -638,7 +636,7 @@ class PGMORL(MOAgent):
         for i in range(1, self.warmup_iterations + 1):
             print(f"Warmup iteration #{iteration}")
             if self.log:
-                self.writer.add_scalar("charts/warmup_iterations", i)
+                wandb.log({"charts/warmup_iterations": i, "global_step": self.global_step})
             self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
             iteration += 1
         self.__eval_all_agents(
@@ -656,15 +654,19 @@ class PGMORL(MOAgent):
             self.__task_weight_selection(ref_point=ref_point)
             print(f"Evolutionary generation #{evolutionary_generation}")
             if self.log:
-                self.writer.add_scalar("charts/evolutionary_generation", evolutionary_generation)
+                wandb.log(
+                    {"charts/evolutionary_generation": evolutionary_generation, "global_step": self.global_step},
+                )
 
             for _ in range(self.evolutionary_iterations):
                 # Run training of every agent for evolutionary iterations.
                 if self.log:
                     print(f"Evolutionary iteration #{iteration - self.warmup_iterations}")
-                    self.writer.add_scalar(
-                        "charts/evolutionary_iterations",
-                        iteration - self.warmup_iterations,
+                    wandb.log(
+                        {
+                            "charts/evolutionary_iterations": iteration - self.warmup_iterations,
+                            "global_step": self.global_step,
+                        },
                     )
                 self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
                 iteration += 1

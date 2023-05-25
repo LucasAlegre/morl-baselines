@@ -7,6 +7,7 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.optim as optim
+import wandb
 from torch.distributions import Categorical
 
 from morl_baselines.common.accrued_reward_buffer import AccruedRewardReplayBuffer
@@ -183,11 +184,12 @@ class EUPG(MOPolicy, MOAgent):
         self.optimizer.step()
 
         if self.log:
-            self.writer.add_scalar("losses/loss", loss, self.global_step)
-            self.writer.add_scalar(
-                "metrics/scalarized_episodic_return",
-                scalarized_return,
-                self.global_step,
+            wandb.log(
+                {
+                    "losses/loss": loss,
+                    "metrics/scalarized_episodic_return": scalarized_return,
+                    "global_step": self.global_step,
+                },
             )
 
     def train(
@@ -224,7 +226,7 @@ class EUPG(MOPolicy, MOAgent):
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval_esr(eval_env, scalarization=self.scalarization, writer=self.writer)
+                self.policy_eval_esr(eval_env, scalarization=self.scalarization, log=self.log)
 
             if terminated or truncated:
                 # NN is updated at the end of each episode
@@ -240,7 +242,6 @@ class EUPG(MOPolicy, MOAgent):
                         scalarization=self.scalarization,
                         weights=None,
                         global_timestep=self.global_step,
-                        writer=self.writer,
                     )
 
             else:

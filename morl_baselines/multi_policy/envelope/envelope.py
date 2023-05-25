@@ -9,6 +9,7 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import wandb
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
@@ -316,10 +317,11 @@ class Envelope(MOPolicy, MOAgent):
             self.q_optim.zero_grad()
             critic_loss.backward()
             if self.log and self.global_step % 100 == 0:
-                self.writer.add_scalar(
-                    "losses/grad_norm",
-                    get_grad_norm(self.q_net.parameters()).item(),
-                    self.global_step,
+                wandb.log(
+                    {
+                        "losses/grad_norm": get_grad_norm(self.q_net.parameters()).item(),
+                        "global_step": self.global_step,
+                    },
                 )
             if self.max_grad_norm is not None:
                 th.nn.utils.clip_grad_norm_(self.q_net.parameters(), self.max_grad_norm)
@@ -355,9 +357,14 @@ class Envelope(MOPolicy, MOAgent):
             )
 
         if self.log and self.global_step % 100 == 0:
-            self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.global_step)
-            self.writer.add_scalar("metrics/epsilon", self.epsilon, self.global_step)
-            self.writer.add_scalar("metrics/homotopy_lambda", self.homotopy_lambda, self.global_step)
+            wandb.log(
+                {
+                    "losses/critic_loss": np.mean(critic_losses),
+                    "metrics/epsilon": self.epsilon,
+                    "metrics/homotopy_lambda": self.homotopy_lambda,
+                    "global_step": self.global_step,
+                },
+            )
 
     @override
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
@@ -520,7 +527,7 @@ class Envelope(MOPolicy, MOAgent):
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 current_front = [
-                    self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, writer=None)[3]
+                    self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, log=self.log)[3]
                     for ew in eval_weights
                 ]
                 log_all_multi_policy_metrics(
@@ -528,7 +535,6 @@ class Envelope(MOPolicy, MOAgent):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
-                    writer=self.writer,
                     ref_front=known_pareto_front,
                 )
 
@@ -538,7 +544,7 @@ class Envelope(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step, writer=self.writer)
+                    log_episode_info(info["episode"], np.dot, w, self.global_step)
 
                 if weight is None:
                     w = random_weights(self.reward_dim, 1, dist="gaussian", rng=self.np_random)
