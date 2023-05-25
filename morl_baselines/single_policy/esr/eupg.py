@@ -184,7 +184,14 @@ class EUPG(MOPolicy, MOAgent):
         self.optimizer.step()
 
         if self.log:
-            wandb.log({"losses/loss": loss, "metrics/scalarized_episodic_return": scalarized_return}, step=self.global_step)
+            wandb.log(
+                {
+                    "losses/loss": loss,
+                    "metrics/scalarized_episodic_return": scalarized_return,
+                    "global_step": self.global_step,
+                },
+                step=self.global_step,
+            )
 
     def train(
         self,

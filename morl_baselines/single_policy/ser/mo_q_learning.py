@@ -213,6 +213,7 @@ class MOQLearning(MOPolicy, MOAgent):
                     f"charts{self.idstr}/epsilon": self.epsilon,
                     f"losses{self.idstr}/scalarized_td_error": self.scalarization(td_error, self.weights),
                     f"losses{self.idstr}/mean_td_error": np.mean(td_error),
+                    "global_step": self.global_step,
                 },
                 self.global_step,
             )
@@ -284,7 +285,10 @@ class MOQLearning(MOPolicy, MOAgent):
 
                 if self.log and self.global_step % 1000 == 0:
                     wandb.log(
-                        {f"charts{self.idstr}/SPS": int(self.global_step / (time.time() - start_time))},
+                        {
+                            f"charts{self.idstr}/SPS": int(self.global_step / (time.time() - start_time)),
+                            "global_step": self.global_step,
+                        },
                         step=self.global_step,
                     )
                     if "episode" in info:

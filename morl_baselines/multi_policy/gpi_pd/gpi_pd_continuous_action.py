@@ -371,6 +371,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     "dynamics/uncertainty_mean": uncertainties.mean(),
                     "dynamics/uncertainty_max": uncertainties.max(),
                     "dynamics/uncertainty_min": uncertainties.min(),
+                    "global_step": self.global_step,
                 },
                 step=self.global_step,
             )
@@ -449,7 +450,12 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     step=self.global_step,
                 )
             wandb.log(
-                {"losses/critic_loss": critic_loss.item(), "losses/policy_loss": policy_loss.item()}, step=self.global_step
+                {
+                    "losses/critic_loss": critic_loss.item(),
+                    "losses/policy_loss": policy_loss.item(),
+                    "global_step": self.global_step,
+                },
+                step=self.global_step,
             )
 
     @th.no_grad()
@@ -553,7 +559,10 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                         Y = np.hstack((m_rewards, m_next_obs - m_obs))
                         mean_holdout_loss = self.dynamics.fit(X, Y)
                         if self.log:
-                            wandb.log({"dynamics/mean_holdout_loss": mean_holdout_loss}, step=self.global_step)
+                            wandb.log(
+                                {"dynamics/mean_holdout_loss": mean_holdout_loss, "global_step": self.global_step},
+                                step=self.global_step,
+                            )
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
                         self._rollout_dynamics(tensor_w)
@@ -565,7 +574,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
                 if self.dyna and self.global_step >= self.dynamics_rollout_starts:
                     plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
-                    wandb.log({"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step})
+                    wandb.log(
+                        {"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step}, step=self.global_step
+                    )
                     plot.close()
 
             if terminated or truncated:

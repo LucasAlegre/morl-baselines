@@ -225,6 +225,7 @@ def log_episode_info(
             f"charts{idstr}/episode_time": episode_time,
             f"metrics{idstr}/scalarized_episode_return": scal_return,
             f"metrics{idstr}/discounted_scalarized_episode_return": disc_scal_return,
+            "global_step": global_timestep,
         },
         step=global_timestep,
     )
@@ -269,7 +270,15 @@ def log_all_multi_policy_metrics(
     sp = sparsity(current_front)
     eum = expected_utility(current_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
 
-    wandb.log({"eval/hypervolume": hv, "eval/sparsity": sp, "eval/eum": eum}, step=global_step)
+    wandb.log(
+        {
+            "eval/hypervolume": hv,
+            "eval/sparsity": sp,
+            "eval/eum": eum,
+            "global_step": global_step,
+        },
+        step=global_step,
+    )
     front = wandb.Table(
         columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
         data=[p.tolist() for p in current_front],

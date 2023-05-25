@@ -569,6 +569,7 @@ class MOPPO(MOPolicy):
                     f"losses_{self.id}/approx_kl": approx_kl.item(),
                     f"losses_{self.id}/clipfrac": np.mean(clipfracs),
                     f"losses_{self.id}/explained_variance": explained_var,
+                    "global_step": self.global_step,
                 },
                 step=self.global_step,
             )
@@ -604,6 +605,6 @@ class MOPPO(MOPolicy):
         print("SPS:", int(self.global_step / (time.time() - start_time)))
         if self.log:
             wandb.log(
-                {"charts/SPS": int(self.global_step / (time.time() - start_time))},
+                {"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step},
                 step=self.global_step,
             )

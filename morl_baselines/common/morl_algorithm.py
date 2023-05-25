@@ -67,6 +67,7 @@ class MOPolicy(ABC):
             {
                 f"eval{idstr}/scalarized_return": scalarized_return,
                 f"eval{idstr}/scalarized_discounted_return": scalarized_discounted_return,
+                "global_step": self.global_step,
             },
             step=self.global_step,
         )

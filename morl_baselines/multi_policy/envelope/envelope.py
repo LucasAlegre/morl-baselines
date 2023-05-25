@@ -318,7 +318,10 @@ class Envelope(MOPolicy, MOAgent):
             critic_loss.backward()
             if self.log and self.global_step % 100 == 0:
                 wandb.log(
-                    {"losses/grad_norm": get_grad_norm(self.q_net.parameters()).item()},
+                    {
+                        "losses/grad_norm": get_grad_norm(self.q_net.parameters()).item(),
+                        "global_step": self.global_step,
+                    },
                     step=self.global_step,
                 )
             if self.max_grad_norm is not None:
@@ -355,9 +358,15 @@ class Envelope(MOPolicy, MOAgent):
             )
 
         if self.log and self.global_step % 100 == 0:
-            wandb.log({"losses/critic_loss": np.mean(critic_losses)}, step=self.global_step)
-            wandb.log({"metrics/epsilon": self.epsilon}, step=self.global_step)
-            wandb.log({"metrics/homotopy_lambda": self.homotopy_lambda}, step=self.global_step)
+            wandb.log(
+                {
+                    "losses/critic_loss": np.mean(critic_losses),
+                    "metrics/epsilon": self.epsilon,
+                    "metrics/homotopy_lambda": self.homotopy_lambda,
+                    "global_step": self.global_step,
+                },
+                step=self.global_step,
+            )
 
     @override
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:

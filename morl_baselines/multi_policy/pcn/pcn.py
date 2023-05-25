@@ -390,7 +390,12 @@ class PCN(MOAgent, MOPolicy):
                 hv = hypervolume(ref_point, leaves_r)
                 hv_est = hv
                 wandb.log(
-                    {"train/hypervolume": hv_est, "train/loss": np.mean(loss), "train/entropy": np.mean(entropy)},
+                    {
+                        "train/hypervolume": hv_est,
+                        "train/loss": np.mean(loss),
+                        "train/entropy": np.mean(entropy),
+                        "global_step": self.global_step,
+                    },
                     step=self.global_step,
                 )
 
@@ -410,6 +415,7 @@ class PCN(MOAgent, MOPolicy):
                         "train/episode": total_episodes,
                         "train/horizon_desired": desired_horizon,
                         "train/mean_horizon_distance": np.linalg.norm(np.mean(horizons) - desired_horizon),
+                        "global_step": self.global_step,
                     },
                     step=self.global_step,
                 )
@@ -422,6 +428,7 @@ class PCN(MOAgent, MOPolicy):
                             f"train/mean_return_distance_{i}": np.linalg.norm(
                                 np.mean(np.array(returns)[:, i]) - desired_return[i]
                             ),
+                            "global_step": self.global_step,
                         },
                         step=self.global_step,
                     )
