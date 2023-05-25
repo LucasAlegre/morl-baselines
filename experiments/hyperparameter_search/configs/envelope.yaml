@@ -9,7 +9,7 @@ parameters:
     max: 1e-3
   initial_epsilon:
     distribution: uniform
-    min: 0.5
+    min: 0.8
     max: 1
   final_epsilon:
     distribution: uniform
@@ -17,24 +17,30 @@ parameters:
     max: 0.15
   epsilon_decay_steps:
     distribution: uniform
-    min: 80000
+    min: 90000
     max: 100000
   max_grad_norm:
     value: 0.1
   gamma:
     value: 0.98
   batch_size:
-    value: 64
+    values: [32,64,128]
   net_arch:
     value: [256, 256, 256, 256]
   buffer_size:
     value: 2000000
   initial_homotopy_lambda:
-    value: 0.0
+    distribution: uniform
+    min: 0.0
+    max: 0.05
   final_homotopy_lambda:
-    value: 0.0
+    distribution: uniform
+    min: 0.95
+    max: 1
   homotopy_decay_steps:
-    value: 10000
+    distribution: uniform
+    min: 10000
+    max: 100000
   learning_starts:
     value: 100
   envelope:
