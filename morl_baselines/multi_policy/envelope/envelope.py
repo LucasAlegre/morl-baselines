@@ -87,14 +87,14 @@ class Envelope(MOPolicy, MOAgent):
         final_epsilon: float = 0.01,
         epsilon_decay_steps: int = None,  # None == fixed epsilon
         tau: float = 1.0,
-        target_net_update_freq: int = 1000,  # ignored if tau != 1.0
+        target_net_update_freq: int = 200,  # ignored if tau != 1.0
         buffer_size: int = int(1e6),
-        net_arch: List = [256, 256],
+        net_arch: List = [256, 256, 256, 256],
         batch_size: int = 256,
         learning_starts: int = 100,
         gradient_updates: int = 1,
         gamma: float = 0.99,
-        max_grad_norm: Optional[float] = None,
+        max_grad_norm: Optional[float] = 1.0,
         envelope: bool = True,
         num_sample_w: int = 4,
         per: bool = True,
