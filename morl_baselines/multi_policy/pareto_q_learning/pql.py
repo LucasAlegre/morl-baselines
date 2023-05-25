@@ -225,7 +225,7 @@ class PQL(MOAgent):
                 state = next_state
 
                 if self.log and self.global_step % log_every == 0:
-                    wandb.log({"global_step": self.global_step}, step=self.global_step)
+                    wandb.log({"global_step": self.global_step})
                     pf = self._eval_all_policies(eval_env)
                     log_all_multi_policy_metrics(
                         current_front=pf,

@@ -571,7 +571,6 @@ class MOPPO(MOPolicy):
                     f"losses_{self.id}/explained_variance": explained_var,
                     "global_step": self.global_step,
                 },
-                step=self.global_step,
             )
 
     def train(self, start_time, current_iteration: int, max_iterations: int):
@@ -606,5 +605,4 @@ class MOPPO(MOPolicy):
         if self.log:
             wandb.log(
                 {"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step},
-                step=self.global_step,
             )

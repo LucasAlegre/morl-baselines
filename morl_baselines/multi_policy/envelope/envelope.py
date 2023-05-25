@@ -322,7 +322,6 @@ class Envelope(MOPolicy, MOAgent):
                         "losses/grad_norm": get_grad_norm(self.q_net.parameters()).item(),
                         "global_step": self.global_step,
                     },
-                    step=self.global_step,
                 )
             if self.max_grad_norm is not None:
                 th.nn.utils.clip_grad_norm_(self.q_net.parameters(), self.max_grad_norm)
@@ -365,7 +364,6 @@ class Envelope(MOPolicy, MOAgent):
                     "metrics/homotopy_lambda": self.homotopy_lambda,
                     "global_step": self.global_step,
                 },
-                step=self.global_step,
             )
 
     @override

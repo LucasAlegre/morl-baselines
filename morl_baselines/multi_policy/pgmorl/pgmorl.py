@@ -636,7 +636,7 @@ class PGMORL(MOAgent):
         for i in range(1, self.warmup_iterations + 1):
             print(f"Warmup iteration #{iteration}")
             if self.log:
-                wandb.log({"charts/warmup_iterations": i, "global_step": self.global_step}, step=self.global_step)
+                wandb.log({"charts/warmup_iterations": i, "global_step": self.global_step})
             self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
             iteration += 1
         self.__eval_all_agents(
@@ -656,7 +656,6 @@ class PGMORL(MOAgent):
             if self.log:
                 wandb.log(
                     {"charts/evolutionary_generation": evolutionary_generation, "global_step": self.global_step},
-                    step=self.global_step,
                 )
 
             for _ in range(self.evolutionary_iterations):
@@ -668,7 +667,6 @@ class PGMORL(MOAgent):
                             "charts/evolutionary_iterations": iteration - self.warmup_iterations,
                             "global_step": self.global_step,
                         },
-                        step=self.global_step,
                     )
                 self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
                 iteration += 1

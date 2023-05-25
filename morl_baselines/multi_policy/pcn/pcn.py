@@ -396,7 +396,6 @@ class PCN(MOAgent, MOPolicy):
                         "train/entropy": np.mean(entropy),
                         "global_step": self.global_step,
                     },
-                    step=self.global_step,
                 )
 
             returns = []
@@ -417,7 +416,6 @@ class PCN(MOAgent, MOPolicy):
                         "train/mean_horizon_distance": np.linalg.norm(np.mean(horizons) - desired_horizon),
                         "global_step": self.global_step,
                     },
-                    step=self.global_step,
                 )
 
                 for i in range(self.reward_dim):
@@ -430,7 +428,6 @@ class PCN(MOAgent, MOPolicy):
                             ),
                             "global_step": self.global_step,
                         },
-                        step=self.global_step,
                     )
             print(
                 f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"

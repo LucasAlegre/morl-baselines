@@ -227,7 +227,6 @@ def log_episode_info(
             f"metrics{idstr}/discounted_scalarized_episode_return": disc_scal_return,
             "global_step": global_timestep,
         },
-        step=global_timestep,
     )
 
     for i in range(episode_return.shape[0]):
@@ -236,7 +235,6 @@ def log_episode_info(
                 f"metrics{idstr}/episode_return_obj_{i}": episode_return[i],
                 f"metrics{idstr}/disc_episode_return_obj_{i}": disc_episode_return[i],
             },
-            step=global_timestep,
         )
 
 
@@ -277,13 +275,13 @@ def log_all_multi_policy_metrics(
             "eval/eum": eum,
             "global_step": global_step,
         },
-        step=global_step,
+        commit=False,
     )
     front = wandb.Table(
         columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
         data=[p.tolist() for p in current_front],
     )
-    wandb.log({"eval/front": front}, step=global_step)
+    wandb.log({"eval/front": front})
 
     # If PF is known, log the additional metrics
     if ref_front is not None:
@@ -293,7 +291,7 @@ def log_all_multi_policy_metrics(
             reference_set=ref_front,
             weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32),
         )
-        wandb.log({"eval/igd": generational_distance, "eval/mul": mul}, step=global_step)
+        wandb.log({"eval/igd": generational_distance, "eval/mul": mul})
 
 
 def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, length: int = 300):

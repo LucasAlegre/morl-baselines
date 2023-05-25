@@ -190,7 +190,6 @@ class EUPG(MOPolicy, MOAgent):
                     "metrics/scalarized_episodic_return": scalarized_return,
                     "global_step": self.global_step,
                 },
-                step=self.global_step,
             )
 
     def train(

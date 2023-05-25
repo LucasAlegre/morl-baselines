@@ -215,7 +215,6 @@ class MOQLearning(MOPolicy, MOAgent):
                     f"losses{self.idstr}/mean_td_error": np.mean(td_error),
                     "global_step": self.global_step,
                 },
-                self.global_step,
             )
 
     @override
@@ -289,7 +288,6 @@ class MOQLearning(MOPolicy, MOAgent):
                             f"charts{self.idstr}/SPS": int(self.global_step / (time.time() - start_time)),
                             "global_step": self.global_step,
                         },
-                        step=self.global_step,
                     )
                     if "episode" in info:
                         log_episode_info(

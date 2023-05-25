@@ -68,13 +68,11 @@ class MOPolicy(ABC):
                 f"eval{idstr}/scalarized_return": scalarized_return,
                 f"eval{idstr}/scalarized_discounted_return": scalarized_discounted_return,
                 "global_step": self.global_step,
-            },
-            step=self.global_step,
+            }
         )
         for i in range(vec_return.shape[0]):
             wandb.log(
                 {f"eval{idstr}/vec_{i}": vec_return[i], f"eval{idstr}/discounted_vec_{i}": discounted_vec_return[i]},
-                self.global_step,
             )
 
     def policy_eval(

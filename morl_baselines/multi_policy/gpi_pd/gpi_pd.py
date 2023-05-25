@@ -411,7 +411,6 @@ class GPIPD(MOPolicy, MOAgent):
                     "dynamics/imagined_transitions": num_added_imagined_transitions,
                     "global_step": self.global_step,
                 },
-                step=self.global_step,
             )
 
     def update(self, weight: th.Tensor):
@@ -494,7 +493,6 @@ class GPIPD(MOPolicy, MOAgent):
             if self.log and self.global_step % 100 == 0:
                 wandb.log(
                     {"losses/grad_norm": get_grad_norm(self.q_nets[0].parameters()).item(), "global_step": self.global_step},
-                    step=self.global_step,
                 )
             if self.max_grad_norm is not None:
                 for psi_net in self.q_nets:
@@ -539,7 +537,7 @@ class GPIPD(MOPolicy, MOAgent):
                         "metrics/max_priority": np.max(priority),
                         "metrics/mean_td_error_w": per.abs().mean().item(),
                     },
-                    step=self.global_step,
+                    commit=False,
                 )
             if self.gpi_pd:
                 wandb.log(
@@ -549,7 +547,7 @@ class GPIPD(MOPolicy, MOAgent):
                         "metrics/mean_gtd_error_w": gper.abs().mean().item(),
                         "metrics/mean_absolute_diff_gtd_td": (gper - per).abs().mean().item(),
                     },
-                    step=self.global_step,
+                    commit=False,
                 )
             wandb.log(
                 {
@@ -557,7 +555,6 @@ class GPIPD(MOPolicy, MOAgent):
                     "metrics/epsilon": self.epsilon,
                     "global_step": self.global_step,
                 },
-                step=self.global_step,
             )
 
     @th.no_grad()
@@ -741,7 +738,6 @@ class GPIPD(MOPolicy, MOAgent):
                         if self.log:
                             wandb.log(
                                 {"dynamics/mean_holdout_loss": mean_holdout_loss, "global_step": self.global_step},
-                                step=self.global_step,
                             )
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
@@ -754,9 +750,7 @@ class GPIPD(MOPolicy, MOAgent):
 
                 if self.dyna and self.global_step >= self.dynamics_rollout_starts:
                     plot = visualize_eval(self, eval_env, self.dynamics, weight, compound=False, horizon=1000)
-                    wandb.log(
-                        {"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step}, step=self.global_step
-                    )
+                    wandb.log({"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step})
                     plot.close()
 
             if terminated or truncated:
@@ -767,7 +761,6 @@ class GPIPD(MOPolicy, MOAgent):
                     log_episode_info(info["episode"], np.dot, weight, self.global_step)
                     wandb.log(
                         {"metrics/policy_index": np.array(self.police_indices), "global_step": self.global_step},
-                        step=self.global_step,
                     )
                     self.police_indices = []
 
@@ -871,7 +864,7 @@ class GPIPD(MOPolicy, MOAgent):
                 mean_gpi_returns_test_tasks = np.mean(
                     [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
-                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}, step=self.global_step)
+                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 

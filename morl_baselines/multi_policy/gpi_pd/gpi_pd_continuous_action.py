@@ -373,7 +373,6 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     "dynamics/uncertainty_min": uncertainties.min(),
                     "global_step": self.global_step,
                 },
-                step=self.global_step,
             )
 
     def update(self, weight: th.Tensor):
@@ -447,7 +446,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                         "metrics/max_priority": np.max(priority),
                         "metrics/min_priority": np.min(priority),
                     },
-                    step=self.global_step,
+                    commit=False,
                 )
             wandb.log(
                 {
@@ -455,7 +454,6 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     "losses/policy_loss": policy_loss.item(),
                     "global_step": self.global_step,
                 },
-                step=self.global_step,
             )
 
     @th.no_grad()
@@ -561,7 +559,6 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                         if self.log:
                             wandb.log(
                                 {"dynamics/mean_holdout_loss": mean_holdout_loss, "global_step": self.global_step},
-                                step=self.global_step,
                             )
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
@@ -574,9 +571,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
                 if self.dyna and self.global_step >= self.dynamics_rollout_starts:
                     plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
-                    wandb.log(
-                        {"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step}, step=self.global_step
-                    )
+                    wandb.log({"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step})
                     plot.close()
 
             if terminated or truncated:
@@ -683,7 +678,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 mean_gpi_returns_test_tasks = np.mean(
                     [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
-                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter}, step=self.global_step)
+                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             # Checkpoint
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
