@@ -227,6 +227,7 @@ def log_episode_info(
             f"metrics{idstr}/discounted_scalarized_episode_return": disc_scal_return,
             "global_step": global_timestep,
         },
+        commit=False,
     )
 
     for i in range(episode_return.shape[0]):
