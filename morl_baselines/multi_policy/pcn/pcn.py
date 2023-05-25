@@ -96,9 +96,9 @@ class PCN(MOAgent, MOPolicy):
         self,
         env: Optional[gym.Env],
         scaling_factor: np.ndarray,
-        learning_rate: float = 1e-2,
+        learning_rate: float = 1e-3,
         gamma: float = 1.0,
-        batch_size: int = 32,
+        batch_size: int = 256,
         hidden_dim: int = 64,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "PCN",
@@ -328,11 +328,11 @@ class PCN(MOAgent, MOPolicy):
         eval_env: gym.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
-        num_er_episodes: int = 500,
+        num_er_episodes: int = 20,
         num_step_episodes: int = 10,
-        num_model_updates: int = 100,
-        max_return: np.ndarray = 250.0,
-        max_buffer_size: int = 500,
+        num_model_updates: int = 50,
+        max_return: np.ndarray = 100.0,
+        max_buffer_size: int = 50,
     ):
         """Train PCN.
 
