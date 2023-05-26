@@ -204,6 +204,8 @@ class PCN(MOAgent, MOPolicy):
 
     def _nlargest(self, n, threshold=0.2):
         """See Section 4.4 of https://arxiv.org/pdf/2204.05036.pdf for details."""
+        n = min(n, len(self.experience_replay))
+        
         returns = np.array([e[2][0].reward for e in self.experience_replay])
         # crowding distance of each point, check ones that are too close together
         distances = crowding_distance(returns)
