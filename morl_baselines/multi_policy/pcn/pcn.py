@@ -203,9 +203,7 @@ class PCN(MOAgent, MOPolicy):
             heapq.heappush(self.experience_replay, (1, step, transitions))
 
     def _nlargest(self, n, threshold=0.2):
-        """See Section 4.4 of https://arxiv.org/pdf/2204.05036.pdf for details."""
-        n = min(n, len(self.experience_replay))
-        
+        """See Section 4.4 of https://arxiv.org/pdf/2204.05036.pdf for details."""        
         returns = np.array([e[2][0].reward for e in self.experience_replay])
         # crowding distance of each point, check ones that are too close together
         distances = crowding_distance(returns)
@@ -304,6 +302,7 @@ class PCN(MOAgent, MOPolicy):
 
     def evaluate(self, env, max_return, n=10):
         """Evaluate policy in the given environment."""
+        n = min(n, len(self.experience_replay))
         episodes = self._nlargest(n)
         returns, horizons = list(zip(*[(e[2][0].reward, len(e[2])) for e in episodes]))
         returns = np.float32(returns)
