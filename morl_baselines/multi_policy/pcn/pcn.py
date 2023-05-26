@@ -334,6 +334,7 @@ class PCN(MOAgent, MOPolicy):
         num_model_updates: int = 50,
         max_return: np.ndarray = 100.0,
         max_buffer_size: int = 100,
+        num_points_pf: int = 100,
     ):
         """Train PCN.
 
@@ -347,6 +348,7 @@ class PCN(MOAgent, MOPolicy):
             num_model_updates: number of model updates per episode
             max_return: maximum return for clipping desired return
             max_buffer_size: maximum buffer size
+            num_points_pf: number of points to sample from pareto front for metrics calculation
         """
         if self.log:
             self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
@@ -436,8 +438,7 @@ class PCN(MOAgent, MOPolicy):
             if self.global_step >= (n_checkpoints + 1) * total_timesteps / 10:
                 self.save()
                 n_checkpoints += 1
-                n_points = 10
-                e_returns, _, _ = self.evaluate(eval_env, max_return, n=n_points)
+                e_returns, _, _ = self.evaluate(eval_env, max_return, n=num_points_pf)
 
                 if self.log:
                     log_all_multi_policy_metrics(
