@@ -10,8 +10,8 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.distributions import Normal
 import wandb
+from torch.distributions import Normal
 
 from morl_baselines.common.evaluation import policy_evaluation_mo
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
@@ -32,6 +32,7 @@ EPSILON = 1e-6
 
 class ReplayMemory:
     """Replay memory."""
+
     def __init__(self, capacity: int):
         """Initialize the replay memory."""
         self.capacity = capacity
@@ -57,12 +58,13 @@ class ReplayMemory:
     def __len__(self):
         """Return the current size of the buffer."""
         return len(self.buffer)
-    
 
 
 class WeightSamplerAngle:
     """Sample weight vectors from normal distribution."""
+
     def __init__(self, rwd_dim, angle, w=None):
+        """Initialize the weight sampler."""
         self.rwd_dim = rwd_dim
         self.angle = angle
         if w is None:
@@ -78,15 +80,15 @@ class WeightSamplerAngle:
         s = s - (s @ self.w).view(-1, 1) * self.w.view(1, -1)
 
         # normalize it
-        s = s / th.norm(s, dim = 1, keepdim=True) 
+        s = s / th.norm(s, dim=1, keepdim=True)
 
-        # sample angle 
+        # sample angle
         s_angle = th.rand(n_sample, 1) * self.angle
 
         # compute shifted vector from w
         w_sample = th.tan(s_angle) * s + self.w.view(1, -1)
 
-        w_sample = w_sample / th.norm(w_sample, dim = 1, keepdim=True, p = 1) 
+        w_sample = w_sample / th.norm(w_sample, dim=1, keepdim=True, p=1)
 
         return w_sample
 
@@ -115,7 +117,7 @@ class Policy(nn.Module):
         log_std = self.log_std_linear(h)
         log_std = th.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
         return mean, log_std
-    
+
     def sample(self, obs, w):
         """Sample an action from the policy network."""
         # for each state in the mini-batch, get its mean and std
@@ -131,15 +133,15 @@ class Policy(nn.Module):
         action = y_t * self.action_scale + self.action_bias
 
         # compute the prob density of the samples
-        
+
         log_prob = normal.log_prob(x_t)
 
         # Enforcing Action Bound
-        # compute the log_prob as the normal distribution sample is processed by tanh 
+        # compute the log_prob as the normal distribution sample is processed by tanh
         #       (reparameterization trick)
         log_prob -= th.log(self.action_scale * (1 - y_t.pow(2)) + EPSILON)
         log_prob = log_prob.sum(1, keepdim=True)
-        log_prob = log_prob.clamp(-1e3, 1e3)       
+        log_prob = log_prob.clamp(-1e3, 1e3)
 
         mean = th.tanh(mean) * self.action_scale + self.action_bias
 
@@ -328,10 +330,10 @@ class CAPQL(MOAgent, MOPolicy):
             # Policy update
             pi, log_pi, _ = self.policy.sample(s_obs, w)
             q_values = th.stack([q_target(s_obs, pi, w) for q_target in self.q_nets])
-            min_q = th.min(q_values, dim=0)[0]        
+            min_q = th.min(q_values, dim=0)[0]
 
-            min_q = (min_q * w).sum(dim=-1, keepdim=True)       
-            policy_loss = ((self.alpha * log_pi) - min_q).mean() 
+            min_q = (min_q * w).sum(dim=-1, keepdim=True)
+            policy_loss = ((self.alpha * log_pi) - min_q).mean()
 
             self.policy_optim.zero_grad()
             policy_loss.backward()
@@ -358,13 +360,12 @@ class CAPQL(MOAgent, MOPolicy):
             obs = th.tensor(obs).float().to(self.device)
             w = th.tensor(w).float().to(self.device)
 
-        _ , _, action = self.policy.sample(obs, w)
+        _, _, action = self.policy.sample(obs, w)
 
         if not torch_action:
             action = action.detach().cpu().numpy()
 
         return action
-
 
     def train(
         self,
@@ -458,6 +459,6 @@ class CAPQL(MOAgent, MOPolicy):
                 )
 
             # Checkpoint
-            self.save(filename=f"CPQL", save_replay_buffer=False)
+            self.save(filename="CPQL", save_replay_buffer=False)
 
         self.close_wandb()
