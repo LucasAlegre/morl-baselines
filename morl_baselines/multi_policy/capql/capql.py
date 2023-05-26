@@ -452,7 +452,7 @@ class CAPQL(MOAgent, MOPolicy):
             else:
                 obs = next_obs
 
-            if self.log and self.global_step % eval_freq == 0:
+            if self.log and self.global_step % (eval_freq * 10) == 0:
                 # Evaluation
                 returns_test_tasks = [
                     policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
