@@ -435,7 +435,7 @@ class PCN(MOAgent, MOPolicy):
                 f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"
             )
 
-            if self.global_step >= (n_checkpoints + 1) * total_timesteps / 10:
+            if self.global_step >= (n_checkpoints + 1) * total_timesteps / 1000:
                 self.save()
                 n_checkpoints += 1
                 e_returns, _, _ = self.evaluate(eval_env, max_return, n=num_points_pf)
