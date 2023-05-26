@@ -43,7 +43,14 @@ class ReplayMemory:
         """Push a transition."""
         if len(self.buffer) < self.capacity:
             self.buffer.append(None)
-        self.buffer[self.position] = (state, action, weights, reward, next_state, done)
+        self.buffer[self.position] = (
+            np.array(state).copy(),
+            np.array(action).copy(),
+            np.array(weights).copy(),
+            np.array(reward).copy(),
+            np.array(next_state).copy(),
+            np.array(done).copy(),
+        )
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size, to_tensor=True, device=None):
@@ -52,7 +59,7 @@ class ReplayMemory:
         state, action, w, reward, next_state, done = map(np.stack, zip(*batch))
         experience_tuples = (state, action, w, reward, next_state, done)
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples))
+            return tuple(map(lambda x: th.tensor(x, dtype=th.float32).to(device), experience_tuples))
         return state, action, w, reward, next_state, done
 
     def __len__(self):
@@ -90,7 +97,7 @@ class WeightSamplerAngle:
 
         w_sample = w_sample / th.norm(w_sample, dim=1, keepdim=True, p=1)
 
-        return w_sample
+        return w_sample.float()
 
 
 class Policy(nn.Module):
@@ -118,6 +125,11 @@ class Policy(nn.Module):
         log_std = th.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
         return mean, log_std
 
+    def get_action(self, obs, w):
+        """Get an action from the policy network."""
+        mean, _ = self.forward(obs, w)
+        return th.tanh(mean) * self.action_scale + self.action_bias
+
     def sample(self, obs, w):
         """Sample an action from the policy network."""
         # for each state in the mini-batch, get its mean and std
@@ -134,13 +146,12 @@ class Policy(nn.Module):
 
         # compute the prob density of the samples
 
-        log_prob = normal.log_prob(x_t)
+        log_prob = normal.log_prob(x_t).sum(dim=1)
 
         # Enforcing Action Bound
         # compute the log_prob as the normal distribution sample is processed by tanh
         #       (reparameterization trick)
-        log_prob -= th.log(self.action_scale * (1 - y_t.pow(2)) + EPSILON)
-        log_prob = log_prob.sum(1, keepdim=True)
+        log_prob -= th.log(self.action_scale * (1 - y_t.pow(2)) + EPSILON).sum(dim=1)
         log_prob = log_prob.clamp(-1e3, 1e3)
 
         mean = th.tanh(mean) * self.action_scale + self.action_bias
@@ -184,7 +195,7 @@ class CAPQL(MOAgent, MOPolicy):
         batch_size: int = 128,
         num_q_nets: int = 2,
         alpha: float = 0.2,
-        learning_starts: int = 100,
+        learning_starts: int = 1000,
         gradient_updates: int = 1,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "CAPQL",
@@ -316,9 +327,9 @@ class CAPQL(MOAgent, MOPolicy):
             with th.no_grad():
                 next_actions, log_pi, _ = self.policy.sample(s_next_obs, w)
                 q_targets = th.stack([q_target(s_next_obs, next_actions, w) for q_target in self.target_q_nets])
-                min_target_q = th.min(q_targets, dim=0)[0] - self.alpha * log_pi
+                min_target_q = th.min(q_targets, dim=0)[0] - self.alpha * log_pi.reshape(-1, 1)
 
-                target_q = (s_rewards + (1 - s_dones) * self.gamma * min_target_q).detach()
+                target_q = (s_rewards + (1 - s_dones.reshape(-1, 1)) * self.gamma * min_target_q).detach()
 
             q_values = [q_net(s_obs, s_actions, w) for q_net in self.q_nets]
             critic_loss = (1 / self.num_q_nets) * sum([F.mse_loss(q_value, target_q) for q_value in q_values])
@@ -360,7 +371,7 @@ class CAPQL(MOAgent, MOPolicy):
             obs = th.tensor(obs).float().to(self.device)
             w = th.tensor(w).float().to(self.device)
 
-        _, _, action = self.policy.sample(obs, w)
+        action = self.policy.get_action(obs, w)
 
         if not torch_action:
             action = action.detach().cpu().numpy()
@@ -414,15 +425,11 @@ class CAPQL(MOAgent, MOPolicy):
                 action = self.env.action_space.sample()
             else:
                 with th.no_grad():
-                    action, _, _ = (
-                        self.policy.sample(
-                            th.tensor(obs).float().to(self.device),
-                            tensor_w,
-                        )
-                        .detach()
-                        .cpu()
-                        .numpy()
+                    action = self.policy.get_action(
+                        th.tensor(obs).float().to(self.device),
+                        tensor_w,
                     )
+                    action = action.detach().cpu().numpy()
 
             action_env = action
 
@@ -431,7 +438,7 @@ class CAPQL(MOAgent, MOPolicy):
             self.replay_buffer.push(obs, action, w, vector_reward, next_obs, terminated)
 
             if self.global_step >= self.learning_starts:
-                self.update(tensor_w)
+                self.update()
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval(eval_env, weights=w, log=self.log)
