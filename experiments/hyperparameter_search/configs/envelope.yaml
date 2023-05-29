@@ -5,43 +5,84 @@ metric:
 parameters:
   learning_rate:
     distribution: uniform
-    min: 1e-4
-    max: 1e-3
+    min: 1e-5
+    max: 3e-4
   initial_epsilon:
     distribution: uniform
-    min: 0.5
+    min: 0.01
     max: 1
   final_epsilon:
     distribution: uniform
-    min: 0.02
-    max: 0.15
+    min: 0.01
+    max: 1
   epsilon_decay_steps:
-    distribution: uniform
-    min: 80000
+    distribution: int_uniform
+    min: 1
     max: 100000
-  max_grad_norm:
-    value: 0.1
+  tau:
+    distribution: uniform
+    min: 0.0
+    max: 1.0
+  target_net_update_freq:
+    distribution: int_uniform
+    min: 1
+    max: 10000
+  buffer_size:
+    distribution: int_uniform
+    min: 1000
+    max: 1000000
+  net_arch:
+    distribution: categorical
+    values:
+      - [64, 64]
+      - [128, 128]
+      - [256, 256]
+      - [512, 512]
+  batch_size:
+    distribution: categorical
+    values:
+      - 32
+      - 64
+      - 128
+      - 256
+      - 512
+  learning_starts:
+    distribution: int_uniform
+    min: 1
+    max: 1000
+  gradient_updates:
+    distribution: int_uniform
+    min: 1
+    max: 10
   gamma:
     value: 0.98
-  batch_size:
-    value: 64
-  net_arch:
-    value: [256, 256, 256, 256]
-  buffer_size:
-    value: 2000000
-  initial_homotopy_lambda:
-    value: 0.0
-  final_homotopy_lambda:
-    value: 0.0
-  homotopy_decay_steps:
-    value: 10000
-  learning_starts:
-    value: 100
+  max_grad_norm:
+    distribution: uniform
+    min: 0.1
+    max: 10.0
   envelope:
-    value: True
-  gradient_updates:
-    value: 1
-  target_net_update_freq:
-    value: 1000
-  tau:
-    value: 1
+    distribution: categorical
+    values: [true, false]
+  num_sample_w:
+    distribution: int_uniform
+    min: 1
+    max: 10
+  per:
+    distribution: categorical
+    values: [true, false]
+  per_alpha:
+    distribution: uniform
+    min: 0.1
+    max: 0.9
+  initial_homotopy_lambda:
+    distribution: uniform
+    min: 0.0
+    max: 1
+  final_homotopy_lambda:
+    distribution: uniform
+    min: 0.0
+    max: 1
+  homotopy_decay_steps:
+    distribution: int_uniform
+    min: 1
+    max: 100000

@@ -140,3 +140,9 @@ weights/
 
 # Saved videos
 videos/
+
+# Launcher
+launcher.sh
+
+# Logs
+slurm-*

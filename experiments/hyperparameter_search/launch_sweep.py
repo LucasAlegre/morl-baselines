@@ -78,7 +78,6 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
             seed=seed,
             group=group
         )
-        # print(algo.get_config())
 
         # Launch the agent training
         print(f"Worker {worker_num}: Seed {seed}. Training agent...")
@@ -107,8 +106,6 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
             known_pareto_front = env.unwrapped.pareto_front(gamma=config["gamma"])
         else:
             known_pareto_front = None
-
-        # print(algo.get_config())
 
         # Launch the agent training
         print(f"Worker {worker_num}: Seed {seed}. Training agent...")
