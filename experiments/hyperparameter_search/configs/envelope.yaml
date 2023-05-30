@@ -5,8 +5,8 @@ metric:
 parameters:
   learning_rate:
     distribution: uniform
-    min: 1e-5
-    max: 3e-4
+    min: 0.0001
+    max: 0.01
   initial_epsilon:
     distribution: uniform
     min: 0.01
@@ -30,22 +30,14 @@ parameters:
   buffer_size:
     distribution: int_uniform
     min: 1000
-    max: 1000000
+    max: 2000000
+  # Check which architectures are possible
   net_arch:
-    distribution: categorical
-    values:
-      - [64, 64]
-      - [128, 128]
-      - [256, 256]
-      - [512, 512]
+    value: [256, 256, 256, 256]
+  # Check which batch sizes are possible
   batch_size:
     distribution: categorical
-    values:
-      - 32
-      - 64
-      - 128
-      - 256
-      - 512
+    values: [32, 64, 128]
   learning_starts:
     distribution: int_uniform
     min: 1

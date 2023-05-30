@@ -142,7 +142,7 @@ weights/
 videos/
 
 # Launcher
-launcher.sh
+launcher_*
 
 # Logs
 slurm-*
