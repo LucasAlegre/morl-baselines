@@ -398,8 +398,6 @@ class CAPQL(MOAgent, MOPolicy):
             known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front, if known.
             num_eval_weights_for_front (int): Number of weights to evaluate for the Pareto front.
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
-            weight_selection_algo (str): Weight selection algorithm to use.
-            timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
             eval_freq (int): Number of timesteps between evaluations during an iteration.
             reset_num_timesteps (bool): Whether to reset the number of timesteps.
         """
