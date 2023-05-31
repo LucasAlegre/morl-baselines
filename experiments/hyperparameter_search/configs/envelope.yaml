@@ -31,7 +31,6 @@ parameters:
     distribution: int_uniform
     min: 1000
     max: 2000000
-  # Check which architectures are possible
   net_arch:
     distribution: categorical
     values:
@@ -43,10 +42,9 @@ parameters:
       - [256, 256, 256, 256]
       - [512, 512]
       - [512, 512, 512, 512]
-  # Check which batch sizes are possible
   batch_size:
     distribution: categorical
-    values: [32, 64, 128]
+    values: [16, 32, 64, 128, 256]
   learning_starts:
     distribution: int_uniform
     min: 1
