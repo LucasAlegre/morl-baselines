@@ -30,6 +30,10 @@ lastpage:
 :end-before: <!-- end benchmark -->
 ```
 
+```{figure} _static/_images/wandb.png
+   :alt: WandB dashboards
+```
+
 ## Citing MORL-Baselines
 ```{include} ../README.md
 :start-after: <!-- start citing -->
