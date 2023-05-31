@@ -30,6 +30,7 @@ lastpage:
 :end-before: <!-- end benchmark -->
 ```
 
+Here is an example of our dashboards with Pareto support in WandB:
 ```{figure} _static/_images/wandb.png
    :alt: WandB dashboards
 ```
