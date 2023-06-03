@@ -337,11 +337,10 @@ def seed_everything(seed: int):
     th.backends.cudnn.benchmark = True
 
 def reset_wandb_env():
-    """Reset environment variables related to Weights & Biases (W&B).
+    """Reset the wandb environment variables.
 
-    This function removes all environment variables that start with "WANDB_" except for "WANDB_PROJECT",
-    "WANDB_ENTITY", and "WANDB_API_KEY". This is useful for resetting the W&B environment variables to their
-    default values or for clearing out old values that may interfere with new ones.
+    This is useful when running multiple sweeps in parallel, as wandb
+    will otherwise try to use the same directory for all the runs.
     """
     exclude = {
         "WANDB_PROJECT",
