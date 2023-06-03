@@ -471,7 +471,7 @@ class Envelope(MOPolicy, MOAgent):
         num_eval_weights_for_front: int = 100,
         num_eval_episodes_for_front: int = 5,
         reset_learning_starts: bool = False,
-        verbose: Optional[bool] = False,
+        verbose: bool = False,
     ):
         """Train the agent.
 
