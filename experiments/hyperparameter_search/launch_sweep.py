@@ -11,7 +11,7 @@ import numpy as np
 import mo_gymnasium as mo_gym
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.utils import reset_wandb_env
+from morl_baselines.common.utils import reset_wandb_env, seed_everything
 
 from morl_baselines.common.experiments import ALGOS, ENVS_WITH_KNOWN_PARETO_FRONT, StoreDict
 
@@ -40,6 +40,8 @@ def parse_args():
     parser.add_argument("--sweep-count", type=int, help="Number of times to run the sweep", default=10)
     parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
 
+    parser.add_argument("--seed", type=int, help="Random seed to use", default=42)
+
     parser.add_argument(
         "--train-hyperparams",
         type=str,
@@ -49,11 +51,14 @@ def parse_args():
         default={},
     )
 
-    args = parser.parse_args()
-
-    parser.add_argument("--config-name", type=str, help="Name of the config to use for the sweep.", default=f"{args.algo}.yaml")
+    parser.add_argument("--config-name", type=str, help="Name of the config to use for the sweep.")
 
     args = parser.parse_args()
+
+    if not args.config_name:
+        args.config_name = f"{args.algo}.yaml"
+    elif not args.config_name.endswith('.yaml'):
+        args.config_name += '.yaml'
 
     return args
 
@@ -156,6 +161,9 @@ def main():
 
 args = parse_args()
 # print(args)
+
+# Set a seed from the command line for random
+seed_everything(args.seed)
 
 # Create an array of seeds
 seeds = [random.randint(0, 1000000) for _ in range(args.num_seeds)]
