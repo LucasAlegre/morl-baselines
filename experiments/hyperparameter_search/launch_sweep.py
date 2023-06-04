@@ -120,12 +120,12 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
             **args.train_hyperparams,
         )
 
-        # Get the hypervolume from the wandb run
-        # print(f"Worker {worker_num}: Seed {seed}. Done Training.")
-        hypervolume = wandb.run.summary["eval/hypervolume"]
-        print(f"Worker {worker_num}: Seed {seed}. Hypervolume: {hypervolume}")
+    # Get the hypervolume from the wandb run
+    print(f"Worker {worker_num}: Seed {seed}. Done Training.")
+    hypervolume = wandb.run.summary["eval/hypervolume"]
+    print(f"Worker {worker_num}: Seed {seed}. Hypervolume: {hypervolume}")
 
-        return WorkerDoneData(hypervolume=hypervolume)
+    return WorkerDoneData(hypervolume=hypervolume)
 
 def main():
     # Get the sweep id
