@@ -21,13 +21,13 @@ def fast_c_prune(candidates):
 def arg_p_prune(candidates, remove_duplicates=True):
     """A batched and fast version of the Pareto coverage set algorithm.
 
-        Args:
-            candidates (ndarray): A numpy array of vectors.
-            remove_duplicates (bool, optional): Whether to remove duplicate vectors. Defaults to True.
+    Args:
+        candidates (ndarray): A numpy array of vectors.
+        remove_duplicates (bool, optional): Whether to remove duplicate vectors. Defaults to True.
 
-        Returns:
-            ndarray: The indices of the elements that should be kept to form the Pareto front or coverage set.
-        """
+    Returns:
+        ndarray: The indices of the elements that should be kept to form the Pareto front or coverage set.
+    """
     if len(candidates) == 1:
         return candidates
 
