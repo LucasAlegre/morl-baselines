@@ -56,7 +56,7 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 | [Optimistic Linear Support (OLS)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py)                                    | Multi               | SER     | /                | /            | Section 3.3 of the [thesis](http://roijers.info/pub/thesis.pdf)     |
 | [Expected Utility Policy Gradient (EUPG)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py)                          | Single              | ESR     | Discrete         | Discrete     |   [Paper](https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return)                                                   |
 
-:warning: The algorithms have not been benchmarked yet, and some of them have limited features.
+:warning: Some algorithms of them have limited features.
 
 <b id="f1">1</b>: Currently, PGMORL is limited to environments with 2 objectives.
 
