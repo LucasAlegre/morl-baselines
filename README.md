@@ -70,7 +70,7 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 MORL-Baselines participates to [Open RL Benchmark](https://github.com/openrlbenchmark/openrlbenchmark) which contains tracked experiments from popular RL libraries such as [cleanRL](https://github.com/vwxyzjn/cleanrl) and [Stable Baselines 3](https://github.com/DLR-RM/stable-baselines3).
 
 
-We are currently running experiments of our algorithms on various environments from [MO-Gymnasium](https://www.github.com/Farama-Foundation/mo-gymnasium). The results can be found here: https://wandb.ai/openrlbenchmark/MORL-Baselines.
+We have run experiments of our algorithms on various environments from [MO-Gymnasium](https://www.github.com/Farama-Foundation/mo-gymnasium). The results can be found here: https://wandb.ai/openrlbenchmark/MORL-Baselines. An issue tracking all the settings is available at [#43](https://github.com/LucasAlegre/morl-baselines/issues/43). Some design documentation for the experimentation protocol are also available on our [Documentation website](https://lucasalegre.github.io/morl-baselines/algos/performances/).
 <!-- end benchmark -->
 
 An example visualization of our dashboards with Pareto support is shown below:
