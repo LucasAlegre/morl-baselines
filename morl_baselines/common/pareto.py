@@ -3,6 +3,64 @@ from copy import deepcopy
 from typing import List
 
 import numpy as np
+from scipy.spatial import ConvexHull
+
+
+def get_non_pareto_dominated_inds(candidates: np.ndarray, remove_duplicates: bool = True) -> np.ndarray:
+    """A batched and fast version of the Pareto coverage set algorithm.
+
+    Args:
+        candidates (ndarray): A numpy array of vectors.
+        remove_duplicates (bool, optional): Whether to remove duplicate vectors. Defaults to True.
+
+    Returns:
+        ndarray: The indices of the elements that should be kept to form the Pareto front or coverage set.
+    """
+    if len(candidates) <= 1:
+        return candidates
+
+    uniques, indcs, invs, counts = np.unique(candidates, return_index=True, return_inverse=True, return_counts=True, axis=0)
+
+    res_eq = np.all(candidates[:, None, None] <= candidates, axis=-1).squeeze()
+    res_g = np.all(candidates[:, None, None] < candidates, axis=-1).squeeze()
+    c1 = np.sum(res_eq, axis=-1) == counts[invs]
+    c2 = np.any(~res_g, axis=-1)
+    if remove_duplicates:
+        to_keep = np.zeros(len(candidates), dtype=bool)
+        to_keep[indcs] = 1
+    else:
+        to_keep = np.ones(len(candidates), dtype=bool)
+
+    return np.logical_and(c1, c2) & to_keep
+
+
+def filter_pareto_dominated(candidates: np.ndarray, remove_duplicates: bool = True) -> np.ndarray:
+    """A batched and fast version of the Pareto coverage set algorithm.
+
+    Args:
+        candidates (ndarray): A numpy array of vectors.
+        remove_duplicates (bool, optional): Whether to remove duplicate vectors. Defaults to True.
+
+    Returns:
+        ndarray: A Pareto coverage set.
+    """
+    return candidates[get_non_pareto_dominated_inds(candidates, remove_duplicates=remove_duplicates)]
+
+
+def filter_convex_dominated(candidates: np.ndarray) -> np.ndarray:
+    """A fast version to prune a set of points to its convex hull. This leverages the QuickHull algorithm.
+
+    This algorithm first computes the convex hull of the set of points and then prunes the Pareto dominated points.
+
+    Args:
+        candidates (ndarray): A numpy array of vectors.
+
+    Returns:
+        ndarray: A convex coverage set.
+    """
+    hull = ConvexHull(candidates)
+    ccs = candidates[hull.vertices]
+    return filter_pareto_dominated(ccs)
 
 
 def get_non_dominated(candidates: set) -> set:
