@@ -79,7 +79,7 @@ def get_non_dominated(candidates: set) -> set:
     Returns:
         The non-dominated subset of this input set.
     """
-    # candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
+    candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
     candidates = candidates[candidates.sum(1).argsort()[::-1]]  # Sort candidates by decreasing sum of coordinates.
     for i in range(candidates.shape[0]):  # Process each point in turn.
         n = candidates.shape[0]  # Check current size of the candidates.
