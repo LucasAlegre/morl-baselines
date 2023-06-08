@@ -10,6 +10,7 @@ import wandb
 from pymoo.util.ref_dirs import get_reference_directions
 from torch import nn
 
+from morl_baselines.common.pareto import filter_pareto_dominated
 from morl_baselines.common.performance_indicators import (
     expected_utility,
     hypervolume,
@@ -265,9 +266,10 @@ def log_all_multi_policy_metrics(
         n_sample_weights: number of weights to sample for EUM and MUL computation
         ref_front: reference front, if known
     """
-    hv = hypervolume(hv_ref_point, current_front)
-    sp = sparsity(current_front)
-    eum = expected_utility(current_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
+    filtered_front = list(filter_pareto_dominated(current_front))
+    hv = hypervolume(hv_ref_point, filtered_front)
+    sp = sparsity(filtered_front)
+    eum = expected_utility(filtered_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
 
     wandb.log(
         {
@@ -280,15 +282,15 @@ def log_all_multi_policy_metrics(
     )
     front = wandb.Table(
         columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
-        data=[p.tolist() for p in current_front],
+        data=[p.tolist() for p in filtered_front],
     )
     wandb.log({"eval/front": front})
 
     # If PF is known, log the additional metrics
     if ref_front is not None:
-        generational_distance = igd(known_front=ref_front, current_estimate=current_front)
+        generational_distance = igd(known_front=ref_front, current_estimate=filtered_front)
         mul = maximum_utility_loss(
-            front=current_front,
+            front=filtered_front,
             reference_set=ref_front,
             weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32),
         )
