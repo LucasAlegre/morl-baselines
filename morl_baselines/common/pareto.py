@@ -6,7 +6,7 @@ import numpy as np
 from scipy.spatial import ConvexHull
 
 
-def get_non_pareto_dominated_inds(candidates: np.ndarray, remove_duplicates: bool = True) -> np.ndarray:
+def get_non_pareto_dominated_inds(candidates: np.ndarray | List, remove_duplicates: bool = True) -> np.ndarray:
     """A batched and fast version of the Pareto coverage set algorithm.
 
     Args:
@@ -19,7 +19,9 @@ def get_non_pareto_dominated_inds(candidates: np.ndarray, remove_duplicates: boo
     if len(candidates) <= 1:
         return candidates
 
-    uniques, indcs, invs, counts = np.unique(candidates, return_index=True, return_inverse=True, return_counts=True, axis=0)
+    candidates = np.array(candidates)
+    uniques, indcs, invs, counts = np.unique(candidates, return_index=True, return_inverse=True, return_counts=True,
+                                             axis=0)
 
     res_eq = np.all(candidates[:, None, None] <= candidates, axis=-1).squeeze()
     res_g = np.all(candidates[:, None, None] < candidates, axis=-1).squeeze()
@@ -34,7 +36,7 @@ def get_non_pareto_dominated_inds(candidates: np.ndarray, remove_duplicates: boo
     return np.logical_and(c1, c2) & to_keep
 
 
-def filter_pareto_dominated(candidates: np.ndarray, remove_duplicates: bool = True) -> np.ndarray:
+def filter_pareto_dominated(candidates: np.ndarray | List, remove_duplicates: bool = True) -> np.ndarray:
     """A batched and fast version of the Pareto coverage set algorithm.
 
     Args:
@@ -44,10 +46,11 @@ def filter_pareto_dominated(candidates: np.ndarray, remove_duplicates: bool = Tr
     Returns:
         ndarray: A Pareto coverage set.
     """
+    candidates = np.array(candidates)
     return candidates[get_non_pareto_dominated_inds(candidates, remove_duplicates=remove_duplicates)]
 
 
-def filter_convex_dominated(candidates: np.ndarray) -> np.ndarray:
+def filter_convex_dominated(candidates: np.ndarray | List) -> np.ndarray:
     """A fast version to prune a set of points to its convex hull. This leverages the QuickHull algorithm.
 
     This algorithm first computes the convex hull of the set of points and then prunes the Pareto dominated points.
@@ -58,6 +61,7 @@ def filter_convex_dominated(candidates: np.ndarray) -> np.ndarray:
     Returns:
         ndarray: A convex coverage set.
     """
+    candidates = np.array(candidates)
     hull = ConvexHull(candidates)
     ccs = candidates[hull.vertices]
     return filter_pareto_dominated(ccs)
@@ -75,7 +79,7 @@ def get_non_dominated(candidates: set) -> set:
     Returns:
         The non-dominated subset of this input set.
     """
-    candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
+    # candidates = np.array(list(candidates))  # Turn the input set into a numpy array.
     candidates = candidates[candidates.sum(1).argsort()[::-1]]  # Sort candidates by decreasing sum of coordinates.
     for i in range(candidates.shape[0]):  # Process each point in turn.
         n = candidates.shape[0]  # Check current size of the candidates.
@@ -85,7 +89,7 @@ def get_non_dominated(candidates: set) -> set:
         # find all points not dominated by i
         # since points are sorted by coordinate sum
         # i cannot dominate any points in 1,...,i-1
-        non_dominated[i + 1 :] = np.any(candidates[i + 1 :] > candidates[i], axis=1)
+        non_dominated[i + 1:] = np.any(candidates[i + 1:] > candidates[i], axis=1)
         candidates = candidates[non_dominated]  # Grab only the non-dominated vectors using the generated bitmask.
 
     non_dominated = set()
@@ -110,8 +114,9 @@ def get_non_dominated_inds(solutions: np.ndarray) -> np.ndarray:
 class ParetoArchive:
     """Pareto archive."""
 
-    def __init__(self):
+    def __init__(self, convex_hull: bool = False):
         """Initializes the Pareto archive."""
+        self.convex_hull = convex_hull
         self.individuals: list = []
         self.evaluations: List[np.ndarray] = []
 
@@ -124,8 +129,12 @@ class ParetoArchive:
         """
         self.evaluations.append(evaluation)
         self.individuals.append(deepcopy(candidate))
+
         # Non-dominated sorting
-        nd_candidates = get_non_dominated({tuple(e) for e in self.evaluations})
+        if self.convex_hull:
+            nd_candidates = filter_convex_dominated(self.evaluations)
+        else:
+            nd_candidates = filter_pareto_dominated(self.evaluations)
 
         # Reconstruct the pareto archive (because Non-Dominated sorting might change the order of candidates)
         non_dominated_evals = []
