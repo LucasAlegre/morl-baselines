@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from scipy.stats import halfnorm
+from scipy.spatial import ConvexHull
 
 from morl_baselines.common.pareto import filter_pareto_dominated, filter_convex_dominated, get_non_dominated
 
@@ -15,11 +16,10 @@ def generate_known_front(num_nd_points, num_d_points, convex=False, dims=2, deci
                                                max_val=max_val,
                                                rng=rng)
     if convex:
-        d_points = sample_convex_combinations(num_nd_points,
+        d_points = sample_convex_combinations(nd_points,
+                                              num_nd_points,
                                               dims=dims,
                                               decimals=decimals,
-                                              min_val=min_val,
-                                              max_val=max_val,
                                               rng=rng)
     else:
         d_points = sample_dominated_points(nd_points, num_d_points, decimals=decimals, rng=rng)
@@ -36,12 +36,14 @@ def sample_from_unit_ball_positive(num_points, dims=2, decimals=None, min_val=0,
     return points
 
 
-def sample_convex_combinations(num_points, dims=2, decimals=None, min_val=0, max_val=10, rng=None):
+def sample_convex_combinations(nd_points, num_points, dims=2, decimals=None, rng=None):
     rng = rng if rng is not None else np.random.default_rng()
-    edges = np.full((dims, dims), min_val)
-    np.fill_diagonal(edges, max_val)
-    coefficients = rng.dirichlet(np.ones(dims), size=num_points)
-    points = np.matmul(coefficients, edges)
+    ch = ConvexHull(nd_points)
+    simplices = ch.simplices
+    parents = rng.choice(simplices, size=num_points, replace=True)
+    parents = nd_points[parents]
+    coefs = rng.dirichlet(np.ones(dims), size=num_points).reshape((num_points, 1, dims))
+    points = np.matmul(coefs, parents).squeeze()
     if decimals is not None:
         points = np.around(points, decimals)
     return points
