@@ -1,26 +1,22 @@
 import unittest
+
 import numpy as np
-from scipy.stats import halfnorm
 from scipy.spatial import ConvexHull
+from scipy.stats import halfnorm
 
-from morl_baselines.common.pareto import filter_pareto_dominated, filter_convex_dominated, get_non_dominated
+from morl_baselines.common.pareto import (
+    filter_convex_dominated,
+    filter_pareto_dominated,
+)
 
 
-def generate_known_front(num_nd_points, num_d_points, convex=False, dims=2, decimals=None, min_val=0, max_val=10,
-                         rng=None):
+def generate_known_front(num_nd_points, num_d_points, convex=False, dims=2, decimals=None, min_val=0, max_val=10, rng=None):
     rng = rng if rng is not None else np.random.default_rng()
-    nd_points = sample_from_unit_ball_positive(num_nd_points,
-                                               dims=dims,
-                                               decimals=decimals,
-                                               min_val=min_val,
-                                               max_val=max_val,
-                                               rng=rng)
+    nd_points = sample_from_unit_ball_positive(
+        num_nd_points, dims=dims, decimals=decimals, min_val=min_val, max_val=max_val, rng=rng
+    )
     if convex:
-        d_points = sample_convex_combinations(nd_points,
-                                              num_nd_points,
-                                              dims=dims,
-                                              decimals=decimals,
-                                              rng=rng)
+        d_points = sample_convex_combinations(nd_points, num_nd_points, dims=dims, decimals=decimals, rng=rng)
     else:
         d_points = sample_dominated_points(nd_points, num_d_points, decimals=decimals, rng=rng)
     return nd_points, d_points
@@ -83,15 +79,11 @@ class TestPruning(unittest.TestCase):
         min_val = 0
         max_val = 10
         rng = np.random.default_rng(self.test_seed)
-        nd_points, d_points = generate_known_front(num_nd_points,
-                                                   num_d_points,
-                                                   dims=dims,
-                                                   decimals=decimals,
-                                                   min_val=min_val,
-                                                   max_val=max_val,
-                                                   rng=rng)
+        nd_points, d_points = generate_known_front(
+            num_nd_points, num_d_points, dims=dims, decimals=decimals, min_val=min_val, max_val=max_val, rng=rng
+        )
         computed_points = filter_pareto_dominated(np.vstack((nd_points, d_points)))
-        self.assertEquals(self.make_set(nd_points), self.make_set(computed_points))
+        self.assertEqual(self.make_set(nd_points), self.make_set(computed_points))
 
     def test_small_ch(self):
         num_nd_points = 100
@@ -101,16 +93,11 @@ class TestPruning(unittest.TestCase):
         min_val = 0
         max_val = 10
         rng = np.random.default_rng(self.test_seed)
-        nd_points, d_points = generate_known_front(num_nd_points,
-                                                   num_d_points,
-                                                   convex=True,
-                                                   dims=dims,
-                                                   decimals=decimals,
-                                                   min_val=min_val,
-                                                   max_val=max_val,
-                                                   rng=rng)
+        nd_points, d_points = generate_known_front(
+            num_nd_points, num_d_points, convex=True, dims=dims, decimals=decimals, min_val=min_val, max_val=max_val, rng=rng
+        )
         computed_points = filter_convex_dominated(np.vstack((nd_points, d_points)))
-        self.assertEquals(self.make_set(nd_points), self.make_set(computed_points))
+        self.assertEqual(self.make_set(nd_points), self.make_set(computed_points))
 
     def test_large_pf(self):
         num_nd_points = 1000
@@ -120,15 +107,11 @@ class TestPruning(unittest.TestCase):
         min_val = 0
         max_val = 10
         rng = np.random.default_rng(self.test_seed)
-        nd_points, d_points = generate_known_front(num_nd_points,
-                                                   num_d_points,
-                                                   dims=dims,
-                                                   decimals=decimals,
-                                                   min_val=min_val,
-                                                   max_val=max_val,
-                                                   rng=rng)
+        nd_points, d_points = generate_known_front(
+            num_nd_points, num_d_points, dims=dims, decimals=decimals, min_val=min_val, max_val=max_val, rng=rng
+        )
         computed_points = filter_pareto_dominated(np.vstack((nd_points, d_points)))
-        self.assertEquals(self.make_set(nd_points), self.make_set(computed_points))
+        self.assertEqual(self.make_set(nd_points), self.make_set(computed_points))
 
     def test_large_ch(self):
         num_nd_points = 1000
@@ -138,17 +121,12 @@ class TestPruning(unittest.TestCase):
         min_val = 0
         max_val = 10
         rng = np.random.default_rng(self.test_seed)
-        nd_points, d_points = generate_known_front(num_nd_points,
-                                                   num_d_points,
-                                                   convex=True,
-                                                   dims=dims,
-                                                   decimals=decimals,
-                                                   min_val=min_val,
-                                                   max_val=max_val,
-                                                   rng=rng)
+        nd_points, d_points = generate_known_front(
+            num_nd_points, num_d_points, convex=True, dims=dims, decimals=decimals, min_val=min_val, max_val=max_val, rng=rng
+        )
         computed_points = filter_convex_dominated(np.vstack((nd_points, d_points)))
-        self.assertEquals(self.make_set(nd_points), self.make_set(computed_points))
+        self.assertEqual(self.make_set(nd_points), self.make_set(computed_points))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

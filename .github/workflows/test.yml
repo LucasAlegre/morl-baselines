@@ -29,3 +29,4 @@ jobs:
     - name: Full Python tests
       run: |
         pytest tests/test_algos.py
+        pytest tests/test_pruning.py
