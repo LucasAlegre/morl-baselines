@@ -365,6 +365,8 @@ class Envelope(MOPolicy, MOAgent):
                     "global_step": self.global_step,
                 },
             )
+            if self.per:
+                wandb.log({"metrics/mean_priority": np.mean(priority)})
 
     @override
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
