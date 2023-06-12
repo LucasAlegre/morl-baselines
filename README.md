@@ -1,6 +1,3 @@
-<img src="docs/_static/_images/mo_cheetah.gif" alt="Multiple policies" align="right" width="50%"/>
-
-
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 ![tests](https://github.com/LucasAlegre/morl-baselines/workflows/Python%20tests/badge.svg)
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/LucasAlegre/morl-baselines/blob/main/LICENSE)
@@ -10,6 +7,8 @@
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 # MORL-Baselines
+
+<img src="docs/_static/_images/mo_cheetah.gif" alt="Multiple policies" align="right" width="50%"/>
 
 <!-- start elevator-pitch -->
 
