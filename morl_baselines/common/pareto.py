@@ -135,7 +135,7 @@ class ParetoArchive:
         if self.convex_hull:
             nd_candidates = {tuple(x) for x in filter_convex_dominated(self.evaluations)}
         else:
-            nd_candidates = {tuple(x) for x in filter_convex_dominated(self.evaluations)}
+            nd_candidates = {tuple(x) for x in filter_pareto_dominated(self.evaluations)}
 
         # Reconstruct the pareto archive (because Non-Dominated sorting might change the order of candidates)
         non_dominated_evals = []
