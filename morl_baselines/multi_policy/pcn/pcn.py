@@ -11,10 +11,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 
+from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import get_non_dominated_inds
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import log_all_multi_policy_metrics
 
 
 def crowding_distance(points):
