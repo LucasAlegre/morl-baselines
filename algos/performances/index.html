@@ -182,6 +182,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../features/pareto/">Pareto utils</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../features/evaluations/">Evaluations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features/weights/">Weights helpers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../features/performance_indicators/">Performance indicators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../features/scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../features/buffers/">Replay Buffers</a></li>
@@ -263,31 +264,6 @@ For both these metrics, we propose to generate a number of equally spaced weight
 </ul>
 <p>Finally, the PF can also be logged as a wandb table for a posteriori analysis. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/front</span></code>.</p>
 <p>Here is the function that logs all the metrics:</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.utils.log_all_multi_policy_metrics">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">log_all_multi_policy_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hv_ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.log_all_multi_policy_metrics" title="Permalink to this definition">#</a></dt>
-<dd><p>Logs all metrics for multi-policy training.</p>
-<p>Logged metrics:
-- hypervolume
-- sparsity
-- expected utility metric (EUM)
-If a reference front is provided, also logs:
-- Inverted generational distance (IGD)
-- Maximum utility loss (MUL)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>current_front</strong> (<em>List</em>) – current Pareto front approximation, computed in an evaluation step</p></li>
-<li><p><strong>hv_ref_point</strong> – reference point for hypervolume computation</p></li>
-<li><p><strong>reward_dim</strong> – number of objectives</p></li>
-<li><p><strong>global_step</strong> – global step for logging</p></li>
-<li><p><strong>n_sample_weights</strong> – number of weights to sample for EUM and MUL computation</p></li>
-<li><p><strong>ref_front</strong> – reference front, if known</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 </section>
 <section id="storage">
@@ -370,10 +346,7 @@ If a reference front is provided, also logs:
 <li><a class="reference internal" href="#introduction">Introduction</a></li>
 <li><a class="reference internal" href="#metrics">Metrics</a><ul>
 <li><a class="reference internal" href="#single-policy-algorithms">Single-policy algorithms</a></li>
-<li><a class="reference internal" href="#multi-policy-algorithms">Multi-policy algorithms</a><ul>
-<li><a class="reference internal" href="#morl_baselines.common.utils.log_all_multi_policy_metrics"><code class="docutils literal notranslate"><span class="pre">log_all_multi_policy_metrics()</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#multi-policy-algorithms">Multi-policy algorithms</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#storage">Storage</a></li>

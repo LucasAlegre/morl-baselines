@@ -180,6 +180,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../features/pareto/">Pareto utils</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features/evaluations/">Evaluations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features/weights/">Weights helpers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features/performance_indicators/">Performance indicators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features/scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features/buffers/">Replay Buffers</a></li>
@@ -310,7 +311,7 @@
 </li>
         <li><a href="../algos/multi_policy/envelope/#morl_baselines.multi_policy.envelope.envelope.Envelope.envelope_target">envelope_target() (morl_baselines.multi_policy.envelope.envelope.Envelope method)</a>
 </li>
-        <li><a href="../features/misc/#morl_baselines.common.utils.equally_spaced_weights">equally_spaced_weights() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/weights/#morl_baselines.common.weights.equally_spaced_weights">equally_spaced_weights() (in module morl_baselines.common.weights)</a>
 </li>
         <li><a href="../algos/single_policy/eupg/#morl_baselines.single_policy.esr.eupg.EUPG">EUPG (class in morl_baselines.single_policy.esr.eupg)</a>
 </li>
@@ -344,7 +345,7 @@
 </li>
         <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.extract_trace">extract_trace() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
 </li>
-        <li><a href="../features/misc/#morl_baselines.common.utils.extrema_weights">extrema_weights() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/weights/#morl_baselines.common.weights.extrema_weights">extrema_weights() (in module morl_baselines.common.weights)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -402,7 +403,7 @@
 </li>
         <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.get_error">get_error() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
 </li>
-        <li><a href="../features/misc/#morl_baselines.common.utils.get_grad_norm">get_grad_norm() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/networks/#morl_baselines.common.networks.get_grad_norm">get_grad_norm() (in module morl_baselines.common.networks)</a>
 </li>
         <li><a href="../algos/multi_policy/pareto_q_learning/#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.get_local_pcs">get_local_pcs() (morl_baselines.multi_policy.pareto_q_learning.pql.PQL method)</a>
 </li>
@@ -432,7 +433,7 @@
   <h2>H</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../features/misc/#morl_baselines.common.utils.huber">huber() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/networks/#morl_baselines.common.networks.huber">huber() (in module morl_baselines.common.networks)</a>
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
@@ -460,7 +461,7 @@
   <h2>L</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../features/misc/#morl_baselines.common.utils.layer_init">layer_init() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/networks/#morl_baselines.common.networks.layer_init">layer_init() (in module morl_baselines.common.networks)</a>
 </li>
         <li><a href="../features/misc/#morl_baselines.common.utils.linearly_decaying_value">linearly_decaying_value() (in module morl_baselines.common.utils)</a>
 </li>
@@ -476,9 +477,9 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../algos/performances/#morl_baselines.common.utils.log_all_multi_policy_metrics">log_all_multi_policy_metrics() (in module morl_baselines.common.utils)</a>, <a href="../features/misc/#morl_baselines.common.utils.log_all_multi_policy_metrics">[1]</a>
+        <li><a href="../features/evaluations/#morl_baselines.common.evaluation.log_all_multi_policy_metrics">log_all_multi_policy_metrics() (in module morl_baselines.common.evaluation)</a>
 </li>
-        <li><a href="../features/misc/#morl_baselines.common.utils.log_episode_info">log_episode_info() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/evaluations/#morl_baselines.common.evaluation.log_episode_info">log_episode_info() (in module morl_baselines.common.evaluation)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -523,6 +524,8 @@
           <li><a href="../features/scalarization/#module-morl_baselines.common.scalarization">morl_baselines.common.scalarization</a>
 </li>
           <li><a href="../features/misc/#module-morl_baselines.common.utils">morl_baselines.common.utils</a>
+</li>
+          <li><a href="../features/weights/#module-morl_baselines.common.weights">morl_baselines.common.weights</a>
 </li>
         </ul></li>
     </ul></td>
@@ -573,6 +576,13 @@
           <li><a href="../features/misc/#module-morl_baselines.common.utils">module</a>
 </li>
         </ul></li>
+        <li>
+    morl_baselines.common.weights
+
+        <ul>
+          <li><a href="../features/weights/#module-morl_baselines.common.weights">module</a>
+</li>
+        </ul></li>
         <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.move_to_sec">move_to_sec() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
 </li>
         <li><a href="../algos/multi_policy/mp_mo_q_learning/#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning">MPMOQLearning (class in morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning)</a>
@@ -621,7 +631,7 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../features/evaluations/#morl_baselines.common.evaluation.policy_evaluation_mo">policy_evaluation_mo() (in module morl_baselines.common.evaluation)</a>
 </li>
-        <li><a href="../features/misc/#morl_baselines.common.utils.polyak_update">polyak_update() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/networks/#morl_baselines.common.networks.polyak_update">polyak_update() (in module morl_baselines.common.networks)</a>
 </li>
         <li><a href="../algos/multi_policy/pareto_q_learning/#morl_baselines.multi_policy.pareto_q_learning.pql.PQL">PQL (class in morl_baselines.multi_policy.pareto_q_learning.pql)</a>
 </li>
@@ -637,7 +647,7 @@
   <h2>R</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../features/misc/#morl_baselines.common.utils.random_weights">random_weights() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/weights/#morl_baselines.common.weights.random_weights">random_weights() (in module morl_baselines.common.weights)</a>
 </li>
         <li><a href="../algos/multi_policy/linear_support/#morl_baselines.multi_policy.linear_support.linear_support.LinearSupport.remove_obsolete_values">remove_obsolete_values() (morl_baselines.multi_policy.linear_support.linear_support.LinearSupport method)</a>
 </li>
@@ -693,7 +703,7 @@
 </li>
         <li><a href="../features/buffers/#morl_baselines.common.diverse_buffer.DiverseMemory.sec_distances">sec_distances() (morl_baselines.common.diverse_buffer.DiverseMemory method)</a>
 </li>
-        <li><a href="../features/misc/#morl_baselines.common.utils.seed_everything">seed_everything() (in module morl_baselines.common.utils)</a>
+        <li><a href="../features/evaluations/#morl_baselines.common.evaluation.seed_everything">seed_everything() (in module morl_baselines.common.evaluation)</a>
 </li>
         <li><a href="../algos/multi_policy/pareto_q_learning/#morl_baselines.multi_policy.pareto_q_learning.pql.PQL.select_action">select_action() (morl_baselines.multi_policy.pareto_q_learning.pql.PQL method)</a>
 </li>

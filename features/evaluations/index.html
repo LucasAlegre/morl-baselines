@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Performance indicators" href="../performance_indicators/" /><link rel="prev" title="Pareto utils" href="../pareto/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Weights helpers" href="../weights/" /><link rel="prev" title="Pareto utils" href="../pareto/" />
 
     <!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
         <title>Evaluations - MORL-Baselines 1.0.0 documentation</title>
@@ -182,6 +182,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../pareto/">Pareto utils</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Evaluations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../weights/">Weights helpers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../performance_indicators/">Performance indicators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
@@ -278,6 +279,49 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.evaluation.log_all_multi_policy_metrics">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.evaluation.</span></span><span class="sig-name descname"><span class="pre">log_all_multi_policy_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hv_ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.evaluation.log_all_multi_policy_metrics" title="Permalink to this definition">#</a></dt>
+<dd><p>Logs all metrics for multi-policy training.</p>
+<p>Logged metrics:
+- hypervolume
+- sparsity
+- expected utility metric (EUM)
+If a reference front is provided, also logs:
+- Inverted generational distance (IGD)
+- Maximum utility loss (MUL)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current_front</strong> (<em>List</em>) – current Pareto front approximation, computed in an evaluation step</p></li>
+<li><p><strong>hv_ref_point</strong> – reference point for hypervolume computation</p></li>
+<li><p><strong>reward_dim</strong> – number of objectives</p></li>
+<li><p><strong>global_step</strong> – global step for logging</p></li>
+<li><p><strong>n_sample_weights</strong> – number of weights to sample for EUM and MUL computation</p></li>
+<li><p><strong>ref_front</strong> – reference front, if known</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.evaluation.log_episode_info">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.evaluation.</span></span><span class="sig-name descname"><span class="pre">log_episode_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.evaluation.log_episode_info" title="Permalink to this definition">#</a></dt>
+<dd><p>Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>info</strong> – info dictionary containing the episode statistics</p></li>
+<li><p><strong>scalarization</strong> – scalarization function</p></li>
+<li><p><strong>weights</strong> – weights to be used in the scalarization</p></li>
+<li><p><strong>global_timestep</strong> – global timestep</p></li>
+<li><p><strong>id</strong> – agent’s id</p></li>
+<li><p><strong>verbose</strong> – whether to print the episode info</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.evaluation.policy_evaluation_mo">
 <span class="sig-prename descclassname"><span class="pre">morl_baselines.common.evaluation.</span></span><span class="sig-name descname"><span class="pre">policy_evaluation_mo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.evaluation.policy_evaluation_mo" title="Permalink to this definition">#</a></dt>
 <dd><p>Evaluates the value of a policy by running the policy for multiple episodes. Returns the average returns.</p>
@@ -296,6 +340,19 @@
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.evaluation.seed_everything">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.evaluation.</span></span><span class="sig-name descname"><span class="pre">seed_everything</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.evaluation.seed_everything" title="Permalink to this definition">#</a></dt>
+<dd><p>Set random seeds for reproducibility.</p>
+<p>This function should be called only once per python process, preferably at the beginning of the main script.
+It has global effects on the random state of the python process, so it should be used with care.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seed</strong> – random seed</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
         </article>
@@ -303,12 +360,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../performance_indicators/">
+          <a class="next-page" href="../weights/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Performance indicators</div>
+                <div class="title">Weights helpers</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -356,7 +413,10 @@
 <li><a class="reference internal" href="#">Evaluations</a><ul>
 <li><a class="reference internal" href="#morl_baselines.common.evaluation.eval_mo"><code class="docutils literal notranslate"><span class="pre">eval_mo()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.evaluation.eval_mo_reward_conditioned"><code class="docutils literal notranslate"><span class="pre">eval_mo_reward_conditioned()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.evaluation.log_all_multi_policy_metrics"><code class="docutils literal notranslate"><span class="pre">log_all_multi_policy_metrics()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.evaluation.log_episode_info"><code class="docutils literal notranslate"><span class="pre">log_episode_info()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.evaluation.policy_evaluation_mo"><code class="docutils literal notranslate"><span class="pre">policy_evaluation_mo()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.evaluation.seed_everything"><code class="docutils literal notranslate"><span class="pre">seed_everything()</span></code></a></li>
 </ul>
 </li>
 </ul>

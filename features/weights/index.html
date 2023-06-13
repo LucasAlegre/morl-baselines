@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Community" href="../../community/community/" /><link rel="prev" title="Neural Networks helpers" href="../networks/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Performance indicators" href="../performance_indicators/" /><link rel="prev" title="Evaluations" href="../evaluations/" />
 
     <!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
-        <title>Miscellaneous - MORL-Baselines 1.0.0 documentation</title>
+        <title>Weights helpers - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -182,12 +182,12 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../pareto/">Pareto utils</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../evaluations/">Evaluations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../weights/">Weights helpers</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Weights helpers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../performance_indicators/">Performance indicators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../networks/">Neural Networks helpers</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Miscellaneous</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/">Miscellaneous</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
@@ -213,7 +213,7 @@
         </a>
         <div class="content-icon-container">
           <div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/features/misc.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/features/weights.md" title="Edit this page">
     <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
@@ -235,43 +235,51 @@
           </label>
         </div>
         <article role="main">
-          <section id="module-morl_baselines.common.utils">
-<span id="miscellaneous"></span><h1>Miscellaneous<a class="headerlink" href="#module-morl_baselines.common.utils" title="Permalink to this heading">#</a></h1>
-<p>General utils for the MORL baselines.</p>
+          <section id="module-morl_baselines.common.weights">
+<span id="weights-helpers"></span><h1>Weights helpers<a class="headerlink" href="#module-morl_baselines.common.weights" title="Permalink to this heading">#</a></h1>
+<p>Utilities related to weight vectors.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.utils.linearly_decaying_value">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">linearly_decaying_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decay_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.linearly_decaying_value" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns the current value for a linearly decaying parameter.</p>
-<p>This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
-al., 2015). The schedule is as follows:
-Begin at 1. until warmup_steps steps have been taken; then
-Linearly decay epsilon from 1. to epsilon in decay_period steps; and then
-Use epsilon from there on.</p>
+<dt class="sig sig-object py" id="morl_baselines.common.weights.equally_spaced_weights">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.weights.</span></span><span class="sig-name descname"><span class="pre">equally_spaced_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.weights.equally_spaced_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Generate weight vectors that are equally spaced in the weight simplex.</p>
+<p>It uses the Riesz s-Energy method from pymoo: <a class="reference external" href="https://pymoo.org/misc/reference_directions.html">https://pymoo.org/misc/reference_directions.html</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>decay_period</strong> – float, the period over which the value is decayed.</p></li>
-<li><p><strong>step</strong> – int, the number of training steps completed so far.</p></li>
-<li><p><strong>warmup_steps</strong> – int, the number of steps taken before the value is decayed.</p></li>
-<li><p><strong>value</strong> (<em>final</em>) – float, the final value to which to decay the value parameter.</p></li>
+<li><p><strong>dim</strong> – size of the weight vector</p></li>
+<li><p><strong>n</strong> – number of weight vectors to generate</p></li>
+<li><p><strong>seed</strong> – random seed</p></li>
 </ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>A float, the current value computed according to the schedule.</strong></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.utils.make_gif">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">make_gif</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fullpath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">300</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.make_gif" title="Permalink to this definition">#</a></dt>
-<dd><p>Render an episode and save it as a gif.</p>
+<dt class="sig sig-object py" id="morl_baselines.common.weights.extrema_weights">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.weights.</span></span><span class="sig-name descname"><span class="pre">extrema_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.weights.extrema_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Generate weight vectors in the extrema of the weight simplex. That is, one element is 1 and the rest are 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dim</strong> – size of the weight vector</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.utils.unique_tol">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">unique_tol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.utils.unique_tol" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns unique elements of a list of np.arrays, within a tolerance.</p>
+<dt class="sig sig-object py" id="morl_baselines.common.weights.random_weights">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.weights.</span></span><span class="sig-name descname"><span class="pre">random_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dirichlet'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Generator</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.weights.random_weights" title="Permalink to this definition">#</a></dt>
+<dd><p>Generate random normalized weight vectors from a Gaussian or Dirichlet distribution alpha=1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim</strong> – size of the weight vector</p></li>
+<li><p><strong>n</strong> – number of weight vectors to generate</p></li>
+<li><p><strong>dist</strong> – distribution to use, either ‘gaussian’ or ‘dirichlet’. Default is ‘dirichlet’ as it is equivalent to sampling uniformly from the weight simplex.</p></li>
+<li><p><strong>seed</strong> – random seed</p></li>
+<li><p><strong>rng</strong> – random number generator</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -281,23 +289,23 @@ Use epsilon from there on.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../community/community/">
+          <a class="next-page" href="../performance_indicators/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Community</div>
+                <div class="title">Performance indicators</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../networks/">
+          <a class="prev-page" href="../evaluations/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Neural Networks helpers</div>
+                <div class="title">Evaluations</div>
                 
               </div>
             </a>
@@ -331,10 +339,10 @@ Use epsilon from there on.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Miscellaneous</a><ul>
-<li><a class="reference internal" href="#morl_baselines.common.utils.linearly_decaying_value"><code class="docutils literal notranslate"><span class="pre">linearly_decaying_value()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.common.utils.make_gif"><code class="docutils literal notranslate"><span class="pre">make_gif()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.common.utils.unique_tol"><code class="docutils literal notranslate"><span class="pre">unique_tol()</span></code></a></li>
+<li><a class="reference internal" href="#">Weights helpers</a><ul>
+<li><a class="reference internal" href="#morl_baselines.common.weights.equally_spaced_weights"><code class="docutils literal notranslate"><span class="pre">equally_spaced_weights()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.weights.extrema_weights"><code class="docutils literal notranslate"><span class="pre">extrema_weights()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.weights.random_weights"><code class="docutils literal notranslate"><span class="pre">random_weights()</span></code></a></li>
 </ul>
 </li>
 </ul>
