@@ -5,13 +5,11 @@ import gymnasium as gym
 import numpy as np
 import wandb
 
+from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import (
-    linearly_decaying_value,
-    log_all_multi_policy_metrics,
-)
+from morl_baselines.common.utils import linearly_decaying_value
 
 
 class PQL(MOAgent):

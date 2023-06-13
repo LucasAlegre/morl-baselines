@@ -12,19 +12,21 @@ import torch.optim as optim
 import wandb
 
 from morl_baselines.common.buffer import ReplayBuffer
-from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.utils import (
-    equally_spaced_weights,
-    get_grad_norm,
-    layer_init,
-    linearly_decaying_value,
+from morl_baselines.common.evaluation import (
     log_all_multi_policy_metrics,
     log_episode_info,
-    polyak_update,
-    random_weights,
 )
+from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.networks import (
+    NatureCNN,
+    get_grad_norm,
+    layer_init,
+    mlp,
+    polyak_update,
+)
+from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
+from morl_baselines.common.utils import linearly_decaying_value
+from morl_baselines.common.weights import equally_spaced_weights, random_weights
 
 
 class QNet(nn.Module):
