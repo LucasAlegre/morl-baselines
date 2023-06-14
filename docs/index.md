@@ -64,6 +64,7 @@ algos/performances
 
 features/pareto
 features/evaluations
+features/weights
 features/performance_indicators
 features/scalarization
 features/buffers

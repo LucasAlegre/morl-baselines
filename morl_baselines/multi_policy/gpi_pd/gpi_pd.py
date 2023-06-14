@@ -13,25 +13,27 @@ import torch.optim as optim
 import wandb
 
 from morl_baselines.common.buffer import ReplayBuffer
-from morl_baselines.common.evaluation import policy_evaluation_mo
+from morl_baselines.common.evaluation import (
+    log_all_multi_policy_metrics,
+    log_episode_info,
+    policy_evaluation_mo,
+)
 from morl_baselines.common.model_based.probabilistic_ensemble import (
     ProbabilisticEnsemble,
 )
 from morl_baselines.common.model_based.utils import ModelEnv, visualize_eval
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.utils import (
-    equally_spaced_weights,
+from morl_baselines.common.networks import (
+    NatureCNN,
     get_grad_norm,
     huber,
     layer_init,
-    linearly_decaying_value,
-    log_all_multi_policy_metrics,
-    log_episode_info,
+    mlp,
     polyak_update,
-    unique_tol,
 )
+from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
+from morl_baselines.common.utils import linearly_decaying_value, unique_tol
+from morl_baselines.common.weights import equally_spaced_weights
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 

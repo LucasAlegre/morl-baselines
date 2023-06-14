@@ -7,14 +7,13 @@ from typing_extensions import override
 import gymnasium as gym
 import numpy as np
 
-from morl_baselines.common.evaluation import policy_evaluation_mo
+from morl_baselines.common.evaluation import (
+    log_all_multi_policy_metrics,
+    policy_evaluation_mo,
+)
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.scalarization import weighted_sum
-from morl_baselines.common.utils import (
-    equally_spaced_weights,
-    log_all_multi_policy_metrics,
-    random_weights,
-)
+from morl_baselines.common.weights import equally_spaced_weights, random_weights
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 

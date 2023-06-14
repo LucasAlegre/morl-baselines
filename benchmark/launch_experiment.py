@@ -17,7 +17,7 @@ import requests
 from gymnasium.wrappers import FlattenObservation
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.utils import seed_everything
+from morl_baselines.common.evaluation import seed_everything
 from morl_baselines.multi_policy.capql.capql import CAPQL
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPILS, GPIPD
