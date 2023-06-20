@@ -195,20 +195,26 @@ def main():
             env = FlattenObservation(env)
             eval_env = FlattenObservation(eval_env)
         elif "mario" in args.env_id:
-            from gymnasium.wrappers import (
-                FrameStack,
-                GrayScaleObservation,
-                ResizeObservation,
-            )
-            from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
 
-            from morl_baselines.common.utils import MaxAndSkipObservationV0
+            def make_mario(env):
+                from gymnasium.wrappers import (
+                    FrameStack,
+                    GrayScaleObservation,
+                    ResizeObservation,
+                )
+                from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
 
-            env = JoypadSpace(env, SIMPLE_MOVEMENT)
-            env = MaxAndSkipObservationV0(env, skip=4)
-            env = ResizeObservation(env, (84, 84))
-            env = GrayScaleObservation(env)
-            env = FrameStack(env, 4)
+                from morl_baselines.common.utils import MaxAndSkipObservationV0
+
+                env = JoypadSpace(env, SIMPLE_MOVEMENT)
+                env = MaxAndSkipObservationV0(env, skip=4)
+                env = ResizeObservation(env, (84, 84))
+                env = GrayScaleObservation(env)
+                env = FrameStack(env, 4)
+                return env
+
+            env = make_mario(env)
+            eval_env = make_mario(eval_env)
 
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
