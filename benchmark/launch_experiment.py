@@ -202,10 +202,10 @@ def main():
             )
             from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
 
-            from morl_baselines.common.utils import MaxAndSkipObservationV0
+            from morl_baselines.common.utils import MaxAndSkipEnv
 
             env = JoypadSpace(env, SIMPLE_MOVEMENT)
-            env = MaxAndSkipObservationV0(env, 4)
+            env = MaxAndSkipEnv(env, 4)
             env = ResizeObservation(env, (84, 84))
             env = GrayScaleObservation(env)
             env = FrameStack(env, 4)
