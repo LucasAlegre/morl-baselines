@@ -68,7 +68,7 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
 
 
 class MaxAndSkipObservationV0(
-    gym.Wrapper[WrapperObsType, ActType, ObsType, ActType],
+    gym.Wrapper,
     gym.utils.RecordConstructorArgs,
 ):
     """This wrapper will return only every ``skip``-th frame (frameskipping) and return the max between the two last observations.
