@@ -14,6 +14,7 @@ from distutils.util import strtobool
 import mo_gymnasium as mo_gym
 import numpy as np
 import requests
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from gymnasium.wrappers import FlattenObservation
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
@@ -193,6 +194,22 @@ def main():
         if "highway" in args.env_id:
             env = FlattenObservation(env)
             eval_env = FlattenObservation(eval_env)
+        elif "mario" in args.env_id:
+            from gymnasium.wrappers import (
+                FrameStack,
+                GrayScaleObservation,
+                ResizeObservation,
+            )
+            from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
+
+            from morl_baselines.common.utils import MaxAndSkipObservationV0
+
+            env = JoypadSpace(env, SIMPLE_MOVEMENT)
+            env = MaxAndSkipObservationV0(env, 4)
+            env = ResizeObservation(env, (84, 84))
+            env = GrayScaleObservation(env)
+            env = FrameStack(env, 4)
+
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"
