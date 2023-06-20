@@ -426,10 +426,10 @@ class GPIPD(MOPolicy, MOAgent):
 
             if len(self.weight_support) > 1:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
-                    s_obs.repeat(2, 1),
+                    s_obs.repeat(2, *(1 for _ in range(s_obs.dim() - 1))),
                     s_actions.repeat(2, 1),
                     s_rewards.repeat(2, 1),
-                    s_next_obs.repeat(2, 1),
+                    s_next_obs.repeat(2, *(1 for _ in range(s_obs.dim() - 1))),
                     s_dones.repeat(2, 1),
                 )
                 # Half of the batch uses the given weight vector, the other half uses weights sampled from the support set
