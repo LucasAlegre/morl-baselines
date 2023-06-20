@@ -102,7 +102,7 @@ class MaxAndSkipObservationV0(gym.Wrapper):
         Returns:
             Max of the last two observations, reward, terminated, truncated, and info from the environment
         """
-        total_reward = 0.0
+        total_reward = np.zeros(self.env.reward_dim, dtype=np.float32)
         terminated = truncated = False
         info = {}
         for i in range(self._skip):
@@ -112,7 +112,7 @@ class MaxAndSkipObservationV0(gym.Wrapper):
                 self._obs_buffer[0] = obs
             if i == self._skip - 1:
                 self._obs_buffer[1] = obs
-            total_reward += float(reward)
+            total_reward += reward
             if done:
                 break
         max_frame = self._obs_buffer.max(axis=0)
