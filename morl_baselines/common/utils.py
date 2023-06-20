@@ -67,10 +67,7 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
     print("Saved gif at: " + fullpath + ".gif")
 
 
-class MaxAndSkipObservationV0(
-    gym.Wrapper,
-    gym.utils.RecordConstructorArgs,
-):
+class MaxAndSkipObservationV0(gym.Wrapper):
     """This wrapper will return only every ``skip``-th frame (frameskipping) and return the max between the two last observations.
 
     Note: This wrapper is based on the wrapper from stable-baselines3: https://stable-baselines3.readthedocs.io/en/master/_modules/stable_baselines3/common/atari_wrappers.html#MaxAndSkipEnv
@@ -83,7 +80,6 @@ class MaxAndSkipObservationV0(
             env (Env): The environment to apply the wrapper
             skip: The number of frames to skip
         """
-        gym.utils.RecordConstructorArgs.__init__(self, skip=skip)
         gym.Wrapper.__init__(self, env)
 
         if not np.issubdtype(type(skip), np.integer):
