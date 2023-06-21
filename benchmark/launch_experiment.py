@@ -211,7 +211,7 @@ def main():
                     FrameStack,
                     GrayScaleObservation,
                     ResizeObservation,
-                    TimeLimit
+                    TimeLimit,
                 )
                 from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
 
