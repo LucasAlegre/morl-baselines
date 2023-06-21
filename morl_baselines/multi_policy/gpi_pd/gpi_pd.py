@@ -619,12 +619,19 @@ class GPIPD(MOPolicy, MOAgent):
             rewards_s,
             next_obs_s,
             dones_s,
-        ) = self.replay_buffer.get_all_data(to_tensor=True, device=self.device)
-        num_batches = int(np.ceil(obs_s.size(0) / 1000))
+        ) = self.replay_buffer.get_all_data(to_tensor=False)
+        num_batches = int(np.ceil(obs_s.shape[0] / 1000))
         for i in range(num_batches):
             b = i * 1000
-            e = min((i + 1) * 1000, obs_s.size(0))
+            e = min((i + 1) * 1000, obs_s.shape[0])
             obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[b:e], dones_s[b:e]
+            obs, actions, rewards, next_obs, dones = (
+                th.tensor(obs).to(self.device),
+                th.tensor(actions).to(self.device),
+                th.tensor(rewards).to(self.device),
+                th.tensor(next_obs).to(self.device),
+                th.tensor(dones).to(self.device),
+            )
             q_values = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
             q_a = q_values.gather(1, actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2))).squeeze(1)
 
