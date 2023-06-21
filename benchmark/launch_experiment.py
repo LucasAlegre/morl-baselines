@@ -16,6 +16,7 @@ import numpy as np
 import requests
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from gymnasium.wrappers import FlattenObservation
+from gymnasium.wrappers.record_video import RecordVideo
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.evaluation import seed_everything
@@ -100,6 +101,15 @@ def parse_args():
         const=True,
         help="if toggled, the runs will be tagged with git tags, commit, and pull request number if possible",
     )
+    parser.add_argument(
+        "--record-video",
+        type=lambda x: bool(strtobool(x)),
+        default=False,
+        nargs="?",
+        const=True,
+        help="if toggled, the runs will be recorded with RecordVideo wrapper.",
+    )
+    parser.add_argument("--record-video-ep-freq", type=int, default=5, help="Record video frequency (in episodes).")
     parser.add_argument(
         "--init-hyperparams",
         type=str,
@@ -201,6 +211,7 @@ def main():
                     FrameStack,
                     GrayScaleObservation,
                     ResizeObservation,
+                    TimeLimit
                 )
                 from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
 
@@ -211,10 +222,18 @@ def main():
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env)
                 env = FrameStack(env, 4)
+                env = TimeLimit(env, max_episode_steps=1000)
                 return env
 
             env = make_mario(env)
             eval_env = make_mario(eval_env)
+
+            if args.record_video:
+                eval_env = RecordVideo(
+                    eval_env,
+                    video_folder=f"videos/{args.algo}-{args.env_id}",
+                    episode_trigger=lambda ep: ep % args.record_video_ep_freq == 0,
+                )
 
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
