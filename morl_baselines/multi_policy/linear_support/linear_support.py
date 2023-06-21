@@ -347,7 +347,7 @@ class LinearSupport:
         for v in vertices:
             corner_weight = v[:-1]
             # Make sure the corner weight is positive and sum to 1
-            corner_weight = corner_weight.abs()
+            corner_weight = np.abs(corner_weight)
             corner_weight /= corner_weight.sum()
             corners.append(corner_weight)
 
