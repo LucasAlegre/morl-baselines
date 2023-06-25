@@ -185,7 +185,7 @@ args = parse_args()
 seed_everything(args.seed)
 
 # Create an array of seeds
-seeds = [random.randint(0, 1000000) for _ in range(args.num_seeds)]
+seeds = list(range(args.num_seeds))
 
 # Load the sweep config
 config_file = os.path.join(os.path.dirname(__file__), "configs", args.config_name)
