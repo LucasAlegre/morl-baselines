@@ -2,7 +2,9 @@ import argparse
 import random
 import yaml
 import os
+
 from dataclasses import dataclass
+from typing import Union
 
 from concurrent.futures import ProcessPoolExecutor
 
@@ -25,6 +27,7 @@ class WorkerInitData:
 @dataclass
 class WorkerDoneData:
     hypervolume: float
+    igd: Union[float, None]
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -121,11 +124,16 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
         )
 
     # Get the hypervolume from the wandb run
-    print(f"Worker {worker_num}: Seed {seed}. Done Training.")
     hypervolume = wandb.run.summary["eval/hypervolume"]
     print(f"Worker {worker_num}: Seed {seed}. Hypervolume: {hypervolume}")
 
-    return WorkerDoneData(hypervolume=hypervolume)
+    # If the environment has a known pareto front, get the IGD from the wandb run
+    igd = None
+    if known_pareto_front:
+        igd = wandb.run.summary["eval/igd"]
+        print(f"Worker {worker_num}: Seed {seed}. IGD: {igd}")
+
+    return WorkerDoneData(hypervolume=hypervolume, igd=igd)
 
 def main():
     # Get the sweep id
@@ -149,10 +157,22 @@ def main():
         results = [future.result() for future in futures]
 
     # Get the hypervolume from the results
-    metrics = [result.hypervolume for result in results]
+    hypervolume_metrics = [result.hypervolume for result in results]
+    print(f"Hypervolumes of the sweep {sweep_id}: {hypervolume_metrics}")
+
+    # Get the IGD from the results
+    igd_metrics = [result.igd for result in results]
+    if all(igd is not None for igd in igd_metrics):
+        print(f"IGDs of the sweep {sweep_id}: {igd_metrics}")
+        # Compute the average IGD
+        average_igd = sum(igd_metrics) / len(igd_metrics)
+        print(f"Average IGD of the sweep {sweep_id}: {average_igd}")
+
+        # Log the average IGD to the sweep run
+        sweep_run.log(dict(igd=average_igd))
 
     # Compute the average hypervolume
-    average_hypervolume = sum(metrics) / len(metrics)
+    average_hypervolume = sum(hypervolume_metrics) / len(hypervolume_metrics)
     print(f"Average hypervolume of the sweep {sweep_id}: {average_hypervolume}")
 
     # Log the average hypervolume to the sweep run
@@ -160,7 +180,6 @@ def main():
     wandb.finish()
 
 args = parse_args()
-# print(args)
 
 # Set a seed from the command line for random
 seed_everything(args.seed)
