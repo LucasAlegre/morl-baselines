@@ -166,8 +166,6 @@ def main():
     # Get the IGD from the results
     igd_metrics = [result.igd for result in results]
     if all(igd is not None for igd in igd_metrics):
-        print(f"IGDs of the sweep {sweep_id}: {igd_metrics}")
-        # Compute the average IGD
         average_igd = sum(igd_metrics) / len(igd_metrics)
         print(f"Average IGD of the sweep {sweep_id}: {average_igd}")
 
