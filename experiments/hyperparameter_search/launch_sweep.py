@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument("--sweep-count", type=int, help="Number of times to run the sweep", default=10)
     parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
 
-    parser.add_argument("--seed", type=int, help="Random seed to use", default=42)
+    parser.add_argument("--seed", type=int, help="Random seed to use", default=0)
 
     parser.add_argument(
         "--train-hyperparams",
@@ -73,6 +73,9 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     group = worker_data.sweep_id
     config = worker_data.config
     worker_num = worker_data.worker_num
+
+    # Set the seed
+    seed_everything(seed)
 
     if args.algo == "pgmorl":
         # PGMORL creates its own environments because it requires wrappers
@@ -181,11 +184,8 @@ def main():
 
 args = parse_args()
 
-# Set a seed from the command line for random
-seed_everything(args.seed)
-
-# Create an array of seeds
-seeds = list(range(args.num_seeds))
+# Create an array of seeds to use for the sweep
+seeds = [args.seed + i for i in range(args.num_seeds)]
 
 # Load the sweep config
 config_file = os.path.join(os.path.dirname(__file__), "configs", args.config_name)
