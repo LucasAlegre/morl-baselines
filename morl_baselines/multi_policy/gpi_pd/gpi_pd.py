@@ -875,7 +875,7 @@ class GPIPD(MOPolicy, MOAgent):
                 )
                 wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
-            self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
+            self.save(filename=f"GPI-PD {weight_selection_algo}", save_replay_buffer=False)
 
         self.close_wandb()
 
