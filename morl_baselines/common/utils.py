@@ -120,7 +120,7 @@ class MaxAndSkipObservationV0(gym.Wrapper):
         return max_frame, total_reward, terminated, truncated, info
 
 
-class Bla(gym.ObservationWrapper, gym.utils.RecordConstructorArgs):
+class Bla(gym.ObservationWrapper):
     """Observation wrapper that stacks the observations in a rolling manner.
 
     For example, if the number of stacks is 4, then the returned observation contains
@@ -160,9 +160,6 @@ class Bla(gym.ObservationWrapper, gym.utils.RecordConstructorArgs):
             num_stack (int): The number of frames to stack
             lz4_compress (bool): Use lz4 to compress the frames internally
         """
-        gym.utils.RecordConstructorArgs.__init__(
-            self, num_stack=num_stack, lz4_compress=lz4_compress
-        )
         gym.ObservationWrapper.__init__(self, env)
 
 
