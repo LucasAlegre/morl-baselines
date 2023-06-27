@@ -719,8 +719,8 @@ class GPIPD(MOPolicy, MOAgent):
         if reset_learning_starts:  # Resets epsilon-greedy exploration
             self.learning_starts = self.global_step
 
-        #if self.per and len(self.replay_buffer) > 0:
-        #    self._reset_priorities(tensor_w)
+        if self.per and len(self.replay_buffer) > 0:
+            self._reset_priorities(tensor_w)
 
         obs, info = self.env.reset()
         for _ in range(1, total_timesteps + 1):

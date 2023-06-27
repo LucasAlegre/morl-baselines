@@ -206,7 +206,7 @@ def main():
             eval_env = FlattenObservation(eval_env)
         elif "mario" in args.env_id:
 
-            def make_mario(env):
+            def wrap_mario(env):
                 from gymnasium.wrappers import (
                     FrameStack,
                     GrayScaleObservation,
@@ -225,8 +225,8 @@ def main():
                 env = TimeLimit(env, max_episode_steps=1000)
                 return env
 
-            env = make_mario(env)
-            eval_env = make_mario(eval_env)
+            env = wrap_mario(env)
+            eval_env = wrap_mario(eval_env)
 
             if args.record_video:
                 eval_env = RecordVideo(
