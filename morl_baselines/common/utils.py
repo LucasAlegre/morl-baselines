@@ -150,15 +150,11 @@ class Bla(gym.ObservationWrapper):
     def __init__(
         self,
         env: gym.Env,
-        num_stack: int,
-        lz4_compress: bool = False,
     ):
         """Observation wrapper that stacks the observations in a rolling manner.
 
         Args:
             env (Env): The environment to apply the wrapper
-            num_stack (int): The number of frames to stack
-            lz4_compress (bool): Use lz4 to compress the frames internally
         """
         gym.ObservationWrapper.__init__(self, env)
 
