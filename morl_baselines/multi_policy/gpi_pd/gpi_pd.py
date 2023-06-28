@@ -711,6 +711,7 @@ class GPIPD(MOPolicy, MOAgent):
             eval_freq (int): Number of timesteps between evaluations
             reset_learning_starts (bool): Whether to reset the learning starts
         """
+        weight_support = unique_tol(weight_support)  # remove duplicates
         self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
 
@@ -775,7 +776,7 @@ class GPIPD(MOPolicy, MOAgent):
                     self.police_indices = []
 
                 if change_w_every_episode:
-                    weight = random.choice(self.weight_support)
+                    weight = random.choice(weight_support)
                     tensor_w = th.tensor(weight, device=self.device)
             else:
                 obs = next_obs

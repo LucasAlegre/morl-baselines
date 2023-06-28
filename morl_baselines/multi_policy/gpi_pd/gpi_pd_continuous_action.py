@@ -515,6 +515,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             eval_freq (int): Number of timesteps between evaluations.
             reset_num_timesteps (bool): Whether to reset the number of timesteps.
         """
+        weight_support = unique_tol(weight_support)
         self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
 
@@ -580,7 +581,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     log_episode_info(info["episode"], np.dot, weight, self.global_step)
 
                 if change_weight_every_episode:
-                    weight = random.choice(self.weight_support)
+                    weight = random.choice(weight_support)
                     tensor_w = th.tensor(weight).float().to(self.device)
             else:
                 obs = next_obs
