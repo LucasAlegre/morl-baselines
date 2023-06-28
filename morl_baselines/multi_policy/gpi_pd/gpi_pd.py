@@ -582,8 +582,8 @@ class GPIPD(MOPolicy, MOAgent):
     @th.no_grad()
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         """Select an action for the given obs and weight vector."""
-        obs = th.as_tensor(obs, device=self.device)
-        w = th.as_tensor(w, device=self.device)
+        obs = th.as_tensor(obs).float().to(self.device)
+        w = th.as_tensor(w).float().to(self.device)
         if self.use_gpi:
             action = self.gpi_action(obs, w, include_w=False)
         else:
@@ -731,7 +731,7 @@ class GPIPD(MOPolicy, MOAgent):
             if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
             else:
-                action = self._act(th.as_tensor(obs, device=self.device), tensor_w)
+                action = self._act(th.as_tensor(obs).float().to(self.device), tensor_w)
 
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
@@ -777,7 +777,7 @@ class GPIPD(MOPolicy, MOAgent):
 
                 if change_w_every_episode:
                     weight = random.choice(weight_support)
-                    tensor_w = th.tensor(weight, device=self.device)
+                    tensor_w = th.tensor(weight).float().to(self.device)
             else:
                 obs = next_obs
 
