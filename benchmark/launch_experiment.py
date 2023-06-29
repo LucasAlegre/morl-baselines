@@ -199,8 +199,14 @@ def main():
         )
 
     else:
-        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
-        eval_env = mo_gym.make(args.env_id)
+        if "mario" in args.env_id:
+            env = mo_gym.make(args.env_id, death_as_penalty=True)
+            eval_env = mo_gym.make(args.env_id, death_as_penalty=True)
+        else:
+            env = mo_gym.make(args.env_id)
+            eval_env = mo_gym.make(args.env_id)
+        env = MORecordEpisodeStatistics(env, gamma=args.gamma)
+
         if "highway" in args.env_id:
             env = FlattenObservation(env)
             eval_env = FlattenObservation(eval_env)
