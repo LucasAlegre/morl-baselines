@@ -492,11 +492,15 @@ class GPIPD(MOPolicy, MOAgent):
 
             self.q_optim.zero_grad()
             critic_loss.backward()
-            if self.log and self.global_step % 100 == 0:
-                wandb.log(
-                    {"losses/grad_norm": get_grad_norm(self.q_nets[0].parameters()).item(), "global_step": self.global_step},
-                )
+
             if self.max_grad_norm is not None:
+                if self.log and self.global_step % 100 == 0:
+                    wandb.log(
+                        {
+                            "losses/grad_norm": get_grad_norm(self.q_nets[0].parameters()).item(),
+                            "global_step": self.global_step,
+                        },
+                    )
                 for psi_net in self.q_nets:
                     th.nn.utils.clip_grad_norm_(psi_net.parameters(), self.max_grad_norm)
             self.q_optim.step()
