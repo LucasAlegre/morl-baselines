@@ -1,8 +1,71 @@
 """Pareto utilities."""
 from copy import deepcopy
-from typing import List
+from typing import List, Union
 
 import numpy as np
+from scipy.spatial import ConvexHull
+
+
+def get_non_pareto_dominated_inds(candidates: Union[np.ndarray, List], remove_duplicates: bool = True) -> np.ndarray:
+    """A batched and fast version of the Pareto coverage set algorithm.
+
+    Args:
+        candidates (ndarray): A numpy array of vectors.
+        remove_duplicates (bool, optional): Whether to remove duplicate vectors. Defaults to True.
+
+    Returns:
+        ndarray: The indices of the elements that should be kept to form the Pareto front or coverage set.
+    """
+    candidates = np.array(candidates)
+    uniques, indcs, invs, counts = np.unique(candidates, return_index=True, return_inverse=True, return_counts=True, axis=0)
+
+    res_eq = np.all(candidates[:, None, None] <= candidates, axis=-1).squeeze()
+    res_g = np.all(candidates[:, None, None] < candidates, axis=-1).squeeze()
+    c1 = np.sum(res_eq, axis=-1) == counts[invs]
+    c2 = np.any(~res_g, axis=-1)
+    if remove_duplicates:
+        to_keep = np.zeros(len(candidates), dtype=bool)
+        to_keep[indcs] = 1
+    else:
+        to_keep = np.ones(len(candidates), dtype=bool)
+
+    return np.logical_and(c1, c2) & to_keep
+
+
+def filter_pareto_dominated(candidates: Union[np.ndarray, List], remove_duplicates: bool = True) -> np.ndarray:
+    """A batched and fast version of the Pareto coverage set algorithm.
+
+    Args:
+        candidates (ndarray): A numpy array of vectors.
+        remove_duplicates (bool, optional): Whether to remove duplicate vectors. Defaults to True.
+
+    Returns:
+        ndarray: A Pareto coverage set.
+    """
+    candidates = np.array(candidates)
+    if len(candidates) < 2:
+        return candidates
+    return candidates[get_non_pareto_dominated_inds(candidates, remove_duplicates=remove_duplicates)]
+
+
+def filter_convex_dominated(candidates: Union[np.ndarray, List]) -> np.ndarray:
+    """A fast version to prune a set of points to its convex hull. This leverages the QuickHull algorithm.
+
+    This algorithm first computes the convex hull of the set of points and then prunes the Pareto dominated points.
+
+    Args:
+        candidates (ndarray): A numpy array of vectors.
+
+    Returns:
+        ndarray: A convex coverage set.
+    """
+    candidates = np.array(candidates)
+    if len(candidates) > 2:
+        hull = ConvexHull(candidates)
+        ccs = candidates[hull.vertices]
+    else:
+        ccs = candidates
+    return filter_pareto_dominated(ccs)
 
 
 def get_non_dominated(candidates: set) -> set:
@@ -52,8 +115,9 @@ def get_non_dominated_inds(solutions: np.ndarray) -> np.ndarray:
 class ParetoArchive:
     """Pareto archive."""
 
-    def __init__(self):
+    def __init__(self, convex_hull: bool = False):
         """Initializes the Pareto archive."""
+        self.convex_hull = convex_hull
         self.individuals: list = []
         self.evaluations: List[np.ndarray] = []
 
@@ -66,8 +130,12 @@ class ParetoArchive:
         """
         self.evaluations.append(evaluation)
         self.individuals.append(deepcopy(candidate))
+
         # Non-dominated sorting
-        nd_candidates = get_non_dominated({tuple(e) for e in self.evaluations})
+        if self.convex_hull:
+            nd_candidates = {tuple(x) for x in filter_convex_dominated(self.evaluations)}
+        else:
+            nd_candidates = {tuple(x) for x in filter_pareto_dominated(self.evaluations)}
 
         # Reconstruct the pareto archive (because Non-Dominated sorting might change the order of candidates)
         non_dominated_evals = []

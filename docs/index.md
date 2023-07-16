@@ -30,6 +30,11 @@ lastpage:
 :end-before: <!-- end benchmark -->
 ```
 
+Here is an example of our dashboards with Pareto support in WandB:
+```{figure} _static/_images/wandb.png
+   :alt: WandB dashboards
+```
+
 ## Citing MORL-Baselines
 ```{include} ../README.md
 :start-after: <!-- start citing -->
@@ -59,6 +64,7 @@ algos/performances
 
 features/pareto
 features/evaluations
+features/weights
 features/performance_indicators
 features/scalarization
 features/buffers

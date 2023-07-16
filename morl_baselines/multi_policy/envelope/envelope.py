@@ -9,21 +9,24 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import wandb
 
 from morl_baselines.common.buffer import ReplayBuffer
-from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.utils import (
-    equally_spaced_weights,
-    get_grad_norm,
-    layer_init,
-    linearly_decaying_value,
+from morl_baselines.common.evaluation import (
     log_all_multi_policy_metrics,
     log_episode_info,
-    polyak_update,
-    random_weights,
 )
+from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.networks import (
+    NatureCNN,
+    get_grad_norm,
+    layer_init,
+    mlp,
+    polyak_update,
+)
+from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
+from morl_baselines.common.utils import linearly_decaying_value
+from morl_baselines.common.weights import equally_spaced_weights, random_weights
 
 
 class QNet(nn.Module):
@@ -87,14 +90,14 @@ class Envelope(MOPolicy, MOAgent):
         final_epsilon: float = 0.01,
         epsilon_decay_steps: int = None,  # None == fixed epsilon
         tau: float = 1.0,
-        target_net_update_freq: int = 1000,  # ignored if tau != 1.0
+        target_net_update_freq: int = 200,  # ignored if tau != 1.0
         buffer_size: int = int(1e6),
-        net_arch: List = [256, 256],
+        net_arch: List = [256, 256, 256, 256],
         batch_size: int = 256,
         learning_starts: int = 100,
         gradient_updates: int = 1,
         gamma: float = 0.99,
-        max_grad_norm: Optional[float] = None,
+        max_grad_norm: Optional[float] = 1.0,
         envelope: bool = True,
         num_sample_w: int = 4,
         per: bool = True,
@@ -318,10 +321,11 @@ class Envelope(MOPolicy, MOAgent):
             self.q_optim.zero_grad()
             critic_loss.backward()
             if self.log and self.global_step % 100 == 0:
-                self.writer.add_scalar(
-                    "losses/grad_norm",
-                    get_grad_norm(self.q_net.parameters()).item(),
-                    self.global_step,
+                wandb.log(
+                    {
+                        "losses/grad_norm": get_grad_norm(self.q_net.parameters()).item(),
+                        "global_step": self.global_step,
+                    },
                 )
             if self.max_grad_norm is not None:
                 th.nn.utils.clip_grad_norm_(self.q_net.parameters(), self.max_grad_norm)
@@ -357,9 +361,16 @@ class Envelope(MOPolicy, MOAgent):
             )
 
         if self.log and self.global_step % 100 == 0:
-            self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.global_step)
-            self.writer.add_scalar("metrics/epsilon", self.epsilon, self.global_step)
-            self.writer.add_scalar("metrics/homotopy_lambda", self.homotopy_lambda, self.global_step)
+            wandb.log(
+                {
+                    "losses/critic_loss": np.mean(critic_losses),
+                    "metrics/epsilon": self.epsilon,
+                    "metrics/homotopy_lambda": self.homotopy_lambda,
+                    "global_step": self.global_step,
+                },
+            )
+            if self.per:
+                wandb.log({"metrics/mean_priority": np.mean(priority)})
 
     @override
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
@@ -503,11 +514,10 @@ class Envelope(MOPolicy, MOAgent):
         eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
         obs, _ = self.env.reset()
 
-        w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian")
+        w = weight if weight is not None else random_weights(self.reward_dim, 1, dist="gaussian", rng=self.np_random)
         tensor_w = th.tensor(w).float().to(self.device)
 
         for _ in range(1, total_timesteps + 1):
-
             if total_episodes is not None and num_episodes == total_episodes:
                 break
 
@@ -525,7 +535,7 @@ class Envelope(MOPolicy, MOAgent):
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 current_front = [
-                    self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, writer=None)[3]
+                    self.policy_eval(eval_env, weights=ew, num_episodes=num_eval_episodes_for_front, log=self.log)[3]
                     for ew in eval_weights
                 ]
                 log_all_multi_policy_metrics(
@@ -542,10 +552,10 @@ class Envelope(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step, self.writer, verbose=verbose)
+                    log_episode_info(info["episode"], np.dot, w, self.global_step, verbose=verbose)
 
                 if weight is None:
-                    w = random_weights(self.reward_dim, 1, dist="gaussian")
+                    w = random_weights(self.reward_dim, 1, dist="gaussian", rng=self.np_random)
                     tensor_w = th.tensor(w).float().to(self.device)
 
             else:

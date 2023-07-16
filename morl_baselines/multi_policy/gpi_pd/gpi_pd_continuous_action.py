@@ -10,25 +10,23 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import wandb as wb
+import wandb
 
 from morl_baselines.common.buffer import ReplayBuffer
-from morl_baselines.common.evaluation import policy_evaluation_mo
+from morl_baselines.common.evaluation import (
+    log_all_multi_policy_metrics,
+    log_episode_info,
+    policy_evaluation_mo,
+)
 from morl_baselines.common.model_based.probabilistic_ensemble import (
     ProbabilisticEnsemble,
 )
 from morl_baselines.common.model_based.utils import ModelEnv, visualize_eval
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.networks import mlp
+from morl_baselines.common.networks import layer_init, mlp, polyak_update
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.utils import (
-    equally_spaced_weights,
-    layer_init,
-    log_all_multi_policy_metrics,
-    log_episode_info,
-    polyak_update,
-    unique_tol,
-)
+from morl_baselines.common.utils import unique_tol
+from morl_baselines.common.weights import equally_spaced_weights
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
@@ -90,26 +88,26 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         learning_rate: float = 3e-4,
         gamma: float = 0.99,
         tau: float = 0.005,
-        buffer_size: int = int(4e5),
+        buffer_size: int = 400000,
         net_arch: List = [256, 256],
-        dynamics_net_arch: List = [200, 200, 200, 200],
         batch_size: int = 128,
         num_q_nets: int = 2,
         delay_policy_update: int = 2,
         learning_starts: int = 100,
-        gradient_updates: int = 1,
+        gradient_updates: int = 20,
         use_gpi: bool = True,
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
-        per: bool = False,
+        per: bool = True,
         min_priority: float = 0.1,
         alpha: float = 0.6,
-        dyna: bool = False,
+        dyna: bool = True,
+        dynamics_net_arch: List = [200, 200, 200, 200],
         dynamics_train_freq: int = 250,
         dynamics_rollout_len: int = 5,
         dynamics_rollout_starts: int = 1000,
         dynamics_rollout_freq: int = 250,
-        dynamics_rollout_batch_size: int = 10000,
+        dynamics_rollout_batch_size: int = 50000,
         dynamics_buffer_size: int = 200000,
         dynamics_min_uncertainty: float = 2.0,
         dynamics_real_ratio: float = 0.1,
@@ -161,7 +159,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.tau = tau
         self.gamma = gamma
@@ -311,19 +309,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         if load_replay_buffer and "replay_buffer" in params:
             self.replay_buffer = params["replay_buffer"]
 
-    def _sample_batch_experiences(self, deactivate_per=False):
+    def _sample_batch_experiences(self):
         if not self.dyna or self.global_step < self.dynamics_rollout_starts or len(self.dynamics_buffer) == 0:
-            if deactivate_per:
-                return self.replay_buffer.sample_uniform(self.batch_size, to_tensor=True, device=self.device)
             return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
         else:
             num_real_samples = int(self.batch_size * self.dynamics_real_ratio)  # % of real world data
-            if self.per and not deactivate_per:
+            if self.per:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(
                     num_real_samples, to_tensor=True, device=self.device
                 )
             else:
-                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample_uniform(
+                (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self.replay_buffer.sample(
                     num_real_samples, to_tensor=True, device=self.device
                 )
             (m_obs, m_actions, m_rewards, m_next_obs, m_dones) = self.dynamics_buffer.sample(
@@ -336,7 +332,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 th.cat([s_next_obs, m_next_obs], dim=0),
                 th.cat([s_dones, m_dones], dim=0),
             )
-            if self.per and not deactivate_per:
+            if self.per:
                 return experience_tuples + (idxes,)
             return experience_tuples
 
@@ -368,9 +364,14 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 obs = next_obs_pred[nonterm_mask]
 
         if self.log:
-            self.writer.add_scalar("dynamics/uncertainty_mean", uncertainties.mean(), self.global_step)
-            self.writer.add_scalar("dynamics/uncertainty_max", uncertainties.max(), self.global_step)
-            self.writer.add_scalar("dynamics/uncertainty_min", uncertainties.min(), self.global_step)
+            wandb.log(
+                {
+                    "dynamics/uncertainty_mean": uncertainties.mean(),
+                    "dynamics/uncertainty_max": uncertainties.max(),
+                    "dynamics/uncertainty_min": uncertainties.min(),
+                    "global_step": self.global_step,
+                },
+            )
 
     def update(self, weight: th.Tensor):
         """Update the policy and the Q-nets."""
@@ -437,11 +438,21 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
         if self.log and self.global_step % 100 == 0:
             if self.per:
-                self.writer.add_scalar("metrics/mean_priority", np.mean(priority), self.global_step)
-                self.writer.add_scalar("metrics/max_priority", np.max(priority), self.global_step)
-                self.writer.add_scalar("metrics/min_priority", np.min(priority), self.global_step)
-            self.writer.add_scalar("losses/critic_loss", critic_loss.item(), self.global_step)
-            self.writer.add_scalar("losses/policy_loss", policy_loss.item(), self.global_step)
+                wandb.log(
+                    {
+                        "metrics/mean_priority": np.mean(priority),
+                        "metrics/max_priority": np.max(priority),
+                        "metrics/min_priority": np.min(priority),
+                    },
+                    commit=False,
+                )
+            wandb.log(
+                {
+                    "losses/critic_loss": critic_loss.item(),
+                    "losses/policy_loss": policy_loss.item(),
+                    "global_step": self.global_step,
+                },
+            )
 
     @th.no_grad()
     def eval(
@@ -544,7 +555,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                         Y = np.hstack((m_rewards, m_next_obs - m_obs))
                         mean_holdout_loss = self.dynamics.fit(X, Y)
                         if self.log:
-                            self.writer.add_scalar("dynamics/mean_holdout_loss", mean_holdout_loss, self.global_step)
+                            wandb.log(
+                                {"dynamics/mean_holdout_loss": mean_holdout_loss, "global_step": self.global_step},
+                            )
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
                         self._rollout_dynamics(tensor_w)
@@ -552,11 +565,11 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 self.update(tensor_w)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=weight, writer=self.writer)
+                self.policy_eval(eval_env, weights=weight, log=self.log)
 
                 if self.dyna and self.global_step >= self.dynamics_rollout_starts:
                     plot = visualize_eval(self, eval_env, self.dynamics, w=weight, compound=False, horizon=1000)
-                    wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
+                    wandb.log({"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step})
                     plot.close()
 
             if terminated or truncated:
@@ -564,7 +577,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, weight, self.global_step, writer=self.writer)
+                    log_episode_info(info["episode"], np.dot, weight, self.global_step)
 
                 if change_weight_every_episode:
                     weight = random.choice(weight_support)
@@ -663,9 +676,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 mean_gpi_returns_test_tasks = np.mean(
                     [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
-                wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
+                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             # Checkpoint
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
+
+
+class GPILSContinuousAction(GPIPDContinuousAction):
+    """Model-free version of GPI-PD with continuous actions."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the agent deactivating the dynamics model."""
+        super().__init__(dyna=False, experiment_name="GPI-LS Continuous Action", *args, **kwargs)

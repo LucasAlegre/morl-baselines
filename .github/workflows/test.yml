@@ -22,10 +22,11 @@ jobs:
       run: |
         pip install pytest
         pip install moviepy
-        pip install mujoco
+        pip install "mujoco==2.3.3"
         sudo apt-get install libgmp-dev
         pip install imageio
         pip install -e .[all]
     - name: Full Python tests
       run: |
         pytest tests/test_algos.py
+        pytest tests/test_pruning.py

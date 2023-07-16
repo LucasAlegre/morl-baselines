@@ -14,11 +14,16 @@ from distutils.util import strtobool
 import mo_gymnasium as mo_gym
 import numpy as np
 import requests
+from gymnasium.wrappers import FlattenObservation
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.utils import seed_everything
+from morl_baselines.common.evaluation import seed_everything
+from morl_baselines.common.experiments import (
+    ALGOS,
+    ENVS_WITH_KNOWN_PARETO_FRONT,
+    StoreDict,
+)
 
-from morl_baselines.common.experiments import ALGOS, ENVS_WITH_KNOWN_PARETO_FRONT, StoreDict
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -130,11 +135,15 @@ def main():
     else:
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
         eval_env = mo_gym.make(args.env_id)
+        if "highway" in args.env_id:
+            env = FlattenObservation(env)
+            eval_env = FlattenObservation(eval_env)
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"
         elif args.algo == "gpi-ls":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (GPI-LS)"
+
         algo = ALGOS[args.algo](
             env=env,
             gamma=args.gamma,

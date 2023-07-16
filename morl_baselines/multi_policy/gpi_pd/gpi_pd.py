@@ -10,28 +10,30 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import wandb as wb
+import wandb
 
 from morl_baselines.common.buffer import ReplayBuffer
-from morl_baselines.common.evaluation import policy_evaluation_mo
+from morl_baselines.common.evaluation import (
+    log_all_multi_policy_metrics,
+    log_episode_info,
+    policy_evaluation_mo,
+)
 from morl_baselines.common.model_based.probabilistic_ensemble import (
     ProbabilisticEnsemble,
 )
 from morl_baselines.common.model_based.utils import ModelEnv, visualize_eval
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.networks import NatureCNN, mlp
-from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
-from morl_baselines.common.utils import (
-    equally_spaced_weights,
+from morl_baselines.common.networks import (
+    NatureCNN,
     get_grad_norm,
     huber,
     layer_init,
-    linearly_decaying_value,
-    log_all_multi_policy_metrics,
-    log_episode_info,
+    mlp,
     polyak_update,
-    unique_tol,
 )
+from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
+from morl_baselines.common.utils import linearly_decaying_value, unique_tol
+from morl_baselines.common.weights import equally_spaced_weights
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
@@ -94,31 +96,31 @@ class GPIPD(MOPolicy, MOAgent):
         buffer_size: int = int(1e6),
         net_arch: List = [256, 256, 256, 256],
         num_nets: int = 2,
-        batch_size: int = 256,
+        batch_size: int = 128,
         learning_starts: int = 100,
-        gradient_updates: int = 1,
+        gradient_updates: int = 20,
         gamma: float = 0.99,
         max_grad_norm: Optional[float] = None,
         use_gpi: bool = True,
-        dyna: bool = False,
+        dyna: bool = True,
         per: bool = True,
         gpi_pd: bool = True,
         alpha_per: float = 0.6,
-        min_priority: float = 1.0,
+        min_priority: float = 0.01,
         drop_rate: float = 0.01,
         layer_norm: bool = True,
         dynamics_normalize_inputs: bool = False,
-        dynamics_uncertainty_threshold: float = 0.5,
+        dynamics_uncertainty_threshold: float = 1.5,
         dynamics_train_freq: Callable = lambda timestep: 250,
         dynamics_rollout_len: int = 1,
         dynamics_rollout_starts: int = 5000,
         dynamics_rollout_freq: int = 250,
-        dynamics_rollout_batch_size: int = 10000,
-        dynamics_buffer_size: int = 400000,
-        dynamics_net_arch: List = [200, 200, 200, 200],
+        dynamics_rollout_batch_size: int = 25000,
+        dynamics_buffer_size: int = 100000,
+        dynamics_net_arch: List = [256, 256, 256],
         dynamics_ensemble_size: int = 5,
         dynamics_num_elites: int = 2,
-        real_ratio: float = 0.05,
+        real_ratio: float = 0.5,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD",
         wandb_entity: Optional[str] = None,
@@ -172,7 +174,7 @@ class GPIPD(MOPolicy, MOAgent):
             device: The device to use.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -254,6 +256,10 @@ class GPIPD(MOPolicy, MOAgent):
                 self.observation_shape, 1, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
             )
         self.dynamics_train_freq = dynamics_train_freq
+        self.dynamics_buffer_size = dynamics_buffer_size
+        self.dynamics_normalize_inputs = dynamics_normalize_inputs
+        self.dynamics_num_elites = dynamics_num_elites
+        self.dynamics_ensemble_size = dynamics_ensemble_size
         self.dynamics_rollout_len = dynamics_rollout_len
         self.dynamics_rollout_starts = dynamics_rollout_starts
         self.dynamics_rollout_freq = dynamics_rollout_freq
@@ -294,10 +300,10 @@ class GPIPD(MOPolicy, MOAgent):
             "dynamics_rollout_starts": self.dynamics_rollout_starts,
             "dynamics_rollout_freq": self.dynamics_rollout_freq,
             "dynamics_rollout_batch_size": self.dynamics_rollout_batch_size,
-            "dynamics_buffer_size": self.dynamics_buffer.max_size,
-            "dynamics_normalize_inputs": self.dynamics.normalize_inputs,
-            "dynamics_ensemble_size": self.dynamics.ensemble_size,
-            "dynamics_num_elites": self.dynamics.num_elites,
+            "dynamics_buffer_size": self.dynamics_buffer_size,
+            "dynamics_normalize_inputs": self.dynamics_normalize_inputs,
+            "dynamics_ensemble_size": self.dynamics_ensemble_size,
+            "dynamics_num_elites": self.dynamics_num_elites,
             "real_ratio": self.real_ratio,
             "drop_rate": self.drop_rate,
             "layer_norm": self.layer_norm,
@@ -398,11 +404,16 @@ class GPIPD(MOPolicy, MOAgent):
                 obs = next_obs_pred[nonterm_mask]
 
         if self.log:
-            self.writer.add_scalar("dynamics/uncertainty_mean", uncertainties.mean(), self.global_step)
-            self.writer.add_scalar("dynamics/uncertainty_max", uncertainties.max(), self.global_step)
-            self.writer.add_scalar("dynamics/uncertainty_min", uncertainties.min(), self.global_step)
-            self.writer.add_scalar("dynamics/model_buffer_size", len(self.dynamics_buffer), self.global_step)
-            self.writer.add_scalar("dynamics/imagined_transitions", num_added_imagined_transitions, self.global_step)
+            wandb.log(
+                {
+                    "dynamics/uncertainty_mean": uncertainties.mean(),
+                    "dynamics/uncertainty_max": uncertainties.max(),
+                    "dynamics/uncertainty_min": uncertainties.min(),
+                    "dynamics/model_buffer_size": len(self.dynamics_buffer),
+                    "dynamics/imagined_transitions": num_added_imagined_transitions,
+                    "global_step": self.global_step,
+                },
+            )
 
     def update(self, weight: th.Tensor):
         """Update the parameters of the networks."""
@@ -482,7 +493,9 @@ class GPIPD(MOPolicy, MOAgent):
             self.q_optim.zero_grad()
             critic_loss.backward()
             if self.log and self.global_step % 100 == 0:
-                self.writer.add_scalar("losses/grad_norm", get_grad_norm(self.q_nets[0].parameters()).item(), self.global_step)
+                wandb.log(
+                    {"losses/grad_norm": get_grad_norm(self.q_nets[0].parameters()).item(), "global_step": self.global_step},
+                )
             if self.max_grad_norm is not None:
                 for psi_net in self.q_nets:
                     th.nn.utils.clip_grad_norm_(psi_net.parameters(), self.max_grad_norm)
@@ -520,16 +533,31 @@ class GPIPD(MOPolicy, MOAgent):
 
         if self.log and self.global_step % 100 == 0:
             if self.per:
-                self.writer.add_scalar("metrics/mean_priority", np.mean(priority), self.global_step)
-                self.writer.add_scalar("metrics/max_priority", np.max(priority), self.global_step)
-                self.writer.add_scalar("metrics/mean_td_error_w", per.abs().mean().item(), self.global_step)
+                wandb.log(
+                    {
+                        "metrics/mean_priority": np.mean(priority),
+                        "metrics/max_priority": np.max(priority),
+                        "metrics/mean_td_error_w": per.abs().mean().item(),
+                    },
+                    commit=False,
+                )
             if self.gpi_pd:
-                self.writer.add_scalar("metrics/mean_gpriority", np.mean(gpriority), self.global_step)
-                self.writer.add_scalar("metrics/max_gpriority", np.max(gpriority), self.global_step)
-                self.writer.add_scalar("metrics/mean_gtd_error_w", gper.abs().mean().item(), self.global_step)
-                self.writer.add_scalar("metrics/mean_absolute_diff_gtd_td", (gper - per).abs().mean().item(), self.global_step)
-            self.writer.add_scalar("losses/critic_loss", np.mean(critic_losses), self.global_step)
-            self.writer.add_scalar("metrics/epsilon", self.epsilon, self.global_step)
+                wandb.log(
+                    {
+                        "metrics/mean_gpriority": np.mean(gpriority),
+                        "metrics/max_gpriority": np.max(gpriority),
+                        "metrics/mean_gtd_error_w": gper.abs().mean().item(),
+                        "metrics/mean_absolute_diff_gtd_td": (gper - per).abs().mean().item(),
+                    },
+                    commit=False,
+                )
+            wandb.log(
+                {
+                    "losses/critic_loss": np.mean(critic_losses),
+                    "metrics/epsilon": self.epsilon,
+                    "global_step": self.global_step,
+                },
+            )
 
     @th.no_grad()
     def gpi_action(self, obs: th.Tensor, w: th.Tensor, return_policy_index=False, include_w=False):
@@ -710,7 +738,9 @@ class GPIPD(MOPolicy, MOAgent):
                         Y = np.hstack((m_rewards, m_next_obs - m_obs))
                         mean_holdout_loss = self.dynamics.fit(X, Y)
                         if self.log:
-                            self.writer.add_scalar("dynamics/mean_holdout_loss", mean_holdout_loss, self.global_step)
+                            wandb.log(
+                                {"dynamics/mean_holdout_loss": mean_holdout_loss, "global_step": self.global_step},
+                            )
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
                         self._rollout_dynamics(tensor_w)
@@ -718,11 +748,11 @@ class GPIPD(MOPolicy, MOAgent):
                 self.update(tensor_w)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval(eval_env, weights=weight, writer=self.writer)
+                self.policy_eval(eval_env, weights=weight, log=self.log)
 
                 if self.dyna and self.global_step >= self.dynamics_rollout_starts:
                     plot = visualize_eval(self, eval_env, self.dynamics, weight, compound=False, horizon=1000)
-                    wb.log({"dynamics/predictions": wb.Image(plot), "global_step": self.global_step})
+                    wandb.log({"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step})
                     plot.close()
 
             if terminated or truncated:
@@ -730,8 +760,10 @@ class GPIPD(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, weight, self.global_step, writer=self.writer)
-                    wb.log({"metrics/policy_index": np.array(self.police_indices), "global_step": self.global_step})
+                    log_episode_info(info["episode"], np.dot, weight, self.global_step)
+                    wandb.log(
+                        {"metrics/policy_index": np.array(self.police_indices), "global_step": self.global_step},
+                    )
                     self.police_indices = []
 
                 if change_w_every_episode:
@@ -834,8 +866,16 @@ class GPIPD(MOPolicy, MOAgent):
                 mean_gpi_returns_test_tasks = np.mean(
                     [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
-                wb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
+                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
+
+
+class GPILS(GPIPD):
+    """Model-free version of GPI-PD."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize GPI-LS deactivating the dynamics model."""
+        super().__init__(dyna=False, gpi_pd=False, experiment_name="GPI-LS", *args, **kwargs)
