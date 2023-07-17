@@ -51,7 +51,7 @@ repos:
     rev: 6.3.0
     hooks:
       - id: pydocstyle
-        exclude: ^(tests/)|(docs/)|(setup.py)|(examples/)|(benchmark/)
+        exclude: ^(tests/)|(docs/)|(setup.py)|(examples/)|(experiments/)
         args:
           - --source
           - --explain
