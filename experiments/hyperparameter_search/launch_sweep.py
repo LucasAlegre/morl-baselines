@@ -1,21 +1,22 @@
 import argparse
-import random
-import yaml
 import os
-
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from typing import Union
 
-from concurrent.futures import ProcessPoolExecutor
-
-import wandb
-import numpy as np
 import mo_gymnasium as mo_gym
+import numpy as np
+import wandb
+import yaml
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
+from morl_baselines.common.experiments import (
+    ALGOS,
+    ENVS_WITH_KNOWN_PARETO_FRONT,
+    StoreDict,
+)
 from morl_baselines.common.utils import reset_wandb_env, seed_everything
 
-from morl_baselines.common.experiments import ALGOS, ENVS_WITH_KNOWN_PARETO_FRONT, StoreDict
 
 @dataclass
 class WorkerInitData:
@@ -24,10 +25,12 @@ class WorkerInitData:
     config: dict
     worker_num: int
 
+
 @dataclass
 class WorkerDoneData:
     hypervolume: float
     igd: Union[float, None]
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -60,10 +63,11 @@ def parse_args():
 
     if not args.config_name:
         args.config_name = f"{args.algo}.yaml"
-    elif not args.config_name.endswith('.yaml'):
-        args.config_name += '.yaml'
+    elif not args.config_name.endswith(".yaml"):
+        args.config_name += ".yaml"
 
     return args
+
 
 def train(worker_data: WorkerInitData) -> WorkerDoneData:
     # Reset the wandb environment variables
@@ -87,7 +91,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
             wandb_entity=args.wandb_entity,
             **config,
             seed=seed,
-            group=group
+            group=group,
         )
 
         # Launch the agent training
@@ -104,13 +108,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=config["gamma"])
         eval_env = mo_gym.make(args.env_id)
 
-        algo = ALGOS[args.algo](
-            env=env,
-            wandb_entity=args.wandb_entity,
-            **config,
-            seed=seed,
-            group=group
-        )
+        algo = ALGOS[args.algo](env=env, wandb_entity=args.wandb_entity, **config, seed=seed, group=group)
 
         if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
             known_pareto_front = env.unwrapped.pareto_front(gamma=config["gamma"])
@@ -138,6 +136,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
 
     return WorkerDoneData(hypervolume=hypervolume, igd=igd)
 
+
 def main():
     # Get the sweep id
     sweep_run = wandb.init()
@@ -149,12 +148,11 @@ def main():
         for num in range(args.num_seeds):
             # print("Spinning up worker {}".format(num))
             seed = seeds[num]
-            futures.append(executor.submit(train, WorkerInitData(
-                sweep_id=sweep_id,
-                seed=seed,
-                config=dict(sweep_run.config),
-                worker_num=num
-            )))
+            futures.append(
+                executor.submit(
+                    train, WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num)
+                )
+            )
 
         # Get results from workers
         results = [future.result() for future in futures]
@@ -179,6 +177,7 @@ def main():
     # Log the average hypervolume to the sweep run
     sweep_run.log(dict(hypervolume=average_hypervolume))
     wandb.finish()
+
 
 args = parse_args()
 
