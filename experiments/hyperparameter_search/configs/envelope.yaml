@@ -1,7 +1,7 @@
 method: bayes
 metric:
   goal: maximize
-  name: hypervolume
+  name: avg_hypervolume
 parameters:
   learning_rate:
     distribution: uniform

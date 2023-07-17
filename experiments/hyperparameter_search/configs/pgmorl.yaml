@@ -1,7 +1,7 @@
 method: bayes
 metric:
   goal: maximize
-  name: hypervolume
+  name: avg_hypervolume
 parameters:
   num_envs:
     distribution: int_uniform
