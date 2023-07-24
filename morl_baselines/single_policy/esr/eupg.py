@@ -135,7 +135,7 @@ class EUPG(MOPolicy, MOAgent):
             rew_dim=self.reward_dim,
             action_dim=self.action_dim,
             net_arch=self.net_arch,
-        )
+        ).to(self.device)
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.learning_rate)
 
         # Logging
@@ -222,7 +222,7 @@ class EUPG(MOPolicy, MOAgent):
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
-            self.buffer.add(obs, accrued_reward_tensor, action, vec_reward, next_obs, terminated)
+            self.buffer.add(obs, accrued_reward_tensor.cpu().numpy(), action, vec_reward, next_obs, terminated)
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:

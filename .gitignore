@@ -140,3 +140,6 @@ weights/
 
 # Saved videos
 videos/
+
+# vscode
+.vscode/
