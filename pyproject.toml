@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "mo-gymnasium >=1.0.0",
-    "gymnasium ==0.27",
+    "gymnasium>=0.28.1,<0.30",
     "numpy >=1.21.0",
     "torch >=1.12.0",
     "pygame >=2.1.0",
