@@ -205,7 +205,7 @@ class Envelope(MOPolicy, MOAgent):
             "env_id": self.env.unwrapped.spec.id,
             "learning_rate": self.learning_rate,
             "initial_epsilon": self.initial_epsilon,
-            "epsilon_decay_steps:": self.epsilon_decay_steps,
+            "epsilon_decay_steps": self.epsilon_decay_steps,
             "batch_size": self.batch_size,
             "tau": self.tau,
             "clip_grand_norm": self.max_grad_norm,
