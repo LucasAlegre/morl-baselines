@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Single-policy Algorithms" href="../../single_policy/" /><link rel="prev" title="Pareto Q-Learning" href="../pareto_q_learning/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.05.20 -->
+    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
         <title>MPMOQ Learning - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=362ab14a" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -242,6 +242,32 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.</span></span><span class="sig-name descname"><span class="pre">MPMOQLearning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization=&lt;function</span> <span class="pre">weighted_sum&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_decay_steps:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_selection_algo:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'random'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_ols:</span> <span class="pre">float</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_gpi_policy:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_q_table:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyna:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyna_updates:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpi_pd:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MORL-Baselines'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MultiPolicy</span> <span class="pre">MO</span> <span class="pre">Q-Learning'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning" title="Permalink to this definition">#</a></dt>
 <dd><p>Multi-policy MOQ-Learning: Outer loop version of mo_q_learning.</p>
 <p>Paper: Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.</p>
+<p>Initialize the Multi-policy MOQ-learning algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> – The environment to learn from.</p></li>
+<li><p><strong>scalarization</strong> – The scalarization function to use.</p></li>
+<li><p><strong>learning_rate</strong> – The learning rate.</p></li>
+<li><p><strong>gamma</strong> – The discount factor.</p></li>
+<li><p><strong>initial_epsilon</strong> – The initial epsilon value.</p></li>
+<li><p><strong>final_epsilon</strong> – The final epsilon value.</p></li>
+<li><p><strong>epsilon_decay_steps</strong> – The number of steps for epsilon decay.</p></li>
+<li><p><strong>weight_selection_algo</strong> – The algorithm to use for weight selection. Options: “random”, “ols”, “gpi-ls”</p></li>
+<li><p><strong>epsilon_ols</strong> – The epsilon value for the optimistic linear support.</p></li>
+<li><p><strong>use_gpi_policy</strong> – Whether to use Generalized Policy Improvement (GPI) or not.</p></li>
+<li><p><strong>transfer_q_table</strong> – Whether to reuse a Q-table from a previous learned policy when initializing a new policy.</p></li>
+<li><p><strong>dyna</strong> – Whether to use Dyna-Q or not.</p></li>
+<li><p><strong>dyna_updates</strong> – The number of Dyna-Q updates to perform.</p></li>
+<li><p><strong>gpi_pd</strong> – Whether to use the GPI-PD method to prioritize Dyna updates.</p></li>
+<li><p><strong>project_name</strong> – The name of the project for logging.</p></li>
+<li><p><strong>experiment_name</strong> – The name of the experiment for logging.</p></li>
+<li><p><strong>wandb_entity</strong> – The entity to use for logging.</p></li>
+<li><p><strong>seed</strong> – The seed to use for reproducibility.</p></li>
+<li><p><strong>log</strong> – Whether to log or not.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.delete_policies">
 <span class="sig-name descname"><span class="pre">delete_policies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delete_indx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.delete_policies" title="Permalink to this definition">#</a></dt>

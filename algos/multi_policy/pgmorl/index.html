@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Pareto Conditioned Networks" href="../pcn/" /><link rel="prev" title="Concave-Augmented Pareto Q-Learning (CAPQL)" href="../capql/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.05.20 -->
+    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
         <title>PGMORL - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=362ab14a" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -261,6 +261,36 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.single_policy.ser.mo_ppo.</span></span><span class="sig-name descname"><span class="pre">MOPPO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">networks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MOPPONet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">envs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SyncVectorEnv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps_per_iteration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2048</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_minibatches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0003</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.995</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anneal_lr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_coef</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ent_coef</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vf_coef</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_vloss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_grad_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_adv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_kl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gae</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gae_lambda</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">device</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">42</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Generator</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_ppo.MOPPO" title="Permalink to this definition">#</a></dt>
 <dd><p>Modified PPO to have a multi-objective value net (returning a vector) and applying weighted sum scalarization.</p>
 <p>This code has been adapted from the PPO implementation of clean RL <a class="reference external" href="https://github.com/vwxyzjn/cleanrl/blob/master/cleanrl/ppo_continuous_action.py">https://github.com/vwxyzjn/cleanrl/blob/master/cleanrl/ppo_continuous_action.py</a></p>
+<p>Multi-objective PPO.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id</strong> – Policy ID</p></li>
+<li><p><strong>networks</strong> – Actor-Critic networks</p></li>
+<li><p><strong>weights</strong> – Weights of the objectives</p></li>
+<li><p><strong>envs</strong> – Vectorized environments</p></li>
+<li><p><strong>log</strong> – Whether to log</p></li>
+<li><p><strong>steps_per_iteration</strong> – Number of steps per iteration</p></li>
+<li><p><strong>num_minibatches</strong> – Number of minibatches</p></li>
+<li><p><strong>update_epochs</strong> – Number of epochs to update the network</p></li>
+<li><p><strong>learning_rate</strong> – Learning rate</p></li>
+<li><p><strong>gamma</strong> – Discount factor</p></li>
+<li><p><strong>anneal_lr</strong> – Whether to anneal the learning rate</p></li>
+<li><p><strong>clip_coef</strong> – PPO clipping coefficient</p></li>
+<li><p><strong>ent_coef</strong> – Entropy coefficient</p></li>
+<li><p><strong>vf_coef</strong> – Value function coefficient</p></li>
+<li><p><strong>clip_vloss</strong> – Whether to clip the value loss</p></li>
+<li><p><strong>max_grad_norm</strong> – Maximum gradient norm</p></li>
+<li><p><strong>norm_adv</strong> – Whether to normalize the advantage</p></li>
+<li><p><strong>target_kl</strong> – Target KL divergence</p></li>
+<li><p><strong>gae</strong> – Whether to use Generalized Advantage Estimation</p></li>
+<li><p><strong>gae_lambda</strong> – GAE lambda</p></li>
+<li><p><strong>device</strong> – Device to use</p></li>
+<li><p><strong>seed</strong> – Random seed</p></li>
+<li><p><strong>rng</strong> – Random number generator</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.single_policy.ser.mo_ppo.MOPPO.change_weights">
 <span class="sig-name descname"><span class="pre">change_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.single_policy.ser.mo_ppo.MOPPO.change_weights" title="Permalink to this definition">#</a></dt>
@@ -318,6 +348,18 @@
 Then, uses these stored samples to perform a regression for predicting the performance of using a given weight
 to train a given policy.
 Predicts: Weight &amp; performance -&gt; delta performance</p>
+<p>Initialize the performance predictor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>neighborhood_threshold</strong> – The threshold for the neighborhood of an evaluation.</p></li>
+<li><p><strong>sigma</strong> – The sigma value for the prediction model</p></li>
+<li><p><strong>A_bound_min</strong> – The minimum value for the A parameter of the prediction model.</p></li>
+<li><p><strong>A_bound_max</strong> – The maximum value for the A parameter of the prediction model.</p></li>
+<li><p><strong>f_scale</strong> – The scale value for the prediction model.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_before_pg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_after_pg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PerformancePredictor.add" title="Permalink to this definition">#</a></dt>
@@ -370,6 +412,48 @@ in Proceedings of the 37th International Conference on Machine Learning,
 Nov. 2020, pp. 10607–10616. Available: <a class="reference external" href="https://proceedings.mlr.press/v119/xu20h.html">https://proceedings.mlr.press/v119/xu20h.html</a></p>
 <p>Paper: <a class="reference external" href="https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf">https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf</a>
 Supplementary materials: <a class="reference external" href="https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf">https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf</a></p>
+<p>Initializes the PGMORL agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env_id</strong> – environment id</p></li>
+<li><p><strong>origin</strong> – reference point to make the objectives positive in the performance buffer</p></li>
+<li><p><strong>num_envs</strong> – number of environments to use (VectorizedEnvs)</p></li>
+<li><p><strong>pop_size</strong> – population size</p></li>
+<li><p><strong>warmup_iterations</strong> – number of warmup iterations</p></li>
+<li><p><strong>steps_per_iteration</strong> – number of steps per iteration</p></li>
+<li><p><strong>evolutionary_iterations</strong> – number of evolutionary iterations</p></li>
+<li><p><strong>num_weight_candidates</strong> – number of weight candidates</p></li>
+<li><p><strong>num_performance_buffer</strong> – number of performance buffers</p></li>
+<li><p><strong>performance_buffer_size</strong> – size of the performance buffers</p></li>
+<li><p><strong>min_weight</strong> – minimum weight</p></li>
+<li><p><strong>max_weight</strong> – maximum weight</p></li>
+<li><p><strong>delta_weight</strong> – delta weight for weight generation</p></li>
+<li><p><strong>env</strong> – environment</p></li>
+<li><p><strong>gamma</strong> – discount factor</p></li>
+<li><p><strong>project_name</strong> – name of the project. Usually MORL-baselines.</p></li>
+<li><p><strong>experiment_name</strong> – name of the experiment. Usually PGMORL.</p></li>
+<li><p><strong>wandb_entity</strong> – wandb entity, defaults to None.</p></li>
+<li><p><strong>seed</strong> – seed for the random number generator</p></li>
+<li><p><strong>log</strong> – whether to log the results</p></li>
+<li><p><strong>net_arch</strong> – number of units per layer</p></li>
+<li><p><strong>num_minibatches</strong> – number of minibatches</p></li>
+<li><p><strong>update_epochs</strong> – number of update epochs</p></li>
+<li><p><strong>learning_rate</strong> – learning rate</p></li>
+<li><p><strong>anneal_lr</strong> – whether to anneal the learning rate</p></li>
+<li><p><strong>clip_coef</strong> – coefficient for the policy gradient clipping</p></li>
+<li><p><strong>ent_coef</strong> – coefficient for the entropy term</p></li>
+<li><p><strong>vf_coef</strong> – coefficient for the value function loss</p></li>
+<li><p><strong>clip_vloss</strong> – whether to clip the value function loss</p></li>
+<li><p><strong>max_grad_norm</strong> – maximum gradient norm</p></li>
+<li><p><strong>norm_adv</strong> – whether to normalize the advantages</p></li>
+<li><p><strong>target_kl</strong> – target KL divergence</p></li>
+<li><p><strong>gae</strong> – whether to use generalized advantage estimation</p></li>
+<li><p><strong>gae_lambda</strong> – lambda parameter for GAE</p></li>
+<li><p><strong>device</strong> – device on which the code should run</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.pgmorl.pgmorl.PGMORL.get_config">
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.pgmorl.pgmorl.PGMORL.get_config" title="Permalink to this definition">#</a></dt>

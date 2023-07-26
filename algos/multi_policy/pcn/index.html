@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Pareto Q-Learning" href="../pareto_q_learning/" /><link rel="prev" title="PGMORL" href="../pgmorl/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.05.20 -->
+    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
         <title>Pareto Conditioned Networks - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=362ab14a" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -248,6 +248,25 @@ and Multiagent Systems (pp. 1110-1118).
 <p>## Credits</p>
 <p>This code is a refactor of the code from the authors of the paper, available at:
 <a class="reference external" href="https://github.com/mathieu-reymond/pareto-conditioned-networks">https://github.com/mathieu-reymond/pareto-conditioned-networks</a></p>
+<p>Initialize PCN agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> (<em>Optional</em><em>[</em><em>gym.Env</em><em>]</em>) – Gym environment.</p></li>
+<li><p><strong>scaling_factor</strong> (<em>np.ndarray</em>) – Scaling factor for the desired return and horizon used in the model.</p></li>
+<li><p><strong>learning_rate</strong> (<em>float</em><em>, </em><em>optional</em>) – Learning rate. Defaults to 1e-2.</p></li>
+<li><p><strong>gamma</strong> (<em>float</em><em>, </em><em>optional</em>) – Discount factor. Defaults to 1.0.</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Batch size. Defaults to 32.</p></li>
+<li><p><strong>hidden_dim</strong> (<em>int</em><em>, </em><em>optional</em>) – Hidden dimension. Defaults to 64.</p></li>
+<li><p><strong>project_name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the project for wandb. Defaults to “MORL-Baselines”.</p></li>
+<li><p><strong>experiment_name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the experiment for wandb. Defaults to “PCN”.</p></li>
+<li><p><strong>wandb_entity</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Entity for wandb. Defaults to None.</p></li>
+<li><p><strong>log</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to log to wandb. Defaults to True.</p></li>
+<li><p><strong>seed</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Seed for reproducibility. Defaults to None.</p></li>
+<li><p><strong>device</strong> (<em>Union</em><em>[</em><em>th.device</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Device to use. Defaults to “auto”.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.pcn.pcn.PCN.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.pcn.pcn.PCN.eval" title="Permalink to this definition">#</a></dt>

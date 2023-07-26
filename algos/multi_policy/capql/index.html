@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="PGMORL" href="../pgmorl/" /><link rel="prev" title="Envelope Q-Learning" href="../envelope/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.05.20 -->
+    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
         <title>Concave-Augmented Pareto Q-Learning (CAPQL) - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=362ab14a" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -246,6 +246,32 @@ Haoye Lu, Daniel Herman &amp; Yaoliang Yu
 ICLR 2023
 Paper: <a class="reference external" href="https://openreview.net/pdf?id=TjEzIsyEsQ6">https://openreview.net/pdf?id=TjEzIsyEsQ6</a>
 Code based on: <a class="reference external" href="https://github.com/haoyelu/CAPQL">https://github.com/haoyelu/CAPQL</a></p>
+<p>CAPQL algorithm with continuous actions.</p>
+<p>It extends the Soft-Actor Critic algorithm to multi-objective RL.
+It learns the policy and Q-networks conditioned on the weight vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> (<em>gym.Env</em>) – The environment to train on.</p></li>
+<li><p><strong>learning_rate</strong> (<em>float</em><em>, </em><em>optional</em>) – The learning rate. Defaults to 3e-4.</p></li>
+<li><p><strong>gamma</strong> (<em>float</em><em>, </em><em>optional</em>) – The discount factor. Defaults to 0.99.</p></li>
+<li><p><strong>tau</strong> (<em>float</em><em>, </em><em>optional</em>) – The soft update coefficient. Defaults to 0.005.</p></li>
+<li><p><strong>buffer_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The size of the replay buffer. Defaults to int(1e6).</p></li>
+<li><p><strong>net_arch</strong> (<em>List</em><em>, </em><em>optional</em>) – The network architecture for the policy and Q-networks.</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The batch size for training. Defaults to 256.</p></li>
+<li><p><strong>num_q_nets</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of Q-networks to use. Defaults to 2.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – The entropy regularization coefficient. Defaults to 0.2.</p></li>
+<li><p><strong>learning_starts</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of steps to take before starting to train. Defaults to 100.</p></li>
+<li><p><strong>gradient_updates</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of gradient steps to take per update. Defaults to 1.</p></li>
+<li><p><strong>project_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the project. Defaults to “MORL Baselines”.</p></li>
+<li><p><strong>experiment_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the experiment. Defaults to “GPI-PD Continuous Action”.</p></li>
+<li><p><strong>wandb_entity</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The wandb entity. Defaults to None.</p></li>
+<li><p><strong>log</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to log to wandb. Defaults to True.</p></li>
+<li><p><strong>seed</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – The seed to use. Defaults to None.</p></li>
+<li><p><strong>device</strong> (<em>Union</em><em>[</em><em>th.device</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The device to use for training. Defaults to “auto”.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_action</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL.eval" title="Permalink to this definition">#</a></dt>

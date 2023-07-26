@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Performance assessments" href="../../performances/" /><link rel="prev" title="MOQ-Learning" href="../moq_learning/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.05.20 -->
+    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
         <title>EUPG - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=362ab14a" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -243,6 +243,25 @@
 <dd><p>Expected Utility Policy Gradient Algorithm.</p>
 <p>The idea is to condition the network on the accrued reward and to scalarize the rewards based on the episodic return (accrued + future rewards)
 Paper: D. Roijers, D. Steckelmacher, and A. Nowe, Multi-objective Reinforcement Learning for the Expected Utility of the Return. 2018.</p>
+<p>Initialize the EUPG algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> – Environment</p></li>
+<li><p><strong>scalarization</strong> – Scalarization function to use (can be non-linear)</p></li>
+<li><p><strong>buffer_size</strong> – Size of the replay buffer</p></li>
+<li><p><strong>net_arch</strong> – Number of units per layer</p></li>
+<li><p><strong>gamma</strong> – Discount factor</p></li>
+<li><p><strong>learning_rate</strong> – Learning rate (alpha)</p></li>
+<li><p><strong>project_name</strong> – Name of the project (for logging)</p></li>
+<li><p><strong>experiment_name</strong> – Name of the experiment (for logging)</p></li>
+<li><p><strong>wandb_entity</strong> – Entity to use for wandb</p></li>
+<li><p><strong>log</strong> – Whether to log or not</p></li>
+<li><p><strong>device</strong> – Device to use for NN. Can be “cpu”, “cuda” or “auto”.</p></li>
+<li><p><strong>seed</strong> – Seed for the random number generator</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.single_policy.esr.eupg.EUPG.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accrued_reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.single_policy.esr.eupg.EUPG.eval" title="Permalink to this definition">#</a></dt>

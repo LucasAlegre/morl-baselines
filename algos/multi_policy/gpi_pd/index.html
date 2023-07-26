@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Envelope Q-Learning" href="../envelope/" /><link rel="prev" title="Multi-Policy Algorithms" href="../" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.05.20 -->
+    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
         <title>GPI-Prioritized Dyna - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=362ab14a" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -245,6 +245,54 @@
 Lucas N. Alegre, Ana L. C. Bazzan, Diederik M. Roijers, Ann Nowé, Bruno C. da Silva
 AAMAS 2023
 Paper: <a class="reference external" href="https://arxiv.org/abs/2301.07784">https://arxiv.org/abs/2301.07784</a></p>
+<p>Initialize the GPI-PD algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> – The environment to learn from.</p></li>
+<li><p><strong>learning_rate</strong> – The learning rate.</p></li>
+<li><p><strong>initial_epsilon</strong> – The initial epsilon value.</p></li>
+<li><p><strong>final_epsilon</strong> – The final epsilon value.</p></li>
+<li><p><strong>epsilon_decay_steps</strong> – The number of steps to decay epsilon.</p></li>
+<li><p><strong>tau</strong> – The soft update coefficient.</p></li>
+<li><p><strong>target_net_update_freq</strong> – The target network update frequency.</p></li>
+<li><p><strong>buffer_size</strong> – The size of the replay buffer.</p></li>
+<li><p><strong>net_arch</strong> – The network architecture.</p></li>
+<li><p><strong>num_nets</strong> – The number of networks.</p></li>
+<li><p><strong>batch_size</strong> – The batch size.</p></li>
+<li><p><strong>learning_starts</strong> – The number of steps before learning starts.</p></li>
+<li><p><strong>gradient_updates</strong> – The number of gradient updates per step.</p></li>
+<li><p><strong>gamma</strong> – The discount factor.</p></li>
+<li><p><strong>max_grad_norm</strong> – The maximum gradient norm.</p></li>
+<li><p><strong>use_gpi</strong> – Whether to use GPI.</p></li>
+<li><p><strong>dyna</strong> – Whether to use Dyna.</p></li>
+<li><p><strong>per</strong> – Whether to use PER.</p></li>
+<li><p><strong>gpi_pd</strong> – Whether to use GPI-PD.</p></li>
+<li><p><strong>alpha_per</strong> – The alpha parameter for PER.</p></li>
+<li><p><strong>min_priority</strong> – The minimum priority for PER.</p></li>
+<li><p><strong>drop_rate</strong> – The dropout rate.</p></li>
+<li><p><strong>layer_norm</strong> – Whether to use layer normalization.</p></li>
+<li><p><strong>dynamics_normalize_inputs</strong> – Whether to normalize inputs to the dynamics model.</p></li>
+<li><p><strong>dynamics_uncertainty_threshold</strong> – The uncertainty threshold for the dynamics model.</p></li>
+<li><p><strong>dynamics_train_freq</strong> – The dynamics model training frequency.</p></li>
+<li><p><strong>dynamics_rollout_len</strong> – The rollout length for the dynamics model.</p></li>
+<li><p><strong>dynamics_rollout_starts</strong> – The number of steps before the first rollout.</p></li>
+<li><p><strong>dynamics_rollout_freq</strong> – The rollout frequency.</p></li>
+<li><p><strong>dynamics_rollout_batch_size</strong> – The rollout batch size.</p></li>
+<li><p><strong>dynamics_buffer_size</strong> – The size of the dynamics model buffer.</p></li>
+<li><p><strong>dynamics_net_arch</strong> – The network architecture for the dynamics model.</p></li>
+<li><p><strong>dynamics_ensemble_size</strong> – The ensemble size for the dynamics model.</p></li>
+<li><p><strong>dynamics_num_elites</strong> – The number of elites for the dynamics model.</p></li>
+<li><p><strong>real_ratio</strong> – The ratio of real transitions to sample.</p></li>
+<li><p><strong>project_name</strong> – The name of the project.</p></li>
+<li><p><strong>experiment_name</strong> – The name of the experiment.</p></li>
+<li><p><strong>wandb_entity</strong> – The name of the wandb entity.</p></li>
+<li><p><strong>log</strong> – Whether to log.</p></li>
+<li><p><strong>seed</strong> – The seed for random number generators.</p></li>
+<li><p><strong>device</strong> – The device to use.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.eval" title="Permalink to this definition">#</a></dt>

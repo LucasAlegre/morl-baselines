@@ -5,11 +5,11 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Neural Networks helpers" href="../networks/" /><link rel="prev" title="Scalarization functions" href="../scalarization/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.05.20 -->
+    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
         <title>Replay Buffers - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=362ab14a" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -244,6 +244,19 @@
 <dt class="sig sig-object py" id="morl_baselines.common.buffer.ReplayBuffer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.buffer.</span></span><span class="sig-name descname"><span class="pre">ReplayBuffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rew_dim=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_size=100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.buffer.ReplayBuffer" title="Permalink to this definition">#</a></dt>
 <dd><p>Multi-objective replay buffer for multi-objective reinforcement learning.</p>
+<p>Initialize the replay buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs_shape</strong> – Shape of the observations</p></li>
+<li><p><strong>action_dim</strong> – Dimension of the actions</p></li>
+<li><p><strong>rew_dim</strong> – Dimension of the rewards</p></li>
+<li><p><strong>max_size</strong> – Maximum size of the buffer</p></li>
+<li><p><strong>obs_dtype</strong> – Data type of the observations</p></li>
+<li><p><strong>action_dtype</strong> – Data type of the actions</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.buffer.ReplayBuffer.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">done</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.buffer.ReplayBuffer.add" title="Permalink to this definition">#</a></dt>
@@ -323,6 +336,20 @@
 <dt class="sig sig-object py" id="morl_baselines.common.diverse_buffer.DiverseMemory">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.diverse_buffer.</span></span><span class="sig-name descname"><span class="pre">DiverseMemory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_capacity:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sec_capacity:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_diversity:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crowding_diversity:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_function=&lt;function</span> <span class="pre">DiverseMemory.&lt;lambda&gt;&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.diverse_buffer.DiverseMemory" title="Permalink to this definition">#</a></dt>
 <dd><p>Prioritized Replay Buffer with integrated secondary Diverse Replay Buffer. Code extracted from <a class="reference external" href="https://github.com/axelabels/DynMORL">https://github.com/axelabels/DynMORL</a>.</p>
+<p>Initializes the DiverseMemory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>main_capacity</strong> – Normal prioritized replay capacity</p></li>
+<li><p><strong>sec_capacity</strong> – Size of the secondary diverse replay buffer, if 0, the buffer functions as a normal prioritized Replay Buffer (default: {0})</p></li>
+<li><p><strong>trace_diversity</strong> – Whether diversity should be enforced at trace-level (True) or at transition-level (False)</p></li>
+<li><p><strong>crowding_diversity</strong> – Whether a crowding distance is applied to compute diversity</p></li>
+<li><p><strong>value_function</strong> – When applied to a trace, this function should return the trace’s value to be used in the crowding distance computation</p></li>
+<li><p><strong>e</strong> – epsilon to be added to errors (default: {0.01})</p></li>
+<li><p><strong>a</strong> – Power to which the error will be raised, if a==0, functionality is reduced to a replay buffer without prioritization (default: {2})</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.diverse_buffer.DiverseMemory.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.diverse_buffer.DiverseMemory.add" title="Permalink to this definition">#</a></dt>
@@ -547,6 +574,20 @@
 <dt class="sig sig-object py" id="morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.prioritized_buffer.</span></span><span class="sig-name descname"><span class="pre">PrioritizedReplayBuffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rew_dim=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_size=100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_priority=1e-05</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer" title="Permalink to this definition">#</a></dt>
 <dd><p>Prioritized Replay Buffer.</p>
+<p>Initialize the Prioritized Replay Buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs_shape</strong> – Shape of the observations</p></li>
+<li><p><strong>action_dim</strong> – Dimension of the actions</p></li>
+<li><p><strong>rew_dim</strong> – Dimension of the rewards</p></li>
+<li><p><strong>max_size</strong> – Maximum size of the buffer</p></li>
+<li><p><strong>obs_dtype</strong> – Data type of the observations</p></li>
+<li><p><strong>action_dtype</strong> – Data type of the actions</p></li>
+<li><p><strong>min_priority</strong> – Minimum priority of the buffer</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">done</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.prioritized_buffer.PrioritizedReplayBuffer.add" title="Permalink to this definition">#</a></dt>
@@ -642,6 +683,19 @@
 <dt class="sig sig-object py" id="morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.accrued_reward_buffer.</span></span><span class="sig-name descname"><span class="pre">AccruedRewardReplayBuffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rew_dim=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_size=100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer" title="Permalink to this definition">#</a></dt>
 <dd><p>Replay buffer with accrued rewards stored (for ESR algorithms).</p>
+<p>Initialize the Replay Buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs_shape</strong> – Shape of the observations</p></li>
+<li><p><strong>action_shape</strong> – Shape of the actions</p></li>
+<li><p><strong>rew_dim</strong> – Dimension of the rewards</p></li>
+<li><p><strong>max_size</strong> – Maximum size of the buffer</p></li>
+<li><p><strong>obs_dtype</strong> – Data type of the observations</p></li>
+<li><p><strong>action_dtype</strong> – Data type of the actions</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accrued_reward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">done</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.add" title="Permalink to this definition">#</a></dt>
