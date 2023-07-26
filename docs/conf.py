@@ -42,3 +42,7 @@ html_theme_options = {
     "source_directory": "docs/",
 }
 html_static_path = ["_static"]
+
+
+# Include both the class and __init__ docstrings when describing the class
+autoclass_content = 'both'
