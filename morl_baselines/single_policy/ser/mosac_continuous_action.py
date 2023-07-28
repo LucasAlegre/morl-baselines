@@ -5,42 +5,24 @@ The implementation of this file is largely based on CleanRL's SAC implementation
 https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88/cleanrl/sac_continuous_action.py
 """
 
-import random
 import time
 from copy import deepcopy
 from typing import Optional, Tuple, Union
-from typing_extensions import override
 
-import gym
 import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from mo_gym import MORecordEpisodeStatistics, MOSyncVectorEnv
-from torch.utils.tensorboard import SummaryWriter
+import wandb
+import gymnasium as gym
+from mo_gymnasium import MORecordEpisodeStatistics
+from typing_extensions import override
 
 from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.evaluation import log_episode_info
 from morl_baselines.common.morl_algorithm import MOPolicy
-from morl_baselines.common.networks import mlp
-from morl_baselines.common.utils import log_episode_info, polyak_update
-
-
-def make_env(env_id: str, seed: int, idx: int, capture_video: bool, run_name: str):
-    """Utility function for creating the env."""
-
-    def thunk():
-        env = gym.make(env_id)
-        env = MORecordEpisodeStatistics(env)
-        if capture_video:
-            if idx == 0:
-                env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
-
-        env.action_space.seed(seed)
-        env.observation_space.seed(seed)
-        return env
-
-    return thunk
+from morl_baselines.common.networks import mlp, polyak_update
 
 
 # ALGO LOGIC: initialize agent here:
@@ -144,9 +126,9 @@ class MOSAC(MOPolicy):
 
     def __init__(
         self,
-        envs: MOSyncVectorEnv,
+        env: gym.Env,
         weights: np.ndarray,
-        scalarization=th.dot,
+        scalarization=th.matmul,
         buffer_size: int = int(1e6),
         gamma: float = 0.99,
         tau: float = 0.005,
@@ -161,15 +143,14 @@ class MOSAC(MOPolicy):
         autotune: bool = True,
         id: Optional[int] = None,
         device: Union[th.device, str] = "auto",
-        torch_deterministic: bool = True,
-        parent_writer: Optional[SummaryWriter] = None,
         log: bool = True,
         seed: int = 42,
+        parent_rng: Optional[np.random.Generator] = None,
     ):
         """Initialize the MOSAC algorithm.
 
         Args:
-            envs: Vectorized Envs
+            env: Env
             weights: weights for the scalarization
             scalarization: scalarization function
             buffer_size: buffer size
@@ -187,38 +168,35 @@ class MOSAC(MOPolicy):
             id: id of the SAC policy, for multi-policy algos
             device: torch device
             torch_deterministic: whether to use deterministic version of pytorch
-            parent_writer: writer for wandb
             log: logging activated or not
             seed: seed for the random generators
+            parent_rng: parent random generator, for multi-policy algos
         """
         super().__init__(id, device)
         # Seeding
         self.seed = seed
-        self.torch_deterministic = torch_deterministic
-        if seed is not None:
-            random.seed(self.seed)
-            np.random.seed(self.seed)
-            th.manual_seed(self.seed)
-            th.backends.cudnn.torch_deterministic = self.torch_deterministic
+        if parent_rng is not None:
+            self.np_random = parent_rng
+        else:
+            self.np_random = np.random.default_rng(self.seed)
 
         # env setup
-        self.envs = envs
-        self.num_envs = envs.num_envs
-        assert isinstance(self.envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
-        self.obs_shape = self.envs.single_observation_space.shape
-        self.action_shape = self.envs.single_action_space.shape
-        self.reward_dim = self.envs.reward_space.shape[0]
+        self.env = env
+        assert isinstance(self.env.action_space, gym.spaces.Box), "only continuous action space is supported"
+        self.obs_shape = self.env.observation_space.shape
+        self.action_shape = self.env.action_space.shape
+        self.reward_dim = self.env.unwrapped.reward_space.shape[0]
 
         # Scalarization
         self.weights = weights
-        self.weights_tensor = th.from_numpy(self.weights).unsqueeze(1).repeat(1, self.num_envs).to(self.device)
+        self.weights_tensor = th.from_numpy(self.weights).float().to(self.device)
+        self.batch_size = batch_size
         self.scalarization = scalarization
 
         # SAC Parameters
         self.buffer_size = buffer_size
         self.gamma = gamma
         self.tau = tau
-        self.batch_size = batch_size
         self.learning_starts = learning_starts
         self.net_arch = net_arch
         self.policy_lr = policy_lr
@@ -232,8 +210,8 @@ class MOSAC(MOPolicy):
             obs_shape=self.obs_shape,
             action_shape=self.action_shape,
             reward_dim=self.reward_dim,
-            action_lower_bound=self.envs.single_action_space.low,
-            action_upper_bound=self.envs.single_action_space.high,
+            action_lower_bound=self.env.action_space.low,
+            action_upper_bound=self.env.action_space.high,
             net_arch=self.net_arch,
         ).to(self.device)
 
@@ -259,7 +237,7 @@ class MOSAC(MOPolicy):
         # Automatic entropy tuning
         self.autotune = autotune
         if self.autotune:
-            self.target_entropy = -th.prod(th.Tensor(envs.single_action_space.shape).to(self.device)).item()
+            self.target_entropy = -th.prod(th.Tensor(env.action_space.shape).to(self.device)).item()
             self.log_alpha = th.zeros(1, requires_grad=True, device=self.device)
             self.alpha = self.log_alpha.exp().item()
             self.a_optimizer = optim.Adam([self.log_alpha], lr=self.q_lr)
@@ -268,19 +246,16 @@ class MOSAC(MOPolicy):
         self.alpha_tensor = th.scalar_tensor(self.alpha).to(self.device)
 
         # Buffer
-        self.envs.single_observation_space.dtype = np.float32
+        self.env.observation_space.dtype = np.float32
         self.buffer = ReplayBuffer(
             obs_shape=self.obs_shape,
             action_dim=self.action_shape[0],
             rew_dim=self.reward_dim,
-            num_envs=self.num_envs,
             max_size=self.buffer_size,
         )
 
         # Logging
         self.log = log
-        if self.log:
-            self.writer = parent_writer
 
     def __deepcopy__(self, memo):
         """Deep copy of the policy.
@@ -289,7 +264,7 @@ class MOSAC(MOPolicy):
             memo (dict): memoization dict
         """
         copied = type(self)(
-            envs=self.envs,
+            env=self.env,
             weights=self.weights,
             scalarization=self.scalarization,
             buffer_size=self.buffer_size,
@@ -306,8 +281,6 @@ class MOSAC(MOPolicy):
             autotune=self.autotune,
             id=self.id,
             device=self.device,
-            torch_deterministic=self.torch_deterministic,
-            parent_writer=self.writer,
             log=self.log,
             seed=self.seed,
         )
@@ -344,7 +317,7 @@ class MOSAC(MOPolicy):
     @override
     def set_weights(self, weights: np.ndarray):
         self.weights = weights
-        self.weights_tensor = th.from_numpy(self.weights).unsqueeze(1).repeat(1, self.num_envs).to(self.device)
+        self.weights_tensor = th.from_numpy(self.weights).float().to(self.device)
 
     @override
     def eval(self, obs: np.ndarray, w: Optional[np.ndarray] = None) -> Union[int, np.ndarray]:
@@ -357,7 +330,7 @@ class MOSAC(MOPolicy):
             action as a numpy array (continuous actions)
         """
         obs = th.as_tensor(obs).float().to(self.device)
-        obs = obs.unsqueeze(0).repeat(self.num_envs, 1)  # duplicate observation to fit the NN input
+        obs = obs.unsqueeze(0)
         with th.no_grad():
             action, _, _ = self.actor.get_action(obs)
 
@@ -375,9 +348,9 @@ class MOSAC(MOPolicy):
             # Q values are scalarized before being compared (min of ensemble networks)
             qf1_next_target = self.scalarization(self.qf1_target(mb_next_obs, next_state_actions), self.weights_tensor)
             qf2_next_target = self.scalarization(self.qf2_target(mb_next_obs, next_state_actions), self.weights_tensor)
-            min_qf_next_target = th.min(qf1_next_target, qf2_next_target) - self.alpha_tensor * next_state_log_pi
+            min_qf_next_target = th.min(qf1_next_target, qf2_next_target) - (self.alpha_tensor * next_state_log_pi).flatten()
             scalarized_rewards = self.scalarization(mb_rewards, self.weights_tensor)
-            next_q_value = scalarized_rewards.flatten() + (1 - mb_dones.flatten()) * self.gamma * min_qf_next_target.view(-1)
+            next_q_value = scalarized_rewards.flatten() + (1 - mb_dones.flatten()) * self.gamma * min_qf_next_target
 
         qf1_a_values = self.scalarization(self.qf1(mb_obs, mb_act), self.weights_tensor).flatten()
         qf2_a_values = self.scalarization(self.qf2(mb_obs, mb_act), self.weights_tensor).flatten()
@@ -420,17 +393,21 @@ class MOSAC(MOPolicy):
             self.qf1_target.requires_grad_(False)
             self.qf2_target.requires_grad_(False)
 
-        if self.global_step % 100 == 0:
+        if self.global_step % 100 == 0 and self.log:
             log_str = f"_{self.id}" if self.id is not None else ""
-            self.writer.add_scalar(f"losses{log_str}/qf1_values", qf1_a_values.mean().item(), self.global_step)
-            self.writer.add_scalar(f"losses{log_str}/qf2_values", qf2_a_values.mean().item(), self.global_step)
-            self.writer.add_scalar(f"losses{log_str}/qf1_loss", qf1_loss.item(), self.global_step)
-            self.writer.add_scalar(f"losses{log_str}/qf2_loss", qf2_loss.item(), self.global_step)
-            self.writer.add_scalar(f"losses{log_str}/qf_loss", qf_loss.item() / 2.0, self.global_step)
-            self.writer.add_scalar(f"losses{log_str}/actor_loss", actor_loss.item(), self.global_step)
-            self.writer.add_scalar(f"losses{log_str}/alpha", self.alpha, self.global_step)
+            to_log = {
+                f"losses{log_str}/alpha": self.alpha,
+                f"losses{log_str}/qf1_values": qf1_a_values.mean().item(),
+                f"losses{log_str}/qf2_values": qf2_a_values.mean().item(),
+                f"losses{log_str}/qf1_loss": qf1_loss.item(),
+                f"losses{log_str}/qf2_loss": qf2_loss.item(),
+                f"losses{log_str}/qf_loss": qf_loss.item() / 2.0,
+                f"losses{log_str}/actor_loss": actor_loss.item(),
+                "global_step": self.global_step,
+            }
             if self.autotune:
-                self.writer.add_scalar(f"losses{log_str}/alpha_loss", alpha_loss.item(), self.global_step)
+                to_log[f"losses{log_str}/alpha_loss"] = alpha_loss.item()
+            wandb.log(to_log)
 
     def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None):
         """Train the agent.
@@ -442,49 +419,40 @@ class MOSAC(MOPolicy):
         start_time = time.time()
 
         # TRY NOT TO MODIFY: start the game
-        obs, _ = self.envs.reset(seed=self.seed)
+        obs, _ = self.env.reset()
         for step in range(total_timesteps):
             # ALGO LOGIC: put action logic here
             if self.global_step < self.learning_starts:
-                actions = np.array([self.envs.single_action_space.sample() for _ in range(self.envs.num_envs)])
+                actions = self.env.action_space.sample()
             else:
-                actions, _, _ = self.actor.get_action(th.Tensor(obs).to(self.device))
-                actions = actions.detach().cpu().numpy()
+                th_obs = th.as_tensor(obs).float().to(self.device)
+                th_obs = th_obs.unsqueeze(0)
+                actions, _, _ = self.actor.get_action(th_obs)
+                actions = actions[0].detach().cpu().numpy()
 
             # execute the game and log data
-            next_obs, rewards, terminateds, truncateds, infos = self.envs.step(actions)
-
-            # Episode info logging
-            if "final_info" in infos.keys():
-                _info = infos["final_info"][0]["episode"]
-                log_episode_info(
-                    _info,
-                    np.dot,
-                    self.weights,
-                    self.global_step,
-                    self.id,
-                    self.writer,
-                )
+            next_obs, rewards, terminated, truncated, infos = self.env.step(actions)
 
             # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
             real_next_obs = next_obs
             if "final_observation" in infos:
-                real_next_obs = next_obs.copy()
-                for idx, d in enumerate(infos["_final_observation"]):
-                    if d:
-                        real_next_obs[idx] = infos["final_observation"][idx]
-            self.buffer.add(
-                obs=obs, next_obs=real_next_obs, action=actions, reward=rewards, done=np.expand_dims(terminateds, axis=1)
-            )
+                real_next_obs = infos["final_observation"]
+            self.buffer.add(obs=obs, next_obs=real_next_obs, action=actions, reward=rewards, done=terminated)
 
             # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
             obs = next_obs
+            if terminated or truncated:
+                obs, _ = self.env.reset()
+                if self.log and "episode" in infos.keys():
+                    log_episode_info(infos["episode"], np.dot, self.weights, self.global_step, self.id)
 
             # ALGO LOGIC: training.
             if self.global_step > self.learning_starts:
                 self.update()
-                if self.global_step % 100 == 0:
+                if self.log and self.global_step % 100 == 0:
                     print("SPS:", int(self.global_step / (time.time() - start_time)))
-                    self.writer.add_scalar("charts/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
+                    wandb.log(
+                        {"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step}
+                    )
 
-            self.global_step += self.num_envs
+            self.global_step += 1

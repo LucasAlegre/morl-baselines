@@ -1,26 +1,29 @@
 """MORL/D Multi-Objective Reinforcement Learning based on Decomposition."""
 import math
 from typing import Callable, List, Optional, Tuple, Union
+
+import torch as th
+import gymnasium as gym
+import numpy as np
+from mo_gymnasium import MONormalizeReward
+from torch import optim
 from typing_extensions import override
 
-import gym
-import mo_gym
-import numpy as np
-import torch as th
-import wandb as wandb
-from mo_gym import MONormalizeReward, MORecordEpisodeStatistics, MOSyncVectorEnv
-from pymoo.util.ref_dirs import get_reference_directions
-from torch import optim
-from torch.utils.tensorboard import SummaryWriter
-
+from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
+from morl_baselines.common.networks import polyak_update
 from morl_baselines.common.pareto import ParetoArchive
-from morl_baselines.common.performance_indicators import eum, hypervolume, igd, sparsity
 from morl_baselines.common.scalarization import tchebicheff, weighted_sum
-from morl_baselines.common.utils import nearest_neighbors, polyak_update, random_weights
-
+from morl_baselines.common.utils import nearest_neighbors
+from morl_baselines.common.weights import equally_spaced_weights, random_weights
+from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
 
 np.set_printoptions(threshold=np.inf)
+
+
+POLICIES = {
+    "MOSAC": MOSAC,
+}
 
 
 class Policy:
@@ -39,80 +42,46 @@ class Policy:
         self.wrapped = wrapped
 
 
-def _make_env(env_id: str, seed: int, idx: int, capture_video: bool, run_name: str, gamma: float, norm=True):
-    """Creates a single environment."""
-
-    def thunk():
-        env = mo_gym.make(env_id, render_mode=None)
-        # env = mo_gym.make(env_id, render_mode=None, dst_map=CONCAVE_MAP)
-        env = MORecordEpisodeStatistics(env, gamma=gamma)
-        if capture_video:
-            if idx == 0:
-                env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
-
-        # Rewards are normalized to make the scalarization easier
-        if norm:
-            for i in range(env.reward_space.shape[0]):
-                env = MONormalizeReward(env, idx=i)
-        env.action_space.seed(seed)
-        env.observation_space.seed(seed)
-        env.reset(seed=seed)
-        return env
-
-    return thunk
-
-
 class MORLD(MOAgent):
     """MORL/D implementation, decomposition based technique for MORL."""
 
     def __init__(
         self,
-        env_name: str,
-        policy_factory: Callable[
-            [int, gym.Env, np.ndarray, Callable[[np.ndarray, np.ndarray], float], float, Optional[SummaryWriter]], Policy
-        ],
-        scalarization_method: str,  # "ws" or "tch"
-        evaluation_mode: str,  # "esr" or "ser"
-        ref_point: np.ndarray,
-        eval_reps: int = 10,
+        env: gym.Env,
+        scalarization_method: str = "ws",  # "ws" or "tch"
+        evaluation_mode: str = "ser",  # "esr" or "ser"
+        policy_name: str = "MOSAC",
+        policy_args: dict = {},
         gamma: float = 0.995,
-        pop_size: int = 10,
-        num_envs: int = 1,
+        pop_size: int = 6,
         seed: int = 42,
+        rng: Optional[np.random.Generator] = None,
         exchange_every: int = int(1e5),
-        neighborhood_size: int = 2,  # n = "n closest neighbors", 0=none
+        neighborhood_size: int = 1,  # n = "n closest neighbors", 0=none
         dist_metric: Callable[[np.ndarray, np.ndarray], float] = lambda a, b: np.sum(
             np.square(a - b)
         ),  # distance metric between neighbors
         shared_buffer: bool = False,
         sharing_mechanism: List[str] = [],
-        update_passes: int = 0,
+        update_passes: int = 10,
         weight_init_method: str = "uniform",
         weight_adaptation_method: Optional[str] = None,  # "PSA" or None
-        front: List[np.ndarray] = [],
-        eum_samples: int = 20,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "MORL-D",
+        wandb_entity: Optional[str] = None,
         log: bool = True,
         device: Union[th.device, str] = "auto",
     ):
         """Initializes MORL/D.
 
         Args:
-            env_name: environment id
-            policy_factory: factory method to create low level, single objective policies, takes
-                int: id
-                gym.Env: environment
-                np.ndarray: weight,
-                Callable: scalarization function
-                float: gamma
+            env: environment
             scalarization_method: scalarization method to apply. "ws" or "tch".
             evaluation_mode: esr or ser (for evaluation env)
-            eval_reps: number of policy evaluation repetitions
-            ref_point: reference point for the hypervolume metric
+            policy_name: name of the underlying policy to use: "MOSAC", EUPG can be easily adapted.
+            policy_args: arguments for the policy
             gamma: gamma
             pop_size: size of population
-            num_envs: number of parallel environments
             seed: seed for RNG
             exchange_every: exchange trigger (timesteps based)
             neighborhood_size: size of the neighbordhood ( in [0, pop_size)
@@ -122,32 +91,29 @@ class MORLD(MOAgent):
             update_passes: number of times to update all policies after sampling from one policy.
             weight_init_method: weight initialization method. "uniform" or "random"
             weight_adaptation_method: weight adaptation method. "PSA" or None.
-            front: Known pareto front, if any.
-            eum_samples: number of samples to use for the eum metric.
             project_name: For wandb logging
             experiment_name: For wandb logging
+            wandb_entity: For wandb logging
             log: For wandb logging
             device: torch device
         """
-        self.env_name = env_name
         self.gamma = gamma
         self.seed = seed
-        self.num_envs = num_envs
 
-        self.envs = MOSyncVectorEnv(
-            [
-                _make_env(self.env_name, self.seed, i, capture_video=False, run_name=experiment_name, gamma=self.gamma)
-                for i in range(self.num_envs)
-            ]
-        )
-        super().__init__(self.envs, device)
-        self.eval_env = _make_env(
-            self.env_name, self.seed, 0, capture_video=False, run_name=experiment_name, gamma=self.gamma, norm=False
-        )()
+        if rng is not None:
+            self.np_random = rng
+        else:
+            self.np_random = np.random.default_rng(self.seed)
+        # This is helpful for scalarization
+        for i in range(env.unwrapped.reward_space.shape[0]):
+            env = MONormalizeReward(env, idx=i)
+        env.action_space.seed(seed)
+        env.observation_space.seed(seed)
+        env.reset(seed=seed)
+        self.env = env
+        super().__init__(self.env, device)
 
         self.evaluation_mode = evaluation_mode
-        self.eval_reps = eval_reps
-        self.ref_point = ref_point
         self.pop_size = pop_size
 
         # Scalarization and weights
@@ -158,12 +124,12 @@ class MORLD(MOAgent):
         else:
             self.delta = None
         if self.weight_init_method == "uniform":
-            self.weights = get_reference_directions("energy", self.reward_dim, self.pop_size).astype(np.float32)
+            self.weights = np.array(equally_spaced_weights(self.reward_dim, self.pop_size, self.seed))
             # Often, the objectives requiring a lot of exploration are the last ones. Reversing allows to first execute those
             # And benefit from transfer learning for the subsequent candidates, requiring less exploration
             self.weights = np.flip(self.weights, 1).copy()
         elif self.weight_init_method == "random":
-            self.weights = random_weights(self.reward_dim, n=self.pop_size, dist="dirichlet")
+            self.weights = random_weights(self.reward_dim, n=self.pop_size, dist="dirichlet", rng=self.np_random)
         else:
             raise Exception(f"Unsupported weight init method: ${self.weight_init_method}")
 
@@ -197,19 +163,38 @@ class MORLD(MOAgent):
         self.project_name = project_name
         self.experiment_name = experiment_name
         self.log = log
-        self.eum_samples = eum_samples
 
+        if shared_buffer:
+            self.experiment_name += "-SB"
+        if self.weight_adaptation_method is not None:
+            self.experiment_name += f"+{self.weight_adaptation_method}"
+        if self.transfer:
+            self.experiment_name += "+transfer"
+
+        self.policy_factory = POLICIES[policy_name]
+        self.policy_name = policy_name
+        self.policy_args = policy_args
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name)
-            self.known_front = front
-        else:
-            self.writer = None
+            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
 
         # Policies' population
         self.current_policy = 0  # For turn by turn selection
-        self.policy_factory = policy_factory
         self.population = [
-            self.policy_factory(i, self.envs, w, self.scalarization, gamma, self.writer) for i, w in enumerate(self.weights)
+            Policy(
+                id=i,
+                weights=w,
+                wrapped=self.policy_factory(
+                    id=i,
+                    env=self.env,
+                    weights=w,
+                    scalarization=th.matmul if scalarization_method == "ws" else self.scalarization,
+                    gamma=gamma,
+                    log=self.log,
+                    parent_rng=self.np_random,
+                    **policy_args,
+                ),
+            )
+            for i, w in enumerate(self.weights)
         ]
         self.archive = ParetoArchive()
 
@@ -219,14 +204,11 @@ class MORLD(MOAgent):
     @override
     def get_config(self) -> dict:
         return {
-            "env_name": self.env_name,
+            "env_id": self.env.unwrapped.spec.id,
             "scalarization_method": self.scalarization_method,
             "evaluation_mode": self.evaluation_mode,
-            "eval_reps": self.eval_reps,
-            "ref_point": self.ref_point,
             "gamma": self.gamma,
             "pop_size": self.pop_size,
-            "num_envs": self.num_envs,
             "exchange_every": self.exchange_every,
             "neighborhood_size": self.neighborhood_size,
             "shared_buffer": self.shared_buffer,
@@ -234,13 +216,14 @@ class MORLD(MOAgent):
             "transfer": self.transfer,
             "weight_init_method": self.weight_init_method,
             "weight_adapt_method": self.weight_adaptation_method,
-            "eum_samples": self.eum_samples,
             "delta_adapt": self.delta,
             "project_name": self.project_name,
             "experiment_name": self.experiment_name,
             "seed": self.seed,
             "log": self.log,
             "device": self.device,
+            "policy_name": self.policy_name,
+            **self.policy_args,
         }
 
     def __share_buffers(self, neighborhood: bool = False):
@@ -269,7 +252,7 @@ class MORLD(MOAgent):
         self.current_policy = (self.current_policy + 1) % self.pop_size
         return candidate
 
-    def __eval_policy(self, policy: Policy) -> np.ndarray:
+    def __eval_policy(self, policy: Policy, eval_env, num_eval_episodes_for_front) -> np.ndarray:
         """Evaluates a policy.
 
         Args:
@@ -279,27 +262,33 @@ class MORLD(MOAgent):
         """
         if self.evaluation_mode == "ser":
             acc = np.zeros(self.reward_dim)
-            for _ in range(self.eval_reps):
+            for _ in range(num_eval_episodes_for_front):
                 _, _, _, discounted_reward = policy.wrapped.policy_eval(
-                    self.eval_env, weights=policy.weights, scalarization=self.scalarization, writer=self.writer
+                    eval_env, weights=policy.weights, scalarization=self.scalarization, log=self.log
                 )
                 acc += discounted_reward
 
         elif self.evaluation_mode == "esr":
             acc = np.zeros(self.reward_dim)
-            for _ in range(self.eval_reps):
+            for _ in range(num_eval_episodes_for_front):
                 _, _, _, discounted_reward = policy.wrapped.policy_eval_esr(
-                    self.eval_env, weights=policy.weights, scalarization=self.scalarization, writer=self.writer
+                    eval_env, weights=policy.weights, scalarization=self.scalarization, log=self.log
                 )
                 acc += discounted_reward
         else:
             raise Exception("Evaluation mode must either be esr or ser.")
-        return acc / self.eval_reps
+        return acc / num_eval_episodes_for_front
 
-    def __eval_all_policies(self):
+    def __eval_all_policies(
+        self,
+        eval_env: gym.Env,
+        num_eval_episodes_for_front: int,
+        ref_point: np.ndarray,
+        known_front: Optional[List[np.ndarray]] = None,
+    ):
         """Evaluates all policies and store their current performances on the buffer and pareto archive."""
         for i, agent in enumerate(self.population):
-            discounted_reward = self.__eval_policy(agent)
+            discounted_reward = self.__eval_policy(agent, eval_env, num_eval_episodes_for_front)
             # Storing current results
             self.archive.add(agent, discounted_reward)
 
@@ -307,25 +296,10 @@ class MORLD(MOAgent):
         print(self.archive.evaluations[:50])
         print(self.archive.evaluations[50:])
 
-        hv = hypervolume(self.ref_point, self.archive.evaluations)
-        sp = sparsity(self.archive.evaluations)
-        eum_metric = eum(
-            front=self.archive.evaluations,
-            weights_set=get_reference_directions("energy", self.reward_dim, self.eum_samples).astype(np.float32),
-        )
         if self.log:
-            front = wandb.Table(
-                columns=[f"objective_{i}" for i in range(1, self.reward_dim + 1)],
-                data=[p.tolist() for p in self.archive.evaluations],
+            log_all_multi_policy_metrics(
+                self.archive.evaluations, ref_point, self.reward_dim, self.global_step, ref_front=known_front
             )
-            self.writer.add_scalar("charts/hypervolume", hv, self.global_step)
-            self.writer.add_scalar("charts/sparsity", sp, self.global_step)
-            self.writer.add_scalar("charts/eum", eum_metric, self.global_step)
-            wandb.log({"charts/pareto_front": front})
-
-            if self.known_front:
-                igd_metric = igd(known_front=self.known_front, current_estimate=self.archive.evaluations)
-                self.writer.add_scalar("charts/IGD", igd_metric, self.global_step)
 
     def __share(self, last_trained: Policy):
         """Shares information between neighbor policies.
@@ -357,7 +331,7 @@ class MORLD(MOAgent):
                         neighbor_net.parameters(), lr=neighbor_policy.wrapped.learning_rate
                     )
 
-    def __adapt_weights(self):
+    def __adapt_weights(self, eval_env: gym.Env, num_eval_episodes_for_front: int):
         """Weight adaptation mechanism. Many strategies exist e.g. MOEA/D-AWA."""
 
         def closest_non_dominated(eval_policy: np.ndarray) -> Tuple[Policy, np.ndarray]:
@@ -373,7 +347,7 @@ class MORLD(MOAgent):
             closest_eval = None
             for eval_candidate, candidate in zip(self.archive.evaluations, self.archive.individuals):
                 distance = np.sum(np.square(eval_policy - eval_candidate))
-                if closest_distance > distance > 0.0:
+                if closest_distance > distance > 0.01:
                     closest_distance = distance
                     closest_nd = candidate
                     closest_eval = eval_candidate
@@ -386,7 +360,7 @@ class MORLD(MOAgent):
             # Journal of Multi-Criteria Decision Analysis, vol. 7, no. 1, pp. 34–47, 1998,
             # doi: 10.1002/(SICI)1099-1360(199801)7:1<34::AID-MCDA161>3.0.CO;2-6.
             for p in self.population:
-                eval_policy = self.__eval_policy(p)
+                eval_policy = self.__eval_policy(p, eval_env, num_eval_episodes_for_front)
                 closest_nd, closest_eval = closest_non_dominated(eval_policy)
 
                 new_weights = p.weights
@@ -416,7 +390,15 @@ class MORLD(MOAgent):
                 if len(p.wrapped.get_buffer()) > 0 and p != current:
                     p.wrapped.update()
 
-    def train(self, total_timesteps: int, reset_num_timesteps: bool = False):
+    def train(
+        self,
+        total_timesteps: int,
+        eval_env: gym.Env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_eval_episodes_for_front: int = 5,
+        reset_num_timesteps: bool = False,
+    ):
         """Trains the algorithm.
 
         Args:
@@ -427,29 +409,30 @@ class MORLD(MOAgent):
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
-        obs, _ = self.envs.reset()
-        self.__eval_all_policies()
+        obs, _ = self.env.reset()
+        print("Starting training...")
+        self.__eval_all_policies(eval_env, num_eval_episodes_for_front, ref_point, known_pareto_front)
 
         while self.global_step < total_timesteps:
             # selection
             policy = self.__select_candidate()
             # policy improvement
-            policy.wrapped.train(self.exchange_every, eval_env=self.eval_env)
+            policy.wrapped.train(self.exchange_every, eval_env=eval_env)
             self.__update_others(policy)
 
             self.global_step += self.exchange_every
             print(f"Switching... global_steps: {self.global_step}")
 
             # Update archive
-            self.__eval_all_policies()
+            self.__eval_all_policies(eval_env, num_eval_episodes_for_front, ref_point, known_pareto_front)
 
             # cooperation
             self.__share(policy)
             # Adaptation
-            self.__adapt_weights()
+            self.__adapt_weights(eval_env, num_eval_episodes_for_front)
             self.__adapt_ref_point()
 
         print("done!")
-        self.envs.close()
-        self.eval_env.close()
+        self.env.close()
+        eval_env.close()
         self.close_wandb()

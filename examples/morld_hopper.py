@@ -1,63 +1,40 @@
-from typing import Callable, Optional
-
-import gym
+import torch
+import mo_gymnasium as mo_gym
 import numpy as np
-import torch as th
-from torch.utils.tensorboard import SummaryWriter
 
-from morl_baselines.multi_policy.morld.morld import MORLD, Policy
-from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
-
-
-def policy_factory(
-    id: int,
-    env: gym.Env,
-    weight: np.ndarray,
-    scalarization: Callable[[np.ndarray, np.ndarray], float],
-    gamma: float,
-    parent_writer: Optional[SummaryWriter],
-) -> Policy:
-    wrapped = MOSAC(
-        id=id,
-        envs=env,
-        scalarization=th.matmul,
-        weights=weight,
-        gamma=gamma,
-        log=True,
-        seed=None,
-        parent_writer=parent_writer,
-    )
-    return Policy(id, weights=weight, wrapped=wrapped)
+from morl_baselines.multi_policy.morld.morld import MORLD
 
 
 def main():
 
     gamma = 0.99
 
-    known_front = []
+    env = mo_gym.make("mo-hopper-v4")
+    eval_env = mo_gym.make("mo-hopper-v4")
 
     algo = MORLD(
-        env_name="mo-hopper-v4",
-        num_envs=1,
+        env=env,
         exchange_every=int(5e4),
         pop_size=6,
-        policy_factory=policy_factory,
+        policy_name="MOSAC",
         scalarization_method="ws",
         evaluation_mode="ser",
-        ref_point=np.array([-100.0, -100.0, -100.0]),
         gamma=gamma,
         log=True,
         neighborhood_size=1,
-        shared_buffer=False,
         update_passes=10,
+        shared_buffer=True,
         sharing_mechanism=[],
         weight_adaptation_method=None,
-        seed=None,
-        experiment_name="MORL-D Hopper",
-        front=known_front,
+        seed=0,
     )
 
-    algo.train(total_timesteps=int(8e6) + 1)
+    algo.train(
+        eval_env=eval_env,
+        total_timesteps=int(8e6) + 1,
+        ref_point=np.array([-100.0, -100.0, -100.0]),
+        known_pareto_front=None,
+    )
 
 
 if __name__ == "__main__":
