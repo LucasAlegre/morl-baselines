@@ -1,13 +1,13 @@
 """MORL/D Multi-Objective Reinforcement Learning based on Decomposition."""
 import math
 from typing import Callable, List, Optional, Tuple, Union
+from typing_extensions import override
 
-import torch as th
 import gymnasium as gym
 import numpy as np
+import torch as th
 from mo_gymnasium import MONormalizeReward
 from torch import optim
-from typing_extensions import override
 
 from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
@@ -17,6 +17,7 @@ from morl_baselines.common.scalarization import tchebicheff, weighted_sum
 from morl_baselines.common.utils import nearest_neighbors
 from morl_baselines.common.weights import equally_spaced_weights, random_weights
 from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
+
 
 np.set_printoptions(threshold=np.inf)
 
@@ -83,6 +84,7 @@ class MORLD(MOAgent):
             gamma: gamma
             pop_size: size of population
             seed: seed for RNG
+            rng: RNG
             exchange_every: exchange trigger (timesteps based)
             neighborhood_size: size of the neighbordhood ( in [0, pop_size)
             dist_metric: distance metric between weight vectors to determine neighborhood
@@ -252,11 +254,13 @@ class MORLD(MOAgent):
         self.current_policy = (self.current_policy + 1) % self.pop_size
         return candidate
 
-    def __eval_policy(self, policy: Policy, eval_env, num_eval_episodes_for_front) -> np.ndarray:
+    def __eval_policy(self, policy: Policy, eval_env: gym.Env, num_eval_episodes_for_front: int) -> np.ndarray:
         """Evaluates a policy.
 
         Args:
             policy: to evaluate
+            eval_env: environment to evaluate on
+            num_eval_episodes_for_front: number of episodes to evaluate on
         Return:
              the discounted returns of the policy
         """
@@ -332,7 +336,12 @@ class MORLD(MOAgent):
                     )
 
     def __adapt_weights(self, eval_env: gym.Env, num_eval_episodes_for_front: int):
-        """Weight adaptation mechanism. Many strategies exist e.g. MOEA/D-AWA."""
+        """Weight adaptation mechanism, many strategies exist e.g. MOEA/D-AWA.
+
+        Args:
+            eval_env: environment to evaluate the policies
+            num_eval_episodes_for_front: number of episodes to evaluate the policies
+        """
 
         def closest_non_dominated(eval_policy: np.ndarray) -> Tuple[Policy, np.ndarray]:
             """Returns the closest policy to eval_policy currently in the Pareto Archive.
@@ -383,7 +392,11 @@ class MORLD(MOAgent):
         pass
 
     def __update_others(self, current: Policy):
-        """Runs policy improvements on all policies in the population except current."""
+        """Runs policy improvements on all policies in the population except current.
+
+        Args:
+            current: current policy
+        """
         print("Updating other policies...")
         for i in range(self.update_passes):
             for p in self.population:
@@ -403,6 +416,10 @@ class MORLD(MOAgent):
 
         Args:
             total_timesteps: total number of timesteps
+            eval_env: evaluation environment
+            ref_point: reference point for the hypervolume metric
+            known_pareto_front: optimal pareto front for the problem if known
+            num_eval_episodes_for_front: number of episodes for each policy evaluation
             reset_num_timesteps: whether to reset the number of timesteps or not
         """
         # Init

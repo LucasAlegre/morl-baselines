@@ -6,8 +6,8 @@ from typing import Dict, Optional, Union
 import gymnasium as gym
 import numpy as np
 import torch as th
-import wandb
 import torch.nn
+import wandb
 from gymnasium import spaces
 from mo_gymnasium.utils import MOSyncVectorEnv
 

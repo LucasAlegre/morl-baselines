@@ -6,7 +6,6 @@ from numpy import array
 
 
 if __name__ == "__main__":
-
     FRONT = np.array(
         [
             array([141.28121643, 75.85871696, 87.13249741]),

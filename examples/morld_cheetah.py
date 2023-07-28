@@ -1,12 +1,11 @@
-import torch
 import mo_gymnasium as mo_gym
 import numpy as np
+import torch  # noqa: F401
 
 from morl_baselines.multi_policy.morld.morld import MORLD
 
 
 def main():
-
     gamma = 0.99
 
     env = mo_gym.make("mo-halfcheetah-v4")

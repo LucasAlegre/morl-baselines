@@ -8,16 +8,15 @@ https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88
 import time
 from copy import deepcopy
 from typing import Optional, Tuple, Union
+from typing_extensions import override
 
+import gymnasium as gym
 import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import wandb
-import gymnasium as gym
-from mo_gymnasium import MORecordEpisodeStatistics
-from typing_extensions import override
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.evaluation import log_episode_info

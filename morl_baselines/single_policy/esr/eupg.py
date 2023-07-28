@@ -186,7 +186,7 @@ class EUPG(MOPolicy, MOAgent):
         return copied
 
     @override
-    def get_policy_net(self) -> torch.nn.Module:
+    def get_policy_net(self) -> nn.Module:
         return self.net
 
     @override
