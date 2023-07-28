@@ -7,16 +7,15 @@ from typing_extensions import override
 import gymnasium as gym
 import numpy as np
 import torch as th
-import torch.nn
 import torch.nn as nn
 import torch.optim as optim
+import wandb
 from torch.distributions import Categorical
-from torch.utils.tensorboard import SummaryWriter
 
 from morl_baselines.common.accrued_reward_buffer import AccruedRewardReplayBuffer
+from morl_baselines.common.evaluation import log_episode_info
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
-from morl_baselines.common.networks import mlp
-from morl_baselines.common.utils import layer_init, log_episode_info
+from morl_baselines.common.networks import layer_init, mlp
 
 
 class PolicyNet(nn.Module):
@@ -97,7 +96,6 @@ class EUPG(MOPolicy, MOAgent):
         wandb_entity: Optional[str] = None,
         log: bool = True,
         log_every: int = 100,
-        parent_writer: Optional[SummaryWriter] = None,
         device: Union[th.device, str] = "auto",
         seed: Optional[int] = None,
     ):
@@ -117,7 +115,6 @@ class EUPG(MOPolicy, MOAgent):
             wandb_entity: Entity to use for wandb
             log: Whether to log or not
             log_every: Log every n episodes
-            parent_writer: Parent writer (for logging)
             device: Device to use for NN. Can be "cpu", "cuda" or "auto".
             seed: Seed for the random number generator
         """
@@ -154,7 +151,7 @@ class EUPG(MOPolicy, MOAgent):
             rew_dim=self.reward_dim,
             action_dim=self.action_dim,
             net_arch=self.net_arch,
-        )
+        ).to(self.device)
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.learning_rate)
 
         # Logging
@@ -162,9 +159,7 @@ class EUPG(MOPolicy, MOAgent):
         self.experiment_name = experiment_name
         self.log = log
         self.log_every = log_every
-        if parent_writer is not None:
-            self.writer = parent_writer
-        if log and parent_writer is None:
+        if log:
             self.setup_wandb(self.project_name, self.experiment_name, wandb_entity)
 
     def __deepcopy__(self, memo):
@@ -181,8 +176,7 @@ class EUPG(MOPolicy, MOAgent):
             self.learning_rate,
             self.project_name,
             self.experiment_name,
-            self.log,
-            parent_writer=self.writer,
+            log=self.log,
             device=self.device,
         )
 
@@ -252,11 +246,12 @@ class EUPG(MOPolicy, MOAgent):
 
         if self.log:
             log_str = f"_{self.id}" if self.id is not None else ""
-            self.writer.add_scalar(f"losses{log_str}/loss", loss, self.global_step)
-            self.writer.add_scalar(
-                f"metrics{log_str}/scalarized_episodic_return",
-                scalarized_return,
-                self.global_step,
+            wandb.log(
+                {
+                    f"losses{log_str}/loss": loss,
+                    f"metrics{log_str}/scalarized_episodic_return": scalarized_return,
+                    "global_step": self.global_step,
+                },
             )
 
     def train(
@@ -290,11 +285,11 @@ class EUPG(MOPolicy, MOAgent):
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
-            self.buffer.add(obs, accrued_reward_tensor, action, vec_reward, next_obs, terminated)
+            self.buffer.add(obs, accrued_reward_tensor.cpu().numpy(), action, vec_reward, next_obs, terminated)
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval_esr(eval_env, scalarization=self.scalarization, weights=self.weights, writer=self.writer)
+                self.policy_eval_esr(eval_env, scalarization=self.scalarization, weights=self.weights, log=self.log)
 
             if terminated or truncated:
                 # NN is updated at the end of each episode
@@ -311,7 +306,6 @@ class EUPG(MOPolicy, MOAgent):
                         weights=self.weights,
                         id=self.id,
                         global_timestep=self.global_step,
-                        writer=self.writer,
                     )
 
             else:
@@ -319,7 +313,7 @@ class EUPG(MOPolicy, MOAgent):
 
             if self.global_step % 1000 == 0:
                 print("SPS:", int(self.global_step / (time.time() - start_time)))
-                self.writer.add_scalar("charts/SPS", int(self.global_step / (time.time() - start_time)), self.global_step)
+                wandb.log({"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step})
 
     @override
     def get_config(self) -> dict:

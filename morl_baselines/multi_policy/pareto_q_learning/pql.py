@@ -3,14 +3,13 @@ from typing import Callable, List, Optional
 
 import gymnasium as gym
 import numpy as np
+import wandb
 
+from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.morl_algorithm import MOAgent
 from morl_baselines.common.pareto import get_non_dominated
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import (
-    linearly_decaying_value,
-    log_all_multi_policy_metrics,
-)
+from morl_baselines.common.utils import linearly_decaying_value
 
 
 class PQL(MOAgent):
@@ -224,14 +223,13 @@ class PQL(MOAgent):
                 state = next_state
 
                 if self.log and self.global_step % log_every == 0:
-                    self.writer.add_scalar("global_step", self.global_step, self.global_step)
+                    wandb.log({"global_step": self.global_step})
                     pf = self._eval_all_policies(eval_env)
                     log_all_multi_policy_metrics(
                         current_front=pf,
                         hv_ref_point=ref_point,
                         reward_dim=self.reward_dim,
                         global_step=self.global_step,
-                        writer=self.writer,
                         ref_front=known_pareto_front,
                     )
 

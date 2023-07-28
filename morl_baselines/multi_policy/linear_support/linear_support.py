@@ -6,12 +6,13 @@ from typing import List, Optional
 import cdd
 import cvxpy as cp
 import numpy as np
+from cvxpy import SolverError
 from gymnasium.core import Env
 
 from morl_baselines.common.evaluation import policy_evaluation_mo
 from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import extrema_weights
+from morl_baselines.common.weights import extrema_weights
 
 
 np.set_printoptions(precision=4)
@@ -289,7 +290,12 @@ class LinearSupport:
         # such that it is consistent with other optimal values for other visited weights
         constraints = [W @ v <= V]
         prob = cp.Problem(objective, constraints)
-        return prob.solve(verbose=False)
+        try:
+            result = prob.solve(verbose=False)
+        except SolverError:
+            print("ECOS solver error, trying another one.")
+            result = prob.solve(solver=cp.SCS, verbose=False)
+        return result
 
     def compute_corner_weights(self) -> List[np.ndarray]:
         """Returns the corner weights for the current set of values.

@@ -33,28 +33,13 @@ Here is the function that logs all the metrics:
 Our official performance metrics are sent to [openrlbenchmark](https://wandb.ai/openrlbenchmark/MORL-Baselines) on wandb. From there, it is possible to use [openrlbenchmark API](https://github.com/openrlbenchmark/openrlbenchmark) to query and plot the wanted results for paper format. Life is good when the full flow is automated 🥸.
 
 ## Benchmarking script
-It is possible to run algorithms from a CLI and configure the parameters accordingly. The script is located in `benchmark/launch_experiment.py`. Here is the documentation:
-```{eval-rst}
-.. automodule:: benchmark.launch_experiment
-    :members:
-```
+It is possible to run algorithms from a CLI and configure the parameters accordingly. The script is located in `benchmark/launch_experiment.py`.
 
 ## Algorithms
 
 Below are the algorithms that we want to test along with the environments from their original papers which are supported in MO-Gymnasium.
 
-### Single-policy algorithms
-* MOQ-Learning (discrete/discrete): DST, MO-MountainCar;
-* EUPG (discrete/discrete): Fishwood;
-
-### Multi-policy algorithms
-* Envelope Q-Learning (continuous/discrete): DST, Fruit-tree, Mario;
-* Pareto Q-Learning (discrete/discrete): DST;
-* PGMORL (continuous/continuous): Half-Cheetah, 2-obj Hopper. Note: the original paper tweaked the environments to have positive rewards only. We feel that such a modification is no good practice and we will use the official environments from MO-Gymnasium instead. Hence, our version of PGMORL cannot be compared to the original paper.
-* MPMOQLearning (discrete/discrete): DST, MO-MountainCar;
-* GPI-LS, GPI-PD (*/*): DST, Minecart, MO-Hopper;
-* OLS - it is a weight generation method, not a full algorithm.
-* PCN (continuous/discrete): DST, MineCart;
+This [issue](https://github.com/LucasAlegre/morl-baselines/issues/43) tracks the current performance assessment of the algorithms.
 
 ## References
 [1]  J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik, “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,” in Proceedings of the 37th International Conference on Machine Learning, Nov. 2020, pp. 10607–10616. Available: https://proceedings.mlr.press/v119/xu20h.html

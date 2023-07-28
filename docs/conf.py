@@ -9,7 +9,7 @@
 project = "MORL-Baselines"
 copyright = "2023, Florian Felten & Lucas Alegre"
 author = "Florian Felten & Lucas Alegre"
-release = "1.0.0-rc1"
+release = "1.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -42,3 +42,7 @@ html_theme_options = {
     "source_directory": "docs/",
 }
 html_static_path = ["_static"]
+
+
+# Include both the class and __init__ docstrings when describing the class
+autoclass_content = "both"

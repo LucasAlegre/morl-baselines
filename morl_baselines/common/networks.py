@@ -1,6 +1,6 @@
 """Utilities for Neural Networks."""
 
-from typing import List, Type
+from typing import Iterable, List, Type
 
 import numpy as np
 import torch as th
@@ -85,3 +85,73 @@ class NatureCNN(nn.Module):
         if observations.dim() == 3:
             observations = observations.unsqueeze(0)
         return self.linear(self.cnn(observations / 255.0))
+
+
+def huber(x, min_priority=0.01):
+    """Huber loss function.
+
+    Args:
+        x: The input tensor.
+        min_priority: The minimum priority.
+
+    Returns:
+        The huber loss.
+    """
+    return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
+
+
+def get_grad_norm(params: Iterable[th.nn.Parameter]) -> th.Tensor:
+    """This is how the grad norm is computed inside torch.nn.clip_grad_norm_().
+
+    Args:
+        params: The parameters to compute the grad norm for.
+
+    Returns:
+        The grad norm.
+    """
+    parameters = [p for p in params if p.grad is not None]
+    if len(parameters) == 0:
+        return th.tensor(0.0)
+    device = parameters[0].grad.device
+    total_norm = th.norm(th.stack([th.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0)
+    return total_norm
+
+
+@th.no_grad()
+def polyak_update(
+    params: Iterable[th.nn.Parameter],
+    target_params: Iterable[th.nn.Parameter],
+    tau: float,
+) -> None:
+    """Polyak averaging for target network parameters.
+
+    Args:
+        params: The parameters to update.
+        target_params: The target parameters.
+        tau: The polyak averaging coefficient (usually small).
+
+    """
+    for param, target_param in zip(params, target_params):
+        if tau == 1:
+            target_param.data.copy_(param.data)
+        else:
+            target_param.data.mul_(1.0 - tau)
+            th.add(target_param.data, param.data, alpha=tau, out=target_param.data)
+
+
+@th.no_grad()
+def layer_init(layer, method="orthogonal", weight_gain: float = 1, bias_const: float = 0) -> None:
+    """Initialize a layer with the given method.
+
+    Args:
+        layer: The layer to initialize.
+        method: The initialization method to use.
+        weight_gain: The gain for the weights.
+        bias_const: The constant for the bias.
+    """
+    if isinstance(layer, (nn.Linear, nn.Conv2d)):
+        if method == "xavier":
+            th.nn.init.xavier_uniform_(layer.weight, gain=weight_gain)
+        elif method == "orthogonal":
+            th.nn.init.orthogonal_(layer.weight, gain=weight_gain)
+        th.nn.init.constant_(layer.bias, bias_const)

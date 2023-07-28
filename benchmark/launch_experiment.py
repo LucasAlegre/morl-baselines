@@ -14,12 +14,15 @@ from distutils.util import strtobool
 import mo_gymnasium as mo_gym
 import numpy as np
 import requests
+from gymnasium.wrappers import FlattenObservation
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.utils import seed_everything
+from morl_baselines.common.evaluation import seed_everything
+from morl_baselines.multi_policy.capql.capql import CAPQL
 from morl_baselines.multi_policy.envelope.envelope import Envelope
-from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
+from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPILS, GPIPD
 from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
+    GPILSContinuousAction,
     GPIPDContinuousAction,
 )
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
@@ -35,16 +38,21 @@ ALGOS = {
     "envelope": Envelope,
     "gpi_pd_continuous": GPIPDContinuousAction,
     "gpi_pd_discrete": GPIPD,
+    "gpi_ls_continuous": GPILSContinuousAction,
+    "gpi_ls_discrete": GPILS,
+    "capql": CAPQL,
     "mpmoql": MPMOQLearning,
     "pcn": PCN,
     "pql": PQL,
     "ols": MPMOQLearning,
+    "gpi-ls": MPMOQLearning,
 }
 
 ENVS_WITH_KNOWN_PARETO_FRONT = [
     "deep-sea-treasure-concave-v0",
     "deep-sea-treasure-v0",
     "minecart-v0",
+    "minecart-deterministic-v0",
     "resource-gathering-v0",
     "fruit-tree-v0",
 ]
@@ -159,6 +167,7 @@ def main():
     if args.algo == "pgmorl":
         # PGMORL creates its own environments because it requires wrappers
         print(f"Instantiating {args.algo} on {args.env_id}")
+        eval_env = mo_gym.make(args.env_id)
         algo = ALGOS[args.algo](
             env_id=args.env_id,
             origin=np.array(args.ref_point),
@@ -173,6 +182,7 @@ def main():
         print("Training starts... Let's roll!")
         algo.train(
             total_timesteps=args.num_timesteps,
+            eval_env=eval_env,
             ref_point=np.array(args.ref_point),
             known_pareto_front=None,
             **args.train_hyperparams,
@@ -181,9 +191,15 @@ def main():
     else:
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
         eval_env = mo_gym.make(args.env_id)
+        if "highway" in args.env_id:
+            env = FlattenObservation(env)
+            eval_env = FlattenObservation(eval_env)
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"
+        elif args.algo == "gpi-ls":
+            args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (GPI-LS)"
+
         algo = ALGOS[args.algo](
             env=env,
             gamma=args.gamma,

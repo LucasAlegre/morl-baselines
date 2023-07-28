@@ -7,6 +7,7 @@ from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
 from morl_baselines.common.evaluation import eval_mo, eval_mo_reward_conditioned
 from morl_baselines.common.scalarization import tchebicheff
+from morl_baselines.multi_policy.capql.capql import CAPQL
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
@@ -20,7 +21,6 @@ from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
 from morl_baselines.multi_policy.pcn.pcn import PCN
 from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
 from morl_baselines.single_policy.esr.eupg import EUPG
-from morl_baselines.single_policy.ser.mo_ppo import make_env
 from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
 
 
@@ -213,6 +213,7 @@ def test_gpi_pd_continuous_action():
 # This test is a bit long to execute, idk what to do with it.
 def test_pgmorl():
     env_id = "mo-mountaincarcontinuous-v0"
+    eval_env = mo_gym.make(env_id)
     algo = PGMORL(
         env_id=env_id,
         origin=np.array([0.0, 0.0]),
@@ -223,13 +224,12 @@ def test_pgmorl():
         num_weight_candidates=5,
         log=False,
     )
-    algo.train(total_timesteps=int(1e4), ref_point=np.array([0.0, 0.0]))
-    env = make_env(env_id, 422, 1, "PGMORL_test", gamma=0.995)()  # idx != 0 to avoid taking videos
+    algo.train(eval_env=eval_env, total_timesteps=int(1e4), ref_point=np.array([0.0, 0.0]))
 
     # Execution of trained policies
     for a in algo.archive.individuals:
         scalarized, discounted_scalarized, reward, discounted_reward = eval_mo(
-            agent=a, env=env, w=np.array([1.0, 1.0]), render=False
+            agent=a, env=eval_env, w=np.array([1.0, 1.0]), render=False
         )
         assert scalarized != 0
         assert discounted_scalarized != 0
@@ -266,3 +266,26 @@ def test_pcn():
     assert scalarized_disc_return != 0
     assert len(vec_ret) == 3
     assert len(vec_disc_ret) == 3
+
+
+def test_capql():
+    env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+    eval_env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+
+    agent = CAPQL(
+        env,
+        log=False,
+    )
+
+    agent.train(
+        total_timesteps=1000,
+        eval_env=eval_env,
+        ref_point=np.array([0.0, 0.0]),
+        eval_freq=100,
+    )
+
+    scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo(agent, env=eval_env, w=np.array([0.5, 0.5]))
+    assert scalar_return != 0
+    assert scalarized_disc_return != 0
+    assert len(vec_ret) == 2
+    assert len(vec_disc_ret) == 2

@@ -9,11 +9,12 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+import wandb
 
+from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.pareto import get_non_dominated_inds
 from morl_baselines.common.performance_indicators import hypervolume
-from morl_baselines.common.utils import log_all_multi_policy_metrics
 
 
 def crowding_distance(points):
@@ -96,9 +97,9 @@ class PCN(MOAgent, MOPolicy):
         self,
         env: Optional[gym.Env],
         scaling_factor: np.ndarray,
-        learning_rate: float = 1e-2,
+        learning_rate: float = 1e-3,
         gamma: float = 1.0,
-        batch_size: int = 32,
+        batch_size: int = 256,
         hidden_dim: int = 64,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "PCN",
@@ -301,6 +302,7 @@ class PCN(MOAgent, MOPolicy):
 
     def evaluate(self, env, max_return, n=10):
         """Evaluate policy in the given environment."""
+        n = min(n, len(self.experience_replay))
         episodes = self._nlargest(n)
         returns, horizons = list(zip(*[(e[2][0].reward, len(e[2])) for e in episodes]))
         returns = np.float32(returns)
@@ -328,11 +330,12 @@ class PCN(MOAgent, MOPolicy):
         eval_env: gym.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
-        num_er_episodes: int = 500,
+        num_er_episodes: int = 20,
         num_step_episodes: int = 10,
-        num_model_updates: int = 100,
-        max_return: np.ndarray = 250.0,
-        max_buffer_size: int = 500,
+        num_model_updates: int = 50,
+        max_return: np.ndarray = 100.0,
+        max_buffer_size: int = 100,
+        num_points_pf: int = 100,
     ):
         """Train PCN.
 
@@ -346,6 +349,7 @@ class PCN(MOAgent, MOPolicy):
             num_model_updates: number of model updates per episode
             max_return: maximum return for clipping desired return
             max_buffer_size: maximum buffer size
+            num_points_pf: number of points to sample from pareto front for metrics calculation
         """
         if self.log:
             self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
@@ -388,9 +392,14 @@ class PCN(MOAgent, MOPolicy):
             if self.log:
                 hv = hypervolume(ref_point, leaves_r)
                 hv_est = hv
-                self.writer.add_scalar("train/hypervolume", hv_est, self.global_step)
-                self.writer.add_scalar("train/loss", np.mean(loss), self.global_step)
-                self.writer.add_scalar("train/entropy", np.mean(entropy), self.global_step)
+                wandb.log(
+                    {
+                        "train/hypervolume": hv_est,
+                        "train/loss": np.mean(loss),
+                        "train/entropy": np.mean(entropy),
+                        "global_step": self.global_step,
+                    },
+                )
 
             returns = []
             horizons = []
@@ -403,29 +412,34 @@ class PCN(MOAgent, MOPolicy):
 
             total_episodes += num_step_episodes
             if self.log:
-                self.writer.add_scalar("train/episode", total_episodes, self.global_step)
-                self.writer.add_scalar("train/horizon_desired", desired_horizon, self.global_step)
-                self.writer.add_scalar(
-                    "train/mean_horizon_distance", np.linalg.norm(np.mean(horizons) - desired_horizon), self.global_step
+                wandb.log(
+                    {
+                        "train/episode": total_episodes,
+                        "train/horizon_desired": desired_horizon,
+                        "train/mean_horizon_distance": np.linalg.norm(np.mean(horizons) - desired_horizon),
+                        "global_step": self.global_step,
+                    },
                 )
 
                 for i in range(self.reward_dim):
-                    self.writer.add_scalar(f"train/desired_return_{i}", desired_return[i], self.global_step)
-                    self.writer.add_scalar(f"train/mean_return_{i}", np.mean(np.array(returns)[:, i]), self.global_step)
-                    self.writer.add_scalar(
-                        f"train/mean_return_distance_{i}",
-                        np.linalg.norm(np.mean(np.array(returns)[:, i]) - desired_return[i]),
-                        self.global_step,
+                    wandb.log(
+                        {
+                            f"train/desired_return_{i}": desired_return[i],
+                            f"train/mean_return_{i}": np.mean(np.array(returns)[:, i]),
+                            f"train/mean_return_distance_{i}": np.linalg.norm(
+                                np.mean(np.array(returns)[:, i]) - desired_return[i]
+                            ),
+                            "global_step": self.global_step,
+                        },
                     )
             print(
                 f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"
             )
 
-            if self.global_step >= (n_checkpoints + 1) * total_timesteps / 100:
+            if self.global_step >= (n_checkpoints + 1) * total_timesteps / 1000:
                 self.save()
                 n_checkpoints += 1
-                n_points = 10
-                e_returns, _, _ = self.evaluate(eval_env, max_return, n=n_points)
+                e_returns, _, _ = self.evaluate(eval_env, max_return, n=num_points_pf)
 
                 if self.log:
                     log_all_multi_policy_metrics(
@@ -433,6 +447,5 @@ class PCN(MOAgent, MOPolicy):
                         hv_ref_point=ref_point,
                         reward_dim=self.reward_dim,
                         global_step=self.global_step,
-                        writer=self.writer,
                         ref_front=known_pareto_front,
                     )
