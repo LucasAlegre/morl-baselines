@@ -122,12 +122,6 @@ class EUPG(MOPolicy, MOAgent):
         MOPolicy.__init__(self, None, device)
 
         self.env = env
-        # EUPG is sometimes launched with vectorized environments (for example when used in outer loop settings)
-        # This allows to unwrap the environment since EUPG does not work in such settings
-        if isinstance(self.env, gym.vector.VectorEnv):
-            self.env = env.envs[0]
-        else:
-            self.env = env
         self.id = id
         # RL
         self.scalarization = scalarization
@@ -237,7 +231,7 @@ class EUPG(MOPolicy, MOAgent):
         # For each sample in the batch, get the distribution over actions
         current_distribution = self.net.distribution(obs, accrued_rewards)
         # Policy gradient
-        log_probs = current_distribution.log_prob(actions.flatten())
+        log_probs = current_distribution.log_prob(actions)
         loss = -th.mean(log_probs * scalarized_return)
 
         self.optimizer.zero_grad()
@@ -281,7 +275,7 @@ class EUPG(MOPolicy, MOAgent):
 
             with th.no_grad():
                 # For training, takes action randomly according to the policy
-                action = self.__choose_action(th.Tensor(obs).to(self.device), accrued_reward_tensor)
+                action = self.__choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
