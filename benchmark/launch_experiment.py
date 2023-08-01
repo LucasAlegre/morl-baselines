@@ -25,6 +25,7 @@ from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
     GPILSContinuousAction,
     GPIPDContinuousAction,
 )
+from morl_baselines.multi_policy.morld.morld import MORLD
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
@@ -46,6 +47,7 @@ ALGOS = {
     "pql": PQL,
     "ols": MPMOQLearning,
     "gpi-ls": MPMOQLearning,
+    "morld": MORLD,
 }
 
 ENVS_WITH_KNOWN_PARETO_FRONT = [
