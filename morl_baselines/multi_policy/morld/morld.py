@@ -57,7 +57,7 @@ class MORLD(MOAgent):
         pop_size: int = 6,
         seed: int = 42,
         rng: Optional[np.random.Generator] = None,
-        exchange_every: int = int(1e4),
+        exchange_every: int = int(4e4),
         neighborhood_size: int = 1,  # n = "n closest neighbors", 0=none
         dist_metric: Callable[[np.ndarray, np.ndarray], float] = lambda a, b: np.sum(
             np.square(a - b)
