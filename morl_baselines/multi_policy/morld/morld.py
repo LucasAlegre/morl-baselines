@@ -109,11 +109,9 @@ class MORLD(MOAgent):
         # This is helpful for scalarization
         for i in range(env.unwrapped.reward_space.shape[0]):
             env = MONormalizeReward(env, idx=i)
-        env.action_space.seed(seed)
-        env.observation_space.seed(seed)
-        env.reset(seed=seed)
+
         self.env = env
-        super().__init__(self.env, device)
+        super().__init__(self.env, device, seed=seed)
 
         self.evaluation_mode = evaluation_mode
         self.pop_size = pop_size
