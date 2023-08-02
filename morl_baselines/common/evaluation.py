@@ -113,7 +113,7 @@ def eval_mo_reward_conditioned(
 
 
 def policy_evaluation_mo(
-    agent, env, w: np.ndarray, scalarization: np.dot, rep: int = 5
+    agent, env, w: np.ndarray, scalarization=np.dot, rep: int = 5
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates the value of a policy by running the policy for multiple episodes. Returns the average returns.
 
