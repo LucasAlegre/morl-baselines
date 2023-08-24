@@ -228,7 +228,7 @@ def main():
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env)
                 env = FrameStack(env, 4)
-                env = TimeLimit(env, max_episode_steps=5000)
+                env = TimeLimit(env, max_episode_steps=1000)
                 return env
 
             env = wrap_mario(env)
