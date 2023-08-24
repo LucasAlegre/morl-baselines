@@ -202,10 +202,10 @@ def main():
     else:
         if "mario" in args.env_id:
             env = mo_gym.make(args.env_id, death_as_penalty=True)
-            eval_env = mo_gym.make(args.env_id, death_as_penalty=True)
+            eval_env = mo_gym.make(args.env_id, death_as_penalty=True, render_mode="rgb_array" if args.record_video else None)
         else:
             env = mo_gym.make(args.env_id)
-            eval_env = mo_gym.make(args.env_id)
+            eval_env = mo_gym.make(args.env_id, render_mode="rgb_array" if args.record_video else None)
         env = MORecordEpisodeStatistics(env, gamma=args.gamma)
 
         if "highway" in args.env_id:
