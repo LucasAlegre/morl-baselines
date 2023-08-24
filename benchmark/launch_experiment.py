@@ -214,6 +214,7 @@ def main():
         elif "mario" in args.env_id:
 
             def wrap_mario(env):
+                from gymnasium.experimental.wrappers import MaxAndSkipObservationV0
                 from gymnasium.wrappers import (
                     FrameStack,
                     GrayScaleObservation,
@@ -221,8 +222,6 @@ def main():
                     TimeLimit,
                 )
                 from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
-
-                from morl_baselines.common.utils import MaxAndSkipObservationV0
 
                 env = JoypadSpace(env, SIMPLE_MOVEMENT)
                 env = MaxAndSkipObservationV0(env, skip=4)
@@ -235,12 +234,12 @@ def main():
             env = wrap_mario(env)
             eval_env = wrap_mario(eval_env)
 
-            if args.record_video:
-                eval_env = RecordVideo(
-                    eval_env,
-                    video_folder=f"videos/{args.algo}-{args.env_id}",
-                    episode_trigger=lambda ep: ep % args.record_video_ep_freq == 0,
-                )
+        if args.record_video:
+            eval_env = RecordVideo(
+                eval_env,
+                video_folder=f"videos/{args.algo}-{args.env_id}",
+                episode_trigger=lambda ep: ep % args.record_video_ep_freq == 0,
+            )
 
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
