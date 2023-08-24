@@ -214,7 +214,6 @@ def main():
         elif "mario" in args.env_id:
 
             def wrap_mario(env):
-                from gymnasium.experimental.wrappers import MaxAndSkipObservationV0
                 from gymnasium.wrappers import (
                     FrameStack,
                     GrayScaleObservation,
@@ -222,9 +221,10 @@ def main():
                     TimeLimit,
                 )
                 from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
+                from mo_gymnasium.utils import MOMaxAndSkipObservation
 
                 env = JoypadSpace(env, SIMPLE_MOVEMENT)
-                env = MaxAndSkipObservationV0(env, skip=4)
+                env = MOMaxAndSkipObservation(env, skip=4)
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env)
                 env = FrameStack(env, 4)
