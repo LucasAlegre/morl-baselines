@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="../../">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Miscellaneous" href="../misc/" /><link rel="prev" title="Replay Buffers" href="../buffers/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
+    <!-- Generated with Sphinx 7.2.3 and Furo 2023.08.19 -->
         <title>Neural Networks helpers - MORL-Baselines 1.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -235,12 +235,12 @@
           </label>
         </div>
         <article role="main">
-          <section id="module-morl_baselines.common.networks">
-<span id="neural-networks-helpers"></span><h1>Neural Networks helpers<a class="headerlink" href="#module-morl_baselines.common.networks" title="Permalink to this heading">#</a></h1>
-<p>Utilities for Neural Networks.</p>
+          <section id="neural-networks-helpers">
+<h1>Neural Networks helpers<a class="headerlink" href="#neural-networks-helpers" title="Link to this heading">#</a></h1>
+<p id="module-morl_baselines.common.networks">Utilities for Neural Networks.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="morl_baselines.common.networks.NatureCNN">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">NatureCNN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.networks.NatureCNN" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">NatureCNN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.networks.NatureCNN" title="Link to this definition">#</a></dt>
 <dd><p>CNN from DQN nature paper: Mnih, Volodymyr, et al. “Human-level control through deep reinforcement learning.” Nature 518.7540 (2015): 529-533.</p>
 <p>CNN from DQN Nature.</p>
 <dl class="field-list simple">
@@ -253,7 +253,7 @@
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.networks.NatureCNN.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.NatureCNN.forward" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.NatureCNN.forward" title="Link to this definition">#</a></dt>
 <dd><p>Predicts the features from the observations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -266,7 +266,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.networks.get_grad_norm">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">get_grad_norm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.get_grad_norm" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">get_grad_norm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.get_grad_norm" title="Link to this definition">#</a></dt>
 <dd><p>This is how the grad norm is computed inside torch.nn.clip_grad_norm_().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -280,7 +280,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.networks.huber">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">huber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.networks.huber" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">huber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.networks.huber" title="Link to this definition">#</a></dt>
 <dd><p>Huber loss function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -297,7 +297,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.networks.layer_init">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">layer_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'orthogonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias_const</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.layer_init" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">layer_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'orthogonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias_const</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.layer_init" title="Link to this definition">#</a></dt>
 <dd><p>Initialize a layer with the given method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -313,7 +313,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.networks.mlp">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">mlp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">input_dim:</span> <span class="pre">int,</span> <span class="pre">output_dim:</span> <span class="pre">int,</span> <span class="pre">net_arch:</span> <span class="pre">~typing.List[int],</span> <span class="pre">activation_fn:</span> <span class="pre">~typing.Type[~torch.nn.modules.module.Module]</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'torch.nn.modules.activation.ReLU'&gt;,</span> <span class="pre">drop_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">layer_norm:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequential</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.mlp" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">mlp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">input_dim:</span> <span class="pre">int,</span> <span class="pre">output_dim:</span> <span class="pre">int,</span> <span class="pre">net_arch:</span> <span class="pre">~typing.List[int],</span> <span class="pre">activation_fn:</span> <span class="pre">~typing.Type[~torch.nn.modules.module.Module]</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'torch.nn.modules.activation.ReLU'&gt;,</span> <span class="pre">drop_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">layer_norm:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequential</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.mlp" title="Link to this definition">#</a></dt>
 <dd><p>Create a multi layer perceptron (MLP), which is a collection of fully-connected layers each followed by an activation function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -331,7 +331,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.networks.polyak_update">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">polyak_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.polyak_update" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.networks.</span></span><span class="sig-name descname"><span class="pre">polyak_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Parameter</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#morl_baselines.common.networks.polyak_update" title="Link to this definition">#</a></dt>
 <dd><p>Polyak averaging for target network parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -422,9 +422,9 @@
       
     </aside>
   </div>
-</div><script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=48c60350"></script>
+</div><script src="../../_static/documentation_options.js?v=51fd25b1"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>

@@ -1,13 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="../../">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Replay Buffers" href="../buffers/" /><link rel="prev" title="Performance indicators" href="../performance_indicators/" />
 
-    <!-- Generated with Sphinx 7.1.0 and Furo 2023.07.26 -->
+    <!-- Generated with Sphinx 7.2.3 and Furo 2023.08.19 -->
         <title>Scalarization functions - MORL-Baselines 1.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=362ab14a" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=36a5483c" />
     
@@ -235,12 +235,12 @@
           </label>
         </div>
         <article role="main">
-          <section id="module-morl_baselines.common.scalarization">
-<span id="scalarization-functions"></span><h1>Scalarization functions<a class="headerlink" href="#module-morl_baselines.common.scalarization" title="Permalink to this heading">#</a></h1>
-<p>Scalarization functions relying on numpy.</p>
+          <section id="scalarization-functions">
+<h1>Scalarization functions<a class="headerlink" href="#scalarization-functions" title="Link to this heading">#</a></h1>
+<p id="module-morl_baselines.common.scalarization">Scalarization functions relying on numpy.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.scalarization.tchebicheff">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">tchebicheff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.scalarization.tchebicheff" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">tchebicheff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.scalarization.tchebicheff" title="Link to this definition">#</a></dt>
 <dd><p>Tchebicheff scalarization function.</p>
 <p>This function requires a reference point. It is automatically adapted to the best value seen so far for each component of the reward.</p>
 <dl class="field-list simple">
@@ -258,7 +258,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.scalarization.weighted_sum">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">weighted_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.scalarization.weighted_sum" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">weighted_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.scalarization.weighted_sum" title="Link to this definition">#</a></dt>
 <dd><p>Weighted sum scalarization (numpy dot product).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -344,9 +344,9 @@
       
     </aside>
   </div>
-</div><script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=48c60350"></script>
+</div><script src="../../_static/documentation_options.js?v=51fd25b1"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>
