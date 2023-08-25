@@ -76,7 +76,7 @@ class ReplayBuffer:
             self.dones[inds],
         )
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples))
+            return tuple(map(lambda x: th.tensor(x, device=device), experience_tuples))
         else:
             return experience_tuples
 
@@ -94,7 +94,7 @@ class ReplayBuffer:
         """
         inds = np.random.choice(self.size, batch_size, replace=replace)
         if to_tensor:
-            return th.tensor(self.obs[inds]).to(device)
+            return th.tensor(self.obs[inds], device=device)
         else:
             return self.obs[inds]
 
