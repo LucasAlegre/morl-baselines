@@ -3,11 +3,11 @@ requires = ["setuptools >= 61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "morl-baselines"
-description="Implementations of multi-objective reinforcement learning (MORL) algorithms."
+name = "morl-baselines-MoDMSE"
+description="Modification of the morl-baselines package to accomodate the MoDMSE environment"
 readme = "README.md"
 requires-python = ">= 3.8"
-authors = [{ name = "Florian Felten & Lucas Alegre", email = "lucasnale@gmail.com" }]
+authors = [{ name = "Florian Felten & Lucas Alegre, modifications by Adrien Bolling", email = "lucasnale@gmail.com" }]
 license = { text = "MIT License" }
 keywords = ["Reinforcement Learning", "Multi-Objective", "RL", "AI", "gymnasium"]
 classifiers = [
@@ -51,7 +51,7 @@ testing = ["pytest ==7.1.3"]
 
 [project.urls]
 Homepage = "https://lucasalegre.github.io/morl-baselines/"
-Repository = "https://github.com/LucasAlegre/morl-baselines"
+Repository = "https://github.com/AdrienBolling/morl-baselines-for-MoDMSE"
 Documentation = "https://lucasalegre.github.io/morl-baselines/"
 "Bug Report" = "https://github.com/LucasAlegre/morl-baselines/issues"
 
