@@ -1,6 +1,8 @@
 """Prioritized Replay Buffer.
 
 Code adapted from https://github.com/sfujim/LAP-PAL
+
+Code modified to fit the MoDMSE environement
 """
 import numpy as np
 import torch as th
@@ -84,9 +86,10 @@ class PrioritizedReplayBuffer:
 
     def __init__(
         self,
-        obs_shape,
-        action_dim,
-        rew_dim=1,
+        obs_shape_schedule,
+        obs_shape_ticket,
+        action_dim = 1,
+        rew_dim=5,
         max_size=100000,
         obs_dtype=np.float32,
         action_dtype=np.float32,
@@ -111,8 +114,10 @@ class PrioritizedReplayBuffer:
             0,
             0,
         )
-        self.obs = np.zeros((max_size,) + (obs_shape), dtype=obs_dtype)
-        self.next_obs = np.zeros((max_size,) + (obs_shape), dtype=obs_dtype)
+        self.obs_schedule = np.zeros((max_size,) + (obs_shape_schedule), dtype=obs_dtype)
+        self.obs_ticket = np.zeros((max_size,) + (obs_shape_ticket), dtype=obs_dtype)
+        self.next_obs_schedule = np.zeros((max_size,) + (obs_shape_schedule), dtype=obs_dtype)
+        self.next_obs_ticket = np.zeros((max_size,) + (obs_shape_ticket), dtype=obs_dtype)
         self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
         self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
         self.dones = np.zeros((max_size, 1), dtype=np.float32)
@@ -120,7 +125,7 @@ class PrioritizedReplayBuffer:
         self.tree = SumTree(max_size)
         self.min_priority = min_priority
 
-    def add(self, obs, action, reward, next_obs, done, priority=None):
+    def add(self, obs_schedule, obs_ticket, action, reward, next_obs_schedule, next_obs_ticket, done, priority=None):
         """Add a new experience to the buffer.
 
         Args:
@@ -132,8 +137,10 @@ class PrioritizedReplayBuffer:
             priority: Priority of the new experience
 
         """
-        self.obs[self.ptr] = np.array(obs).copy()
-        self.next_obs[self.ptr] = np.array(next_obs).copy()
+        self.obs_schedule[self.ptr] = np.array(obs_schedule).copy()
+        self.obs_ticket[self.ptr] = np.array(obs_ticket).copy()
+        self.next_obs_schedule[self.ptr] = np.array(next_obs_schedule).copy()
+        self.next_obs_ticket[self.ptr] = np.array(next_obs_ticket).copy()
         self.actions[self.ptr] = np.array(action).copy()
         self.rewards[self.ptr] = np.array(reward).copy()
         self.dones[self.ptr] = np.array(done).copy()
@@ -157,10 +164,12 @@ class PrioritizedReplayBuffer:
         idxes = self.tree.sample(batch_size)
 
         experience_tuples = (
-            self.obs[idxes],
+            self.obs_schedule[idxes],
+            self.obs_ticket[idxes],
             self.actions[idxes],
             self.rewards[idxes],
-            self.next_obs[idxes],
+            self.next_obs_schedule[idxes],
+            self.next_obs_ticket[idxes],
             self.dones[idxes],
         )
         if to_tensor:
@@ -181,9 +190,9 @@ class PrioritizedReplayBuffer:
         """
         idxes = self.tree.sample(batch_size)
         if to_tensor:
-            return th.tensor(self.obs[idxes]).to(device)
+            return th.tensor(self.obs_schedule[idxes]).float().to(device), th.tensor(self.obs_ticket[idxes]).float().to(device)
         else:
-            return self.obs[idxes]
+            return self.obs_schedule[idxes], self.obs_ticket[idxes]
 
     def update_priorities(self, idxes, priorities):
         """Update the priorities of the experiences at idxes.
@@ -211,10 +220,12 @@ class PrioritizedReplayBuffer:
         else:
             inds = np.arange(self.size)
         tuples = (
-            self.obs[inds],
+            self.obs_schedule[inds],
+            self.obs_ticket[inds],
             self.actions[inds],
             self.rewards[inds],
-            self.next_obs[inds],
+            self.next_obs_schedule[inds],
+            self.next_obs_ticket[inds],
             self.dones[inds],
         )
         if to_tensor:
