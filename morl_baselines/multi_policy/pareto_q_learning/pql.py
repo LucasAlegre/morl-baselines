@@ -4,7 +4,6 @@ from typing import Callable, List, Optional
 import gymnasium as gym
 import numpy as np
 import wandb
-import numbers
 
 from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.morl_algorithm import MOAgent
@@ -21,18 +20,18 @@ class PQL(MOAgent):
     """
 
     def __init__(
-            self,
-            env,
-            ref_point: np.ndarray,
-            gamma: float = 0.8,
-            initial_epsilon: float = 1.0,
-            epsilon_decay_steps: int = 100000,
-            final_epsilon: float = 0.1,
-            seed: Optional[int] = None,
-            project_name: str = "MORL-Baselines",
-            experiment_name: str = "Pareto Q-Learning",
-            wandb_entity: Optional[str] = None,
-            log: bool = True,
+        self,
+        env,
+        ref_point: np.ndarray,
+        gamma: float = 0.8,
+        initial_epsilon: float = 1.0,
+        epsilon_decay_steps: int = 100000,
+        final_epsilon: float = 0.1,
+        seed: Optional[int] = None,
+        project_name: str = "MORL-Baselines",
+        experiment_name: str = "Pareto Q-Learning",
+        wandb_entity: Optional[str] = None,
+        log: bool = True,
     ):
         """Initialize the Pareto Q-learning algorithm.
 
@@ -60,25 +59,10 @@ class PQL(MOAgent):
         # Algorithm setup
         self.ref_point = ref_point
 
-        if type(self.env.action_space) == gym.spaces.Discrete:
-            self.num_actions = self.env.action_space.n
-        elif type(self.env.action_space) == gym.spaces.MultiDiscrete:
-            self.num_actions = np.prod(self.env.action_space.nvec)
-        else:
-            raise Exception("PQL only supports (multi)discrete action spaces.")
-
-        if type(self.env.observation_space) == gym.spaces.Discrete:
-            self.env_shape = (self.env.observation_space.n,)
-        elif type(self.env.observation_space) == gym.spaces.MultiDiscrete:
-            self.env_shape = self.env.observation_space.nvec
-        elif type(self.env.observation_space) == gym.spaces.Box and self.env.observation_space.is_bounded(
-                manner='both') and issubclass(self.env.observation_space.dtype.type, numbers.Integral):
-            low_bound = np.array(self.env.observation_space.low)
-            high_bound = np.array(self.env.observation_space.high)
-            self.env_shape = high_bound - low_bound + 1
-        else:
-            raise Exception('PQL only supports discretizable observation spaces.')
-
+        self.num_actions = self.env.action_space.n
+        low_bound = self.env.observation_space.low
+        high_bound = self.env.observation_space.high
+        self.env_shape = (high_bound[0] - low_bound[0] + 1, high_bound[1] - low_bound[1] + 1)
         self.num_states = np.prod(self.env_shape)
         self.num_objectives = self.env.reward_space.shape[0]
         self.counts = np.zeros((self.num_states, self.num_actions))
@@ -189,13 +173,13 @@ class PQL(MOAgent):
         return non_dominated
 
     def train(
-            self,
-            total_timesteps: int,
-            eval_env: gym.Env,
-            ref_point: Optional[np.ndarray] = None,
-            known_pareto_front: Optional[List[np.ndarray]] = None,
-            log_every: Optional[int] = 10000,
-            action_eval: Optional[str] = "hypervolume",
+        self,
+        total_timesteps: int,
+        eval_env: gym.Env,
+        ref_point: Optional[np.ndarray] = None,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        log_every: Optional[int] = 10000,
+        action_eval: Optional[str] = "hypervolume",
     ):
         """Learn the Pareto front.
 
