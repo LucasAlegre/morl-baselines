@@ -174,6 +174,7 @@ class MOSAC(MOPolicy):
         super().__init__(id, device)
         # Seeding
         self.seed = seed
+        self.parent_rng = parent_rng
         if parent_rng is not None:
             self.np_random = parent_rng
         else:
@@ -256,6 +257,25 @@ class MOSAC(MOPolicy):
         # Logging
         self.log = log
 
+    def get_config(self) -> dict:
+        """Returns the configuration of the policy."""
+        return {
+            "env_id": self.env.unwrapped.spec.id,
+            "buffer_size": self.buffer_size,
+            "gamma": self.gamma,
+            "tau": self.tau,
+            "batch_size": self.batch_size,
+            "learning_starts": self.learning_starts,
+            "net_arch": self.net_arch,
+            "policy_lr": self.policy_lr,
+            "q_lr": self.q_lr,
+            "policy_freq": self.policy_freq,
+            "target_net_freq": self.target_net_freq,
+            "alpha": self.alpha,
+            "autotune": self.autotune,
+            "seed": self.seed,
+        }
+
     def __deepcopy__(self, memo):
         """Deep copy of the policy.
 
@@ -282,6 +302,7 @@ class MOSAC(MOPolicy):
             device=self.device,
             log=self.log,
             seed=self.seed,
+            parent_rng=self.parent_rng,
         )
 
         # Copying networks
@@ -408,14 +429,16 @@ class MOSAC(MOPolicy):
                 to_log[f"losses{log_str}/alpha_loss"] = alpha_loss.item()
             wandb.log(to_log)
 
-    def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None):
+    def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None, start_time=None):
         """Train the agent.
 
         Args:
             total_timesteps (int): Total number of timesteps (env steps) to train for
             eval_env (Optional[gym.Env]): Gym environment used for evaluation.
+            start_time (Optional[float]): Starting time for the training procedure. If None, it will be set to the current time.
         """
-        start_time = time.time()
+        if start_time is None:
+            start_time = time.time()
 
         # TRY NOT TO MODIFY: start the game
         obs, _ = self.env.reset()

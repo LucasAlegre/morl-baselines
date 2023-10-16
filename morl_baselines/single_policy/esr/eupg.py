@@ -95,9 +95,10 @@ class EUPG(MOPolicy, MOAgent):
         experiment_name: str = "EUPG",
         wandb_entity: Optional[str] = None,
         log: bool = True,
-        log_every: int = 100,
+        log_every: int = 1000,
         device: Union[th.device, str] = "auto",
         seed: Optional[int] = None,
+        parent_rng: Optional[np.random.Generator] = None,
     ):
         """Initialize the EUPG algorithm.
 
@@ -117,9 +118,18 @@ class EUPG(MOPolicy, MOAgent):
             log_every: Log every n episodes
             device: Device to use for NN. Can be "cpu", "cuda" or "auto".
             seed: Seed for the random number generator
+            parent_rng: Parent random number generator (for reproducibility)
         """
         MOAgent.__init__(self, env, device, seed=seed)
         MOPolicy.__init__(self, None, device)
+
+        # Seeding
+        self.seed = seed
+        self.parent_rng = parent_rng
+        if parent_rng is not None:
+            self.np_random = parent_rng
+        else:
+            self.np_random = np.random.default_rng(self.seed)
 
         self.env = env
         self.id = id
@@ -153,7 +163,7 @@ class EUPG(MOPolicy, MOAgent):
         self.experiment_name = experiment_name
         self.log = log
         self.log_every = log_every
-        if log:
+        if log and parent_rng is None:
             self.setup_wandb(self.project_name, self.experiment_name, wandb_entity)
 
     def __deepcopy__(self, memo):
@@ -172,6 +182,7 @@ class EUPG(MOPolicy, MOAgent):
             self.experiment_name,
             log=self.log,
             device=self.device,
+            parent_rng=self.parent_rng,
         )
 
         copied.global_step = self.global_step
@@ -248,20 +259,17 @@ class EUPG(MOPolicy, MOAgent):
                 },
             )
 
-    def train(
-        self,
-        total_timesteps: int,
-        eval_env: Optional[gym.Env] = None,
-        eval_freq: int = 1000,
-    ):
+    def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None, eval_freq: int = 1000, start_time=None):
         """Train the agent.
 
         Args:
             total_timesteps: Number of timesteps to train for
             eval_env: Environment to run policy evaluation on
             eval_freq: Frequency of policy evaluation
+            start_time: Start time of the training (for SPS)
         """
-        start_time = time.time()
+        if start_time is None:
+            start_time = time.time()
         # Init
         (
             obs,
@@ -274,8 +282,8 @@ class EUPG(MOPolicy, MOAgent):
             self.global_step += 1
 
             with th.no_grad():
-                # For training, takes action randomly according to the policy
-                action = self.__choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
+                # For training, takes action according to the policy
+                action = self.__choose_action(th.Tensor(obs).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update

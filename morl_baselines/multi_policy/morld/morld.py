@@ -1,5 +1,6 @@
 """MORL/D Multi-Objective Reinforcement Learning based on Decomposition."""
 import math
+import time
 from typing import Callable, List, Optional, Tuple, Union
 from typing_extensions import override
 
@@ -16,6 +17,7 @@ from morl_baselines.common.pareto import ParetoArchive
 from morl_baselines.common.scalarization import tchebicheff, weighted_sum
 from morl_baselines.common.utils import nearest_neighbors
 from morl_baselines.common.weights import equally_spaced_weights, random_weights
+from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
 
 
@@ -24,6 +26,7 @@ np.set_printoptions(threshold=np.inf)
 
 POLICIES = {
     "MOSAC": MOSAC,
+    "EUPG": EUPG,
 }
 
 
@@ -164,18 +167,19 @@ class MORLD(MOAgent):
         self.experiment_name = experiment_name
         self.log = log
 
+        self.experiment_name += f"({policy_name})"
         if shared_buffer:
             self.experiment_name += "-SB"
-        if self.weight_adaptation_method is not None:
+        if self.weight_adaptation_method is not None and shared_buffer:
             self.experiment_name += f"+{self.weight_adaptation_method}"
+        elif self.weight_adaptation_method is not None:
+            self.experiment_name += f"-{self.weight_adaptation_method}"
         if self.transfer:
             self.experiment_name += "+transfer"
 
         self.policy_factory = POLICIES[policy_name]
         self.policy_name = policy_name
         self.policy_args = policy_args
-        if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
 
         # Policies' population
         self.current_policy = 0  # For turn by turn selection
@@ -197,6 +201,8 @@ class MORLD(MOAgent):
             for i, w in enumerate(self.weights)
         ]
         self.archive = ParetoArchive()
+        if self.log:
+            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
 
         if self.shared_buffer:
             self.__share_buffers()
@@ -223,6 +229,7 @@ class MORLD(MOAgent):
             "log": self.log,
             "device": self.device,
             "policy_name": self.policy_name,
+            **self.population[0].wrapped.get_config(),
             **self.policy_args,
         }
 
@@ -423,6 +430,7 @@ class MORLD(MOAgent):
         # Init
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
+        start_time = time.time()
 
         obs, _ = self.env.reset()
         print("Starting training...")
@@ -432,11 +440,12 @@ class MORLD(MOAgent):
             # selection
             policy = self.__select_candidate()
             # policy improvement
-            policy.wrapped.train(self.exchange_every, eval_env=eval_env)
-            self.__update_others(policy)
-
+            policy.wrapped.train(self.exchange_every, eval_env=eval_env, start_time=start_time)
             self.global_step += self.exchange_every
             print(f"Switching... global_steps: {self.global_step}")
+            for p in self.population:
+                p.wrapped.global_step = self.global_step
+            self.__update_others(policy)
 
             # Update archive
             self.__eval_all_policies(eval_env, num_eval_episodes_for_front, ref_point, known_pareto_front)
