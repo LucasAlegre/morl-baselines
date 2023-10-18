@@ -208,19 +208,19 @@ class MOAgent(ABC):
             self.env = env
             if isinstance(self.env.observation_space, spaces.Discrete):
                 self.observation_shape = (1,)
-                self.observation_dim = self.env.observation_space.n
+                self.observation_dim = self.env.unwrapped.observation_space.n
             else:
-                self.observation_shape = self.env.observation_space.shape
-                self.observation_dim = self.env.observation_space.shape[0]
+                self.observation_shape = self.env.unwrapped.observation_space.shape
+                self.observation_dim = self.env.unwrapped.observation_space.shape[0]
 
-            self.action_space = env.action_space
-            if isinstance(self.env.action_space, (spaces.Discrete, spaces.MultiBinary)):
+            self.action_space = env.unwrapped.action_space
+            if isinstance(self.env.unwrapped.action_space, (spaces.Discrete, spaces.MultiBinary)):
                 self.action_shape = (1,)
-                self.action_dim = self.env.action_space.n
+                self.action_dim = self.env.unwrapped.action_space.n
             else:
-                self.action_shape = self.env.action_space.shape
-                self.action_dim = self.env.action_space.shape[0]
-            self.reward_dim = self.env.reward_space.shape[0]
+                self.action_shape = self.env.unwrapped.action_space.shape
+                self.action_dim = self.env.unwrapped.action_space.shape[0]
+            self.reward_dim = self.env.unwrapped.reward_space.shape[0]
 
     @abstractmethod
     def get_config(self) -> dict:
