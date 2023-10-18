@@ -102,6 +102,8 @@ class MORLD(MOAgent):
             log: For wandb logging
             device: torch device
         """
+        self.env = env
+        super().__init__(self.env, device, seed=seed)
         self.gamma = gamma
         self.seed = seed
 
@@ -112,9 +114,6 @@ class MORLD(MOAgent):
         # This is helpful for scalarization
         for i in range(env.unwrapped.reward_space.shape[0]):
             env = MONormalizeReward(env, idx=i)
-
-        self.env = env
-        super().__init__(self.env, device, seed=seed)
 
         self.evaluation_mode = evaluation_mode
         self.pop_size = pop_size
@@ -194,6 +193,7 @@ class MORLD(MOAgent):
                     scalarization=th.matmul if scalarization_method == "ws" else self.scalarization,
                     gamma=gamma,
                     log=self.log,
+                    seed=self.seed,
                     parent_rng=self.np_random,
                     **policy_args,
                 ),
