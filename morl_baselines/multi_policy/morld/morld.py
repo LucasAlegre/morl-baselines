@@ -129,7 +129,7 @@ class MORLD(MOAgent):
             self.weights = np.array(equally_spaced_weights(self.reward_dim, self.pop_size, self.seed))
             # Often, the objectives requiring a lot of exploration are the last ones. Reversing allows to first execute those
             # And benefit from transfer learning for the subsequent candidates, requiring less exploration
-            self.weights = np.flip(self.weights, 1).copy()
+            # self.weights = np.flip(self.weights, 1).copy()
         elif self.weight_init_method == "random":
             self.weights = random_weights(self.reward_dim, n=self.pop_size, dist="dirichlet", rng=self.np_random)
         else:
@@ -296,8 +296,10 @@ class MORLD(MOAgent):
         known_front: Optional[List[np.ndarray]] = None,
     ):
         """Evaluates all policies and store their current performances on the buffer and pareto archive."""
+        evals = []
         for i, agent in enumerate(self.population):
             discounted_reward = self.__eval_policy(agent, eval_env, num_eval_episodes_for_front)
+            evals.append(discounted_reward)
             # Storing current results
             self.archive.add(agent, discounted_reward)
 
@@ -309,6 +311,7 @@ class MORLD(MOAgent):
             log_all_multi_policy_metrics(
                 self.archive.evaluations, ref_point, self.reward_dim, self.global_step, ref_front=known_front
             )
+        return evals
 
     def __share(self, last_trained: Policy):
         """Shares information between neighbor policies.
@@ -340,12 +343,11 @@ class MORLD(MOAgent):
                         neighbor_net.parameters(), lr=neighbor_policy.wrapped.learning_rate
                     )
 
-    def __adapt_weights(self, eval_env: gym.Env, num_eval_episodes_for_front: int):
+    def __adapt_weights(self, evals: List[np.ndarray]):
         """Weight adaptation mechanism, many strategies exist e.g. MOEA/D-AWA.
 
         Args:
-            eval_env: environment to evaluate the policies
-            num_eval_episodes_for_front: number of episodes to evaluate the policies
+            evals: current evaluations of the population
         """
 
         def closest_non_dominated(eval_policy: np.ndarray) -> Tuple[Policy, np.ndarray]:
@@ -373,8 +375,8 @@ class MORLD(MOAgent):
             # “Pareto simulated annealing—a metaheuristic technique for multiple-objective combinatorial optimization,”
             # Journal of Multi-Criteria Decision Analysis, vol. 7, no. 1, pp. 34–47, 1998,
             # doi: 10.1002/(SICI)1099-1360(199801)7:1<34::AID-MCDA161>3.0.CO;2-6.
-            for p in self.population:
-                eval_policy = self.__eval_policy(p, eval_env, num_eval_episodes_for_front)
+            for i, p in enumerate(self.population):
+                eval_policy = evals[i]
                 closest_nd, closest_eval = closest_non_dominated(eval_policy)
 
                 new_weights = p.weights
@@ -448,12 +450,12 @@ class MORLD(MOAgent):
             self.__update_others(policy)
 
             # Update archive
-            self.__eval_all_policies(eval_env, num_eval_episodes_for_front, ref_point, known_pareto_front)
+            evals = self.__eval_all_policies(eval_env, num_eval_episodes_for_front, ref_point, known_pareto_front)
 
             # cooperation
             self.__share(policy)
             # Adaptation
-            self.__adapt_weights(eval_env, num_eval_episodes_for_front)
+            self.__adapt_weights(evals)
             self.__adapt_ref_point()
 
         print("done!")
