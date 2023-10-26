@@ -33,7 +33,7 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 * All algorithms are automatically tested.
 * Utility functions are provided e.g. pareto pruning, experience buffers, etc.
 * Performances have been tested and reported in a reproducible manner.
-* 🔜 Hyper-parameter optimization available.
+* Hyperparameter optimization available.
 
 <!-- end features -->
 
