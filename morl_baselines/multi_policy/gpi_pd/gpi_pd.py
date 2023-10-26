@@ -782,6 +782,7 @@ class GPIPD(MOPolicy, MOAgent):
         num_eval_episodes_for_front: int = 5,
         timesteps_per_iter: int = 10000,
         weight_selection_algo: str = "gpi-ls",
+        eval_freq_in_iter: int = 1000,
     ):
         """Train agent.
 
@@ -794,6 +795,7 @@ class GPIPD(MOPolicy, MOAgent):
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             timesteps_per_iter (int): Number of timesteps to train for per iteration.
             weight_selection_algo (str): Weight selection algorithm to use.
+            eval_freq_in_iter (int): Number of timesteps between evaluations.
         """
         if self.log:
             self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
@@ -837,7 +839,7 @@ class GPIPD(MOPolicy, MOAgent):
                 weight_support=M,
                 change_w_every_episode=weight_selection_algo == "gpi-ls",
                 eval_env=eval_env,
-                eval_freq=1000,
+                eval_freq=eval_freq_in_iter,
                 reset_num_timesteps=False,
                 reset_learning_starts=False,
             )
