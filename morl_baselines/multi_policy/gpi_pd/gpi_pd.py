@@ -783,6 +783,7 @@ class GPIPD(MOPolicy, MOAgent):
         timesteps_per_iter: int = 10000,
         weight_selection_algo: str = "gpi-ls",
         eval_freq_in_iter: int = 1000,
+        checkpoints: bool = True,
     ):
         """Train agent.
 
@@ -796,6 +797,7 @@ class GPIPD(MOPolicy, MOAgent):
             timesteps_per_iter (int): Number of timesteps to train for per iteration.
             weight_selection_algo (str): Weight selection algorithm to use.
             eval_freq_in_iter (int): Number of timesteps between evaluations.
+            checkpoints (bool): Whether to save checkpoints.
         """
         if self.log:
             self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
@@ -870,7 +872,8 @@ class GPIPD(MOPolicy, MOAgent):
                 )
                 wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
-            self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
+            if checkpoints:
+                self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
 
