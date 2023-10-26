@@ -1,4 +1,5 @@
 """Pareto Q-Learning."""
+import numbers
 from typing import Callable, List, Optional
 
 import gymnasium as gym
@@ -59,10 +60,28 @@ class PQL(MOAgent):
         # Algorithm setup
         self.ref_point = ref_point
 
-        self.num_actions = self.env.action_space.n
-        low_bound = self.env.observation_space.low
-        high_bound = self.env.observation_space.high
-        self.env_shape = (high_bound[0] - low_bound[0] + 1, high_bound[1] - low_bound[1] + 1)
+        if type(self.env.action_space) == gym.spaces.Discrete:
+            self.num_actions = self.env.action_space.n
+        elif type(self.env.action_space) == gym.spaces.MultiDiscrete:
+            self.num_actions = np.prod(self.env.action_space.nvec)
+        else:
+            raise Exception("PQL only supports (multi)discrete action spaces.")
+
+        if type(self.env.observation_space) == gym.spaces.Discrete:
+            self.env_shape = (self.env.observation_space.n,)
+        elif type(self.env.observation_space) == gym.spaces.MultiDiscrete:
+            self.env_shape = self.env.observation_space.nvec
+        elif (
+            type(self.env.observation_space) == gym.spaces.Box
+            and self.env.observation_space.is_bounded(manner="both")
+            and issubclass(self.env.observation_space.dtype.type, numbers.Integral)
+        ):
+            low_bound = np.array(self.env.observation_space.low)
+            high_bound = np.array(self.env.observation_space.high)
+            self.env_shape = high_bound - low_bound + 1
+        else:
+            raise Exception("PQL only supports discretizable observation spaces.")
+
         self.num_states = np.prod(self.env_shape)
         self.num_objectives = self.env.reward_space.shape[0]
         self.counts = np.zeros((self.num_states, self.num_actions))

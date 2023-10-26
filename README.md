@@ -19,6 +19,8 @@ It strictly follows [MO-Gymnasium](https://github.com/Farama-Foundation/mo-gymna
 
 For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we suggest reading [A practical guide to multi-objective reinforcement learning and planning](https://link.springer.com/article/10.1007/s10458-022-09552-y).
 
+A tutorial on MO-Gymnasium and MORL-Baselines is also available: [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1ByjuUp8-CJeh1giPOACqPGiglPxDnlSq?usp=sharing)
+
 <!-- end elevator-pitch -->
 
 ## Features
@@ -55,7 +57,7 @@ For details on multi-objective MDP's (MOMDP's) and other MORL definitions, we su
 | [Optimistic Linear Support (OLS)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py)                                    | Multi               | SER     | /                | /            | Section 3.3 of the [thesis](http://roijers.info/pub/thesis.pdf)     |
 | [Expected Utility Policy Gradient (EUPG)](https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py)                          | Single              | ESR     | Discrete         | Discrete     |   [Paper](https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return)                                                   |
 
-:warning: Some algorithms of them have limited features.
+:warning: Some of the algorithms have limited features.
 
 <b id="f1">1</b>: Currently, PGMORL is limited to environments with 2 objectives.
 

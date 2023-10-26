@@ -426,10 +426,10 @@ class GPIPD(MOPolicy, MOAgent):
 
             if len(self.weight_support) > 1:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
-                    s_obs.repeat(2, 1),
+                    s_obs.repeat(2, *(1 for _ in range(s_obs.dim() - 1))),
                     s_actions.repeat(2, 1),
                     s_rewards.repeat(2, 1),
-                    s_next_obs.repeat(2, 1),
+                    s_next_obs.repeat(2, *(1 for _ in range(s_obs.dim() - 1))),
                     s_dones.repeat(2, 1),
                 )
                 # Half of the batch uses the given weight vector, the other half uses weights sampled from the support set
@@ -492,11 +492,15 @@ class GPIPD(MOPolicy, MOAgent):
 
             self.q_optim.zero_grad()
             critic_loss.backward()
-            if self.log and self.global_step % 100 == 0:
-                wandb.log(
-                    {"losses/grad_norm": get_grad_norm(self.q_nets[0].parameters()).item(), "global_step": self.global_step},
-                )
+
             if self.max_grad_norm is not None:
+                if self.log and self.global_step % 100 == 0:
+                    wandb.log(
+                        {
+                            "losses/grad_norm": get_grad_norm(self.q_nets[0].parameters()).item(),
+                            "global_step": self.global_step,
+                        },
+                    )
                 for psi_net in self.q_nets:
                     th.nn.utils.clip_grad_norm_(psi_net.parameters(), self.max_grad_norm)
             self.q_optim.step()
@@ -579,6 +583,7 @@ class GPIPD(MOPolicy, MOAgent):
             return action, policy_index.item()
         return action
 
+    @th.no_grad()
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         """Select an action for the given obs and weight vector."""
         obs = th.as_tensor(obs).float().to(self.device)
@@ -619,12 +624,19 @@ class GPIPD(MOPolicy, MOAgent):
             rewards_s,
             next_obs_s,
             dones_s,
-        ) = self.replay_buffer.get_all_data(to_tensor=True, device=self.device)
-        num_batches = int(np.ceil(obs_s.size(0) / 1000))
+        ) = self.replay_buffer.get_all_data(to_tensor=False)
+        num_batches = int(np.ceil(obs_s.shape[0] / 1000))
         for i in range(num_batches):
             b = i * 1000
-            e = min((i + 1) * 1000, obs_s.size(0))
+            e = min((i + 1) * 1000, obs_s.shape[0])
             obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[b:e], dones_s[b:e]
+            obs, actions, rewards, next_obs, dones = (
+                th.tensor(obs).to(self.device),
+                th.tensor(actions).to(self.device),
+                th.tensor(rewards).to(self.device),
+                th.tensor(next_obs).to(self.device),
+                th.tensor(dones).to(self.device),
+            )
             q_values = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
             q_a = q_values.gather(1, actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2))).squeeze(1)
 
@@ -703,6 +715,7 @@ class GPIPD(MOPolicy, MOAgent):
             eval_freq (int): Number of timesteps between evaluations
             reset_learning_starts (bool): Whether to reset the learning starts
         """
+        weight_support = unique_tol(weight_support)  # remove duplicates
         self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
 
@@ -868,7 +881,7 @@ class GPIPD(MOPolicy, MOAgent):
                 )
                 wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
-            self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
+            self.save(filename=f"GPI-PD {weight_selection_algo}", save_replay_buffer=False)
 
         self.close_wandb()
 

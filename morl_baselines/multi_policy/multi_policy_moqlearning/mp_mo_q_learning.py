@@ -199,6 +199,10 @@ class MPMOQLearning(MOAgent):
             elif self.weight_selection_algo == "random":
                 w = random_weights(self.reward_dim, rng=self.np_random)
 
+            if len(self.policies) == 0 or not self.dyna:
+                model = None
+            else:
+                model = self.policies[-1].model  # shared model
             new_agent = MOQLearning(
                 env=self.env,
                 id=iter,
@@ -212,7 +216,7 @@ class MPMOQLearning(MOAgent):
                 use_gpi_policy=self.use_gpi_policy,
                 dyna=self.dyna,
                 dyna_updates=self.dyna_updates,
-                model=self.policies[-1].model if self.dyna else None,  # The model is shared between agents
+                model=model,
                 gpi_pd=self.gpi_pd,
                 parent=self,
                 log=self.log,

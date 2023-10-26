@@ -142,10 +142,10 @@ class MOQLearning(MOPolicy, MOAgent):
         """
         priority = (
             np.dot(reward, weights)
-            + (1 - terminal) * self.gamma * self.parent.max_scalar_q_values(next_obs, weights)
+            + (1 - terminal) * self.gamma * self.parent.max_scalar_q_value(next_obs, weights)
             - np.dot(self.q_table[tuple(obs)][action], weights)
         )
-        priority = np.max(np.abs(priority), self.min_priority) ** self.alpha
+        priority = max(np.abs(priority), self.min_priority) ** self.alpha
         return priority
 
     @override

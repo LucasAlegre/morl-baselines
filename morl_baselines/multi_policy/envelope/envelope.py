@@ -66,8 +66,10 @@ class QNet(nn.Module):
 
         """
         if self.feature_extractor is not None:
-            features = self.feature_extractor(obs / 255.0)
-            input = th.cat((features, w), dim=w.dim() - 1)
+            features = self.feature_extractor(obs)
+            if w.dim() == 1:
+                w = w.unsqueeze(0)
+            input = th.cat((features, w), dim=features.dim() - 1)
         else:
             input = th.cat((obs, w), dim=w.dim() - 1)
         q_values = self.net(input)
@@ -289,10 +291,10 @@ class Envelope(MOPolicy, MOAgent):
             )  # sample num_sample_w random weights
             w = sampled_w.repeat_interleave(b_obs.size(0), 0)  # repeat the weights for each sample
             b_obs, b_actions, b_rewards, b_next_obs, b_dones = (
-                b_obs.repeat(self.num_sample_w, 1),
+                b_obs.repeat(self.num_sample_w, *(1 for _ in range(b_obs.dim() - 1))),
                 b_actions.repeat(self.num_sample_w, 1),
                 b_rewards.repeat(self.num_sample_w, 1),
-                b_next_obs.repeat(self.num_sample_w, 1),
+                b_next_obs.repeat(self.num_sample_w, *(1 for _ in range(b_next_obs.dim() - 1))),
                 b_dones.repeat(self.num_sample_w, 1),
             )
 
@@ -419,10 +421,9 @@ class Envelope(MOPolicy, MOAgent):
         Returns: the envelope target.
         """
         # Repeat the weights for each sample
-        W = sampled_w.unsqueeze(0).repeat(obs.size(0), 1, 1)
+        W = sampled_w.repeat(obs.size(0), 1)
         # Repeat the observations for each sampled weight
-        next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
-
+        next_obs = obs.repeat_interleave(sampled_w.size(0), 0)
         # Batch size X Num sampled weights X Num actions X Num objectives
         next_q_values = self.q_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.reward_dim)
         # Scalarized Q values for each sampled weight
