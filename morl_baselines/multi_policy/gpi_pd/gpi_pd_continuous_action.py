@@ -595,7 +595,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         num_eval_episodes_for_front: int = 5,
         weight_selection_algo: str = "gpi-ls",
         timesteps_per_iter: int = 10000,
-        eval_freq: int = 1000,
+        eval_freq: int = 10000,
+        eval_freq_in_iter: int = 1000,
+        checkpoints: bool = True,
     ):
         """Train the agent.
 
@@ -608,7 +610,9 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             weight_selection_algo (str): Weight selection algorithm to use.
             timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
-            eval_freq (int): Number of timesteps between evaluations during an iteration.
+            eval_freq (int): Number of timesteps between each MO evaluation.
+            eval_freq_in_iter (int): Number of timesteps between evaluations during an iteration.
+            checkpoints (bool): Whether to save checkpoints.
         """
         if self.log:
             self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
@@ -649,7 +653,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 weight_support=M,
                 change_weight_every_episode=weight_selection_algo == "gpi-ls",
                 eval_env=eval_env,
-                eval_freq=eval_freq,
+                eval_freq=eval_freq_in_iter,
             )
 
             if weight_selection_algo == "ols":
@@ -660,7 +664,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
-            if self.log:
+            if self.log and self.global_step % eval_freq:
                 # Evaluation
                 gpi_returns_test_tasks = [
                     policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
@@ -679,7 +683,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             # Checkpoint
-            self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
+            if checkpoints:
+                self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
 
