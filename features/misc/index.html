@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Community" href="../../community/community/" /><link rel="prev" title="Neural Networks helpers" href="../networks/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Hyperparameter optimization" href="../hpo/" /><link rel="prev" title="Neural Networks helpers" href="../networks/" />
 
     <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
         <title>Miscellaneous - MORL-Baselines 1.0.0 documentation</title>
@@ -188,6 +188,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../networks/">Neural Networks helpers</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Miscellaneous</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hpo/">Hyperparameter optimization</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
@@ -269,6 +270,14 @@ Use epsilon from there on.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="morl_baselines.common.utils.reset_wandb_env">
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">reset_wandb_env</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.utils.reset_wandb_env" title="Link to this definition">#</a></dt>
+<dd><p>Reset the wandb environment variables.</p>
+<p>This is useful when running multiple sweeps in parallel, as wandb
+will otherwise try to use the same directory for all the runs.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.utils.unique_tol">
 <span class="sig-prename descclassname"><span class="pre">morl_baselines.common.utils.</span></span><span class="sig-name descname"><span class="pre">unique_tol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#morl_baselines.common.utils.unique_tol" title="Link to this definition">#</a></dt>
 <dd><p>Returns unique elements of a list of np.arrays, within a tolerance.</p>
@@ -281,12 +290,12 @@ Use epsilon from there on.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../community/community/">
+          <a class="next-page" href="../hpo/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Community</div>
+                <div class="title">Hyperparameter optimization</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -334,6 +343,7 @@ Use epsilon from there on.</p>
 <li><a class="reference internal" href="#">Miscellaneous</a><ul>
 <li><a class="reference internal" href="#morl_baselines.common.utils.linearly_decaying_value"><code class="docutils literal notranslate"><span class="pre">linearly_decaying_value()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.utils.make_gif"><code class="docutils literal notranslate"><span class="pre">make_gif()</span></code></a></li>
+<li><a class="reference internal" href="#morl_baselines.common.utils.reset_wandb_env"><code class="docutils literal notranslate"><span class="pre">reset_wandb_env()</span></code></a></li>
 <li><a class="reference internal" href="#morl_baselines.common.utils.unique_tol"><code class="docutils literal notranslate"><span class="pre">unique_tol()</span></code></a></li>
 </ul>
 </li>

@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Replay Buffers" href="../buffers/" /><link rel="prev" title="Performance indicators" href="../performance_indicators/" />
+<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Community" href="../../community/community/" /><link rel="prev" title="Miscellaneous" href="../misc/" />
 
     <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
-        <title>Scalarization functions - MORL-Baselines 1.0.0 documentation</title>
+        <title>Hyperparameter optimization - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=36a5483c" />
@@ -134,7 +134,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -184,11 +184,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../evaluations/">Evaluations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../weights/">Weights helpers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../performance_indicators/">Performance indicators</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Scalarization functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scalarization/">Scalarization functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../buffers/">Replay Buffers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../networks/">Neural Networks helpers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../misc/">Miscellaneous</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../hpo/">Hyperparameter optimization</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Hyperparameter optimization</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
@@ -214,7 +214,7 @@
         </a>
         <div class="content-icon-container">
           <div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/features/scalarization.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/features/hpo.md" title="Edit this page">
     <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
@@ -230,50 +230,31 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <section id="module-morl_baselines.common.scalarization">
-<span id="scalarization-functions"></span><h1>Scalarization functions<a class="headerlink" href="#module-morl_baselines.common.scalarization" title="Link to this heading">#</a></h1>
-<p>Scalarization functions relying on numpy.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.scalarization.tchebicheff">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">tchebicheff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.scalarization.tchebicheff" title="Link to this definition">#</a></dt>
-<dd><p>Tchebicheff scalarization function.</p>
-<p>This function requires a reference point. It is automatically adapted to the best value seen so far for each component of the reward.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>tau</strong> – Parameter to be sure the reference point is always dominating (automatically adapted).</p></li>
-<li><p><strong>reward_dim</strong> – Dimension of the reward vector</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Callable</strong> – Tchebicheff scalarization function</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="morl_baselines.common.scalarization.weighted_sum">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.scalarization.</span></span><span class="sig-name descname"><span class="pre">weighted_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.common.scalarization.weighted_sum" title="Link to this definition">#</a></dt>
-<dd><p>Weighted sum scalarization (numpy dot product).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>reward</strong> – Reward vector</p></li>
-<li><p><strong>weights</strong> – Weight vector</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>float</strong> – Weighted sum</p>
-</dd>
-</dl>
-</dd></dl>
-
+          <section id="hyperparameter-optimization">
+<h1>Hyperparameter optimization<a class="headerlink" href="#hyperparameter-optimization" title="Link to this heading">#</a></h1>
+<p>MORL-Baselines contains an early solution to the problem of hyperparameter optimization for MORL.
+The problem and solution are introduced and discussed in the following paper:
+<a class="reference external" href="https://arxiv.org/abs/2310.16487">F. Felten, D. Gareev, E.-G. Talbi, and G. Danoy, “Hyperparameter Optimization for Multi-Objective Reinforcement Learning.” arXiv, Oct. 25, 2023. doi: 10.48550/arXiv.2310.16487.</a></p>
+<p>A script to launch the hyperparameter sweep is available in <a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/experiments/hyperparameter_search/launch_sweep.py"><code class="docutils literal notranslate"><span class="pre">benchmark/launch_experiment.py</span></code></a>.</p>
+<p>An example usage of such script is the following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>experiments/hyperparameter_search/launch_sweep.py<span class="w"> </span><span class="se">\</span>
+--algo<span class="w"> </span>envelope<span class="w"> </span><span class="se">\</span>
+--env-id<span class="w"> </span>minecart-v0<span class="w"> </span><span class="se">\</span>
+--ref-point<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">0</span><span class="w"> </span>-200<span class="w"> </span><span class="se">\</span>
+--sweep-count<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+--seed<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+--num-seeds<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+--config-name<span class="w"> </span>envelope<span class="w"> </span><span class="se">\</span>
+--train-hyperparams<span class="w"> </span>num_eval_weights_for_front:100<span class="w"> </span>reset_num_timesteps:False<span class="w"> </span>eval_freq:10000<span class="w"> </span>total_timesteps:10000
+</pre></div>
+</div>
+<p>It will launch a HP search for Envelope Q-Leaning on minecart, using <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">0,</span> <span class="pre">-200]</span></code> as reference point for hypervolume. It will try 100 values of hyperparameters. The parameters distributions are specified in a yaml file specified by <code class="docutils literal notranslate"><span class="pre">config-name</span></code> (by default same name as the algorithm), it has to be in the directory. For each set of HP values, the algorithm will be trained on 3 different seeds, starting from 10 (so 10, 11, 12).</p>
 </section>
 
         </article>
@@ -281,23 +262,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../buffers/">
+          <a class="next-page" href="../../community/community/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Replay Buffers</div>
+                <div class="title">Community</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../performance_indicators/">
+          <a class="prev-page" href="../misc/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Performance indicators</div>
+                <div class="title">Miscellaneous</div>
                 
               </div>
             </a>
@@ -319,28 +300,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Scalarization functions</a><ul>
-<li><a class="reference internal" href="#morl_baselines.common.scalarization.tchebicheff"><code class="docutils literal notranslate"><span class="pre">tchebicheff()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.common.scalarization.weighted_sum"><code class="docutils literal notranslate"><span class="pre">weighted_sum()</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
