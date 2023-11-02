@@ -58,7 +58,11 @@ def parse_args():
         default={},
     )
 
-    parser.add_argument("--config-name", type=str, help="Name of the config to use for the sweep.")
+    parser.add_argument(
+        "--config-name",
+        type=str,
+        help="Name of the config to use for the sweep, defaults to using the same name as the algorithm.",
+    )
 
     args = parser.parse_args()
 

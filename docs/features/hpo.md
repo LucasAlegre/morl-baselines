@@ -17,7 +17,8 @@ python experiments/hyperparameter_search/launch_sweep.py \
 --sweep-count 100 \
 --seed 10 \
 --num-seeds 3 \
+--config-name envelope \
 --train-hyperparams num_eval_weights_for_front:100 reset_num_timesteps:False eval_freq:10000 total_timesteps:10000
 ```
 
-It will launch a HP search for Envelope Q-Leaning on minecart, using `[0, 0, -200]` as reference point for hypervolume. It will try 100 values of hyperparameters (distributions are specified in a yaml file in the repo). For each set of HP values, the algorithm will be trained on 3 different seeds, starting from 10 (so 10, 11, 12).
+It will launch a HP search for Envelope Q-Leaning on minecart, using `[0, 0, -200]` as reference point for hypervolume. It will try 100 values of hyperparameters. The parameters distributions are specified in a yaml file specified by `config-name` (by default same name as the algorithm), it has to be in the directory. For each set of HP values, the algorithm will be trained on 3 different seeds, starting from 10 (so 10, 11, 12).
