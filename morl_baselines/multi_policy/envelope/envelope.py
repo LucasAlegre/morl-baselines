@@ -113,6 +113,7 @@ class Envelope(MOPolicy, MOAgent):
         log: bool = True,
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
+        group: Optional[str] = None,
     ):
         """Envelope Q-learning algorithm.
 
@@ -144,6 +145,7 @@ class Envelope(MOPolicy, MOAgent):
             log: Whether to log to wandb.
             seed: The seed for the random number generator.
             device: The device to use for training.
+            group: The wandb group to use for logging.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
@@ -197,7 +199,7 @@ class Envelope(MOPolicy, MOAgent):
 
         self.log = log
         if log:
-            self.setup_wandb(project_name, experiment_name, wandb_entity)
+            self.setup_wandb(project_name, experiment_name, wandb_entity, group)
 
     @override
     def get_config(self):
@@ -205,7 +207,7 @@ class Envelope(MOPolicy, MOAgent):
             "env_id": self.env.unwrapped.spec.id,
             "learning_rate": self.learning_rate,
             "initial_epsilon": self.initial_epsilon,
-            "epsilon_decay_steps:": self.epsilon_decay_steps,
+            "epsilon_decay_steps": self.epsilon_decay_steps,
             "batch_size": self.batch_size,
             "tau": self.tau,
             "clip_grand_norm": self.max_grad_norm,
@@ -481,6 +483,7 @@ class Envelope(MOPolicy, MOAgent):
         num_eval_weights_for_front: int = 100,
         num_eval_episodes_for_front: int = 5,
         reset_learning_starts: bool = False,
+        verbose: bool = False,
     ):
         """Train the agent.
 
@@ -496,6 +499,7 @@ class Envelope(MOPolicy, MOAgent):
             num_eval_weights_for_front: number of weights to sample for creating the pareto front when evaluating.
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
+            verbose: whether to print the episode info.
         """
         if eval_env is not None:
             assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
@@ -549,7 +553,7 @@ class Envelope(MOPolicy, MOAgent):
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step)
+                    log_episode_info(info["episode"], np.dot, w, self.global_step, verbose=verbose)
 
                 if weight is None:
                     w = random_weights(self.reward_dim, 1, dist="gaussian", rng=self.np_random)

@@ -70,6 +70,7 @@ features/scalarization
 features/buffers
 features/networks
 features/misc
+features/hpo
 ```
 
 ```{toctree}

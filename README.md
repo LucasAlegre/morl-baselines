@@ -35,7 +35,7 @@ A tutorial on MO-Gymnasium and MORL-Baselines is also available: [![Open in Cola
 * All algorithms are automatically tested.
 * Utility functions are provided e.g. pareto pruning, experience buffers, etc.
 * Performances have been tested and reported in a reproducible manner.
-* 🔜 Hyper-parameter optimization available.
+* Hyperparameter optimization available.
 
 <!-- end features -->
 

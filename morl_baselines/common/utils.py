@@ -1,4 +1,5 @@
 """General utils for the MORL baselines."""
+import os
 from typing import List
 
 import numpy as np
@@ -63,3 +64,19 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
     clip = ImageSequenceClip(list(frames), fps=fps)
     clip.write_gif(fullpath + ".gif", fps=fps)
     print("Saved gif at: " + fullpath + ".gif")
+
+
+def reset_wandb_env():
+    """Reset the wandb environment variables.
+
+    This is useful when running multiple sweeps in parallel, as wandb
+    will otherwise try to use the same directory for all the runs.
+    """
+    exclude = {
+        "WANDB_PROJECT",
+        "WANDB_ENTITY",
+        "WANDB_API_KEY",
+    }
+    for k, v in os.environ.items():
+        if k.startswith("WANDB_") and k not in exclude:
+            del os.environ[k]
