@@ -664,7 +664,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
-            if self.log and self.global_step % eval_freq:
+            if self.log and self.global_step % eval_freq == 0:
                 # Evaluation
                 gpi_returns_test_tasks = [
                     policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
