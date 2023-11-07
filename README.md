@@ -93,15 +93,14 @@ As much as possible, this repo tries to follow the single-file implementation ru
 ## Citing the Project
 
 <!-- start citing -->
+If you use MORL-Baselines in your research, please cite our NeurIPS 2023 paper:
 
 ```bibtex
-@misc{morl_baselines,
-    author = {Florian Felten and Lucas N. Alegre},
-    title = {MORL-Baselines: Multi-Objective Reinforcement Learning algorithms implementations},
-    year = {2022},
-    publisher = {GitHub},
-    journal = {GitHub repository},
-    howpublished = {\url{https://github.com/LucasAlegre/morl-baselines}},
+@inproceedings{felten_toolkit_2023,
+	author = {Felten, Florian and Alegre, Lucas Nunes and Now{\'e}, Ann and Bazzan, Ana L. C. and Talbi, El Ghazali and Danoy, Gr{\'e}goire and Silva, Bruno Castro da},
+	title = {A Toolkit for Reliable Benchmarking and Research in Multi-Objective Reinforcement Learning},
+	booktitle = {Proceedings of the 37th Conference on Neural Information Processing Systems ({NeurIPS} 2023)},
+	year = {2023}
 }
 ```
 
