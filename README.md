@@ -93,12 +93,13 @@ As much as possible, this repo tries to follow the single-file implementation ru
 ## Citing the Project
 
 <!-- start citing -->
+If you use MORL-Baselines in your research, please cite our NeurIPS 2023 paper:
 
 ```bibtex
 @inproceedings{felten_toolkit_2023,
 	author = {Felten, Florian and Alegre, Lucas Nunes and Now{\'e}, Ann and Bazzan, Ana L. C. and Talbi, El Ghazali and Danoy, Gr{\'e}goire and Silva, Bruno Castro da},
-	title = {A {Toolkit} for {Reliable} {Benchmarking} and {Research} in {Multi}-{Objective} {Reinforcement} {Learning}},
-	booktitle = {Proceedings of the 37th {Conference} on {Neural} {Information} {Processing} {Systems} ({NeurIPS} 2023)},
+	title = {A Toolkit for Reliable Benchmarking and Research in Multi-Objective Reinforcement Learning},
+	booktitle = {Proceedings of the 37th Conference on Neural Information Processing Systems ({NeurIPS} 2023)},
 	year = {2023}
 }
 ```
