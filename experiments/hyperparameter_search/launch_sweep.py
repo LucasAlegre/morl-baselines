@@ -4,10 +4,12 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 from dataclasses import dataclass
 
-import mo_gymnasium as mo_gym
 import numpy as np
 import wandb
+import torch
 import yaml
+
+import mo_gymnasium as mo_gym
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.evaluation import seed_everything
@@ -24,6 +26,7 @@ class WorkerInitData:
     seed: int
     config: dict
     worker_num: int
+    device: str
 
 @dataclass
 class WorkerDoneData:
@@ -71,7 +74,6 @@ def parse_args():
 
     return args
 
-
 def train(worker_data: WorkerInitData) -> WorkerDoneData:
     # Reset the wandb environment variables
     reset_wandb_env()
@@ -80,6 +82,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     group = worker_data.sweep_id
     config = worker_data.config
     worker_num = worker_data.worker_num
+    device = worker_data.device
 
     # Set the seed
     seed_everything(seed)
@@ -95,6 +98,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
             **config,
             seed=seed,
             group=group,
+            device=device,
         )
 
         # Launch the agent training
@@ -111,7 +115,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=config["gamma"])
         eval_env = mo_gym.make(args.env_id)
 
-        algo = ALGOS[args.algo](env=env, wandb_entity=args.wandb_entity, **config, seed=seed, group=group)
+        algo = ALGOS[args.algo](env=env, wandb_entity=args.wandb_entity, **config, seed=seed, group=group, device=device)
 
         if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
             known_pareto_front = env.unwrapped.pareto_front(gamma=config["gamma"])
@@ -142,11 +146,15 @@ def main():
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         futures = []
         for num in range(args.num_seeds):
-            # print("Spinning up worker {}".format(num))
+            # Get the seed for the worker
             seed = seeds[num]
+            # Assign the worker to a GPU if available in a round robin fashion
+            device = f'cuda:{num % torch.cuda.device_count()}' if torch.cuda.is_available() else 'cpu'
+            print("Spinning up worker {}".format(num) + f" on device {device}")
+            # Add the worker to the queue
             futures.append(
                 executor.submit(
-                    train, WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num)
+                    train, WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num, device=device)
                 )
             )
 
