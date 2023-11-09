@@ -93,7 +93,7 @@ As much as possible, this repo tries to follow the single-file implementation ru
 ## Citing the Project
 
 <!-- start citing -->
-If you use MORL-Baselines in your research, please cite our [NeurIPS 2023 paper](https://openreview.net/pdf?id=KFj0Q1EXvU):
+If you use MORL-Baselines in your research, please cite our [NeurIPS 2023 paper](https://openreview.net/pdf?id=jfwRLudQyj):
 
 ```bibtex
 @inproceedings{felten_toolkit_2023,
