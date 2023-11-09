@@ -1,6 +1,7 @@
 import argparse
 import os
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import cpu_count
 from dataclasses import dataclass
 
 import mo_gymnasium as mo_gym
@@ -17,7 +18,6 @@ from morl_baselines.common.experiments import (
 )
 from morl_baselines.common.utils import reset_wandb_env
 
-
 @dataclass
 class WorkerInitData:
     sweep_id: str
@@ -25,11 +25,9 @@ class WorkerInitData:
     config: dict
     worker_num: int
 
-
 @dataclass
 class WorkerDoneData:
     hypervolume: float
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -140,9 +138,8 @@ def main():
     # Get the sweep id
     sweep_run = wandb.init()
 
-    # Spin up workers before calling wandb.init()
     # Workers will be blocked on a queue waiting to start
-    with ProcessPoolExecutor(max_workers=args.num_seeds) as executor:
+    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         futures = []
         for num in range(args.num_seeds):
             # print("Spinning up worker {}".format(num))
