@@ -1,0 +1,94 @@
+method: bayes
+metric:
+  goal: maximize
+  name: avg_hypervolume
+parameters:
+  num_envs:
+    distribution: int_uniform
+    min: 2
+    max: 8
+  pop_size:
+    # distribution: int_uniform
+    # min: 4
+    # max: 10
+    # Fix the value for now as delta weight = 1 / (popsize-1)
+    value: 6
+  warmup_iterations:
+    distribution: int_uniform
+    min: 50
+    max: 100
+  steps_per_iteration:
+    distribution: int_uniform
+    min: 1000
+    max: 5000
+  evolutionary_iterations:
+    distribution: int_uniform
+    min: 10
+    max: 30
+  num_weight_candidates:
+    distribution: int_uniform
+    min: 5
+    max: 10
+  num_performance_buffer:
+    distribution: int_uniform
+    min: 50
+    max: 200
+  performance_buffer_size:
+    distribution: int_uniform
+    min: 1
+    max: 5
+  min_weight:
+    value: 0.0
+  max_weight:
+    value: 1.0
+  delta_weight:
+    # distribution: uniform
+    # min: 0.1
+    # max: 0.5
+    # Fix the value for now as delta weight = 1 / (popsize-1)
+    value: 0.2
+  gamma:
+    value: 0.995
+  num_minibatches:
+    distribution: categorical
+    values: [16, 32, 64]
+  update_epochs:
+    distribution: int_uniform
+    min: 5
+    max: 20
+  learning_rate:
+    distribution: uniform
+    min: 0.0001
+    max: 0.01
+  anneal_lr:
+    distribution: categorical
+    values: [true, false]
+  clip_coef:
+    distribution: uniform
+    min: 0.1
+    max: 1.0
+  ent_coef:
+    distribution: uniform
+    min: 0.0
+    max: 0.01
+  vf_coef:
+    distribution: uniform
+    min: 0.1
+    max: 1.0
+  clip_vloss:
+    distribution: categorical
+    values: [true, false]
+  max_grad_norm:
+    distribution: uniform
+    min: 0.1
+    max: 1.0
+  norm_adv:
+    distribution: categorical
+    values: [true, false]
+  gae:
+    distribution: categorical
+    values: [true, false]
+  gae_lambda:
+    distribution: uniform
+    min: 0.9
+    max: 0.99
