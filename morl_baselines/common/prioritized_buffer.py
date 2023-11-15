@@ -4,6 +4,8 @@ Code adapted from https://github.com/sfujim/LAP-PAL
 
 Code modified to fit the MoDMSE environement
 """
+import os
+
 import numpy as np
 import torch as th
 
@@ -85,24 +87,19 @@ class PrioritizedReplayBuffer:
     """Prioritized Replay Buffer."""
 
     def __init__(
-        self,
-        obs_shape_schedule,
-        obs_shape_ticket,
-        action_dim = 1,
-        rew_dim=5,
-        max_size=100000,
-        obs_dtype=np.float32,
-        action_dtype=np.float32,
-        min_priority=1e-5,
+            self,
+            action_dim=1,
+            rew_dim=5,
+            max_size=100000,
+            action_dtype=np.float32,
+            min_priority=1e-5,
     ):
         """Initialize the Prioritized Replay Buffer.
 
         Args:
-            obs_shape: Shape of the observations
             action_dim: Dimension of the actions
             rew_dim: Dimension of the rewards
             max_size: Maximum size of the buffer
-            obs_dtype: Data type of the observations
             action_dtype: Data type of the actions
             min_priority: Minimum priority of the buffer
         """
@@ -114,10 +111,8 @@ class PrioritizedReplayBuffer:
             0,
             0,
         )
-        self.obs_schedule = np.zeros((max_size,) + (obs_shape_schedule), dtype=obs_dtype)
-        self.obs_ticket = np.zeros((max_size,) + (obs_shape_ticket), dtype=obs_dtype)
-        self.next_obs_schedule = np.zeros((max_size,) + (obs_shape_schedule), dtype=obs_dtype)
-        self.next_obs_ticket = np.zeros((max_size,) + (obs_shape_ticket), dtype=obs_dtype)
+        self.obs = np.zeros((max_size,), dtype=object)
+        self.next_obs = np.zeros((max_size,), dtype=object)
         self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
         self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
         self.dones = np.zeros((max_size, 1), dtype=np.float32)
@@ -125,7 +120,7 @@ class PrioritizedReplayBuffer:
         self.tree = SumTree(max_size)
         self.min_priority = min_priority
 
-    def add(self, obs_schedule, obs_ticket, action, reward, next_obs_schedule, next_obs_ticket, done, priority=None):
+    def add(self, obs, action, reward, next_obs, done, priority=None):
         """Add a new experience to the buffer.
 
         Args:
@@ -137,10 +132,8 @@ class PrioritizedReplayBuffer:
             priority: Priority of the new experience
 
         """
-        self.obs_schedule[self.ptr] = np.array(obs_schedule).copy()
-        self.obs_ticket[self.ptr] = np.array(obs_ticket).copy()
-        self.next_obs_schedule[self.ptr] = np.array(next_obs_schedule).copy()
-        self.next_obs_ticket[self.ptr] = np.array(next_obs_ticket).copy()
+        self.obs[self.ptr] = obs.copy()
+        self.next_obs[self.ptr] = next_obs.copy()
         self.actions[self.ptr] = np.array(action).copy()
         self.rewards[self.ptr] = np.array(reward).copy()
         self.dones[self.ptr] = np.array(done).copy()
@@ -164,12 +157,10 @@ class PrioritizedReplayBuffer:
         idxes = self.tree.sample(batch_size)
 
         experience_tuples = (
-            self.obs_schedule[idxes],
-            self.obs_ticket[idxes],
+            self.obs[idxes],
             self.actions[idxes],
             self.rewards[idxes],
-            self.next_obs_schedule[idxes],
-            self.next_obs_ticket[idxes],
+            self.next_obs[idxes],
             self.dones[idxes],
         )
         if to_tensor:
@@ -190,9 +181,12 @@ class PrioritizedReplayBuffer:
         """
         idxes = self.tree.sample(batch_size)
         if to_tensor:
-            return th.tensor(self.obs_schedule[idxes]).float().to(device), th.tensor(self.obs_ticket[idxes]).float().to(device)
+            try:
+                return th.tensor(self.obs[idxes]).float().to(device)
+            except TypeError:
+                print("Observation class cannot be converted to tensor.")
         else:
-            return self.obs_schedule[idxes], self.obs_ticket[idxes]
+            return self.obs[idxes]
 
     def update_priorities(self, idxes, priorities):
         """Update the priorities of the experiences at idxes.
@@ -220,12 +214,10 @@ class PrioritizedReplayBuffer:
         else:
             inds = np.arange(self.size)
         tuples = (
-            self.obs_schedule[inds],
-            self.obs_ticket[inds],
+            self.obs[inds],
             self.actions[inds],
             self.rewards[inds],
-            self.next_obs_schedule[inds],
-            self.next_obs_ticket[inds],
+            self.next_obs[inds],
             self.dones[inds],
         )
         if to_tensor:
@@ -236,3 +228,74 @@ class PrioritizedReplayBuffer:
     def __len__(self):
         """Return the size of the buffer."""
         return self.size
+
+    def save(self, path):
+        """Save the buffer to a file.
+
+        Args:
+            path: Path to the file
+        """
+
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+        if isinstance(self.obs[0], np.ndarray):
+            np.savez_compressed(
+                path+"buffer.npz",
+                obs=self.obs,
+                actions=self.actions,
+                rewards=self.rewards,
+                next_obs=self.next_obs,
+                dones=self.dones,
+                tree=self.tree.nodes,
+                min_priority=self.min_priority,
+                ptr=self.ptr,
+                size=self.size,
+            )
+        else:
+            np.savez_compressed(
+                path+"buffer_without_obs.npz",
+                actions=self.actions,
+                rewards=self.rewards,
+                dones=self.dones,
+                tree=self.tree.nodes,
+                min_priority=self.min_priority,
+                ptr=self.ptr,
+                size=self.size,
+            )
+            # Check if the observation's class implements a save method
+            try:
+                self.obs[0].save(self.obs, path + "obs")
+                self.obs[0].save(self.next_obs, path + "next_obs")
+            except AttributeError:
+                print("Observation class does not implement a save method.")
+
+    def load(self, path):
+        """Load the buffer from a file.
+
+        Args:
+            path: Path to the file
+        """
+        if isinstance(self.obs[0], np.ndarray):
+            data = np.load(path, allow_pickle=True)
+            self.obs = data["obs"]
+            self.actions = data["actions"]
+            self.rewards = data["rewards"]
+            self.next_obs = data["next_obs"]
+            self.dones = data["dones"]
+        else:
+            data = np.load(path, allow_pickle=True)
+            self.actions = data["actions"]
+            self.rewards = data["rewards"]
+            self.next_obs = data["next_obs"]
+            self.dones = data["dones"]
+            # Check if the observation's class implements a load method
+            try:
+                self.obs = self.obs[0].load(path + "obs")
+                self.next_obs = self.obs[0].load(path + "next_obs")
+            except AttributeError:
+                print("Observation class does not implement a load method.")
+        self.tree.nodes = data["tree"]
+        self.min_priority = data["min_priority"]
+        self.ptr = data["ptr"]
+        self.size = data["size"]
