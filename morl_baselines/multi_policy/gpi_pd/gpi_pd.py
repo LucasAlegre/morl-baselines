@@ -69,6 +69,9 @@ class QNet(nn.Module):
 
     def forward(self, obs, w):
         """Forward pass."""
+        obs = th.tensor(obs, device=self.weights_features[0].weight.device)
+        w = th.tensor(w, device=self.weights_features[0].weight.device)
+
         sf = self.state_features(obs)
         wf = self.weights_features(w)
         q_values = self.net(sf * wf)
@@ -127,6 +130,8 @@ class GPIPD(MOPolicy, MOAgent):
         log: bool = True,
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
+        custom_qnet: Optional[nn.Module] = None,
+        custom_model_env: Optional[ModelEnv] = None,
     ):
         """Initialize the GPI-PD algorithm.
 
@@ -172,6 +177,8 @@ class GPIPD(MOPolicy, MOAgent):
             log: Whether to log.
             seed: The seed for random number generators.
             device: The device to use.
+            custom_qnet: A custom Q network.
+            custom_model_env: A custom model environment.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device=device)
@@ -193,46 +200,62 @@ class GPIPD(MOPolicy, MOAgent):
         self.num_nets = num_nets
         self.drop_rate = drop_rate
         self.layer_norm = layer_norm
+        self.custom_qnet = custom_qnet
+        self.custom_model_env = custom_model_env
+        self.device = device
 
         # Q-Networks
-        self.q_nets = [
-            QNet(
-                self.observation_shape,
-                self.action_dim,
-                self.reward_dim,
-                net_arch=net_arch,
-                drop_rate=drop_rate,
-                layer_norm=layer_norm,
-            ).to(self.device)
-            for _ in range(self.num_nets)
-        ]
-        self.target_q_nets = [
-            QNet(
-                self.observation_shape,
-                self.action_dim,
-                self.reward_dim,
-                net_arch=net_arch,
-                drop_rate=drop_rate,
-                layer_norm=layer_norm,
-            ).to(self.device)
-            for _ in range(self.num_nets)
-        ]
-        for q, target_q in zip(self.q_nets, self.target_q_nets):
-            target_q.load_state_dict(q.state_dict())
-            for param in target_q.parameters():
-                param.requires_grad = False
-        self.q_optim = optim.Adam(chain(*[net.parameters() for net in self.q_nets]), lr=self.learning_rate)
+        if not self.custom_qnet:
+            self.q_nets = [
+                QNet(
+                    self.observation_shape,
+                    self.action_dim,
+                    self.reward_dim,
+                    net_arch=net_arch,
+                    drop_rate=drop_rate,
+                    layer_norm=layer_norm,
+                ).to(self.device)
+                for _ in range(self.num_nets)
+            ]
+            self.target_q_nets = [
+                QNet(
+                    self.observation_shape,
+                    self.action_dim,
+                    self.reward_dim,
+                    net_arch=net_arch,
+                    drop_rate=drop_rate,
+                    layer_norm=layer_norm,
+                ).to(self.device)
+                for _ in range(self.num_nets)
+            ]
+            for q, target_q in zip(self.q_nets, self.target_q_nets):
+                target_q.load_state_dict(q.state_dict())
+                for param in target_q.parameters():
+                    param.requires_grad = False
+            self.q_optim = optim.Adam(chain(*[net.parameters() for net in self.q_nets]), lr=self.learning_rate)
+        else:
+            self.q_nets = [custom_qnet.to(self.device) for _ in range(self.num_nets)]
+            self.target_q_nets = [custom_qnet.to(self.device) for _ in range(self.num_nets)]
+            for q, target_q in zip(self.q_nets, self.target_q_nets):
+                target_q.load_state_dict(q.state_dict())
+                for param in target_q.parameters():
+                    param.requires_grad = False
+            self.q_optim = optim.Adam(chain(*[net.parameters() for net in self.q_nets]), lr=self.learning_rate)
 
         # Prioritized experience replay parameters
         self.per = per
         self.gpi_pd = gpi_pd
+
+        # Get action dim
+        self.action_dim = len(self.env.action_space.shape)
+
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                action_dim=self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         else:
             self.replay_buffer = ReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                action_dim=self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         self.min_priority = min_priority
         self.alpha = alpha_per
@@ -243,17 +266,20 @@ class GPIPD(MOPolicy, MOAgent):
         self.dynamics = None
         self.dynamics_buffer = None
         if self.dyna:
-            self.dynamics = ProbabilisticEnsemble(
-                input_dim=self.observation_dim + self.action_dim,
-                output_dim=self.observation_dim + self.reward_dim,
-                arch=self.dynamics_net_arch,
-                normalize_inputs=dynamics_normalize_inputs,
-                ensemble_size=dynamics_ensemble_size,
-                num_elites=dynamics_num_elites,
-                device=self.device,
-            )
+            if not self.custom_model_env:
+                self.dynamics = ProbabilisticEnsemble(
+                    input_dim=self.observation_dim + self.action_dim,
+                    output_dim=self.observation_dim + self.reward_dim,
+                    arch=self.dynamics_net_arch,
+                    normalize_inputs=dynamics_normalize_inputs,
+                    ensemble_size=dynamics_ensemble_size,
+                    num_elites=dynamics_num_elites,
+                    device=self.device,
+                )
+            else:
+                raise NotImplementedError
             self.dynamics_buffer = ReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
+                 action_dim=self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
             )
         self.dynamics_train_freq = dynamics_train_freq
         self.dynamics_buffer_size = dynamics_buffer_size
@@ -308,6 +334,8 @@ class GPIPD(MOPolicy, MOAgent):
             "drop_rate": self.drop_rate,
             "layer_norm": self.layer_norm,
             "seed": self.seed,
+            "device": self.device,
+            "custom_qnet": self.q_nets[0].__class__.__name__ if self.q_nets[0] else None,
         }
 
     def save(self, save_replay_buffer=True, save_dir="weights/", filename=None):
@@ -321,9 +349,11 @@ class GPIPD(MOPolicy, MOAgent):
         saved_params["M"] = self.weight_support
         if self.dyna:
             saved_params["dynamics_state_dict"] = self.dynamics.state_dict()
-        if save_replay_buffer:
-            saved_params["replay_buffer"] = self.replay_buffer
         filename = self.experiment_name if filename is None else filename
+        if save_replay_buffer and self.obs_dtype == np.ndarray:
+            saved_params["replay_buffer"] = self.replay_buffer
+        elif save_replay_buffer:  # Save replay buffer to separate folder using the observation's type save function
+            self.replay_buffer.save(save_dir + "/", filename + "_replay_buffer")
         th.save(saved_params, save_dir + "/" + filename + ".tar")
 
     def load(self, path, load_replay_buffer=True):
@@ -338,36 +368,38 @@ class GPIPD(MOPolicy, MOAgent):
             self.dynamics.load_state_dict(params["dynamics_state_dict"])
         if load_replay_buffer and "replay_buffer" in params:
             self.replay_buffer = params["replay_buffer"]
+        elif load_replay_buffer:  # Load replay buffer from separate folder
+            self.replay_buffer.load(path[:-4] + "_replay_buffer")
 
     def _sample_batch_experiences(self):
         if not self.dyna or self.global_step < self.dynamics_rollout_starts or len(self.dynamics_buffer) == 0:
-            return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
+            return self.replay_buffer.sample(self.batch_size, to_tensor=False, device=self.device)
         else:
             num_real_samples = int(self.batch_size * self.real_ratio)  # real_ratio% of real world data
             if self.per:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(
-                    num_real_samples, to_tensor=True, device=self.device
+                    num_real_samples, to_tensor=False, device=self.device
                 )
             else:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones = self.replay_buffer.sample(
-                    num_real_samples, to_tensor=True, device=self.device
+                    num_real_samples, to_tensor=False, device=self.device
                 )
             m_obs, m_actions, m_rewards, m_next_obs, m_dones = self.dynamics_buffer.sample(
-                self.batch_size - num_real_samples, to_tensor=True, device=self.device
+                self.batch_size - num_real_samples, to_tensor=False, device=self.device
             )
             experience_tuples = (
-                th.cat([s_obs, m_obs], dim=0),
-                th.cat([s_actions, m_actions], dim=0),
-                th.cat([s_rewards, m_rewards], dim=0),
-                th.cat([s_next_obs, m_next_obs], dim=0),
-                th.cat([s_dones, m_dones], dim=0),
+                np.concatenate([s_obs, m_obs], axis=0),
+                np.concatenate([s_actions, m_actions], axis=0),
+                np.concatenate([s_rewards, m_rewards], axis=0),
+                np.concatenate([s_next_obs, m_next_obs], axis=0),
+                np.concatenate([s_dones, m_dones], axis=0),
             )
             if self.per:
                 return experience_tuples + (idxes,)
             return experience_tuples
 
     @th.no_grad()
-    def _rollout_dynamics(self, w: th.Tensor):
+    def _rollout_dynamics(self, w: np.ndarray):
         # Dyna Planning
         num_times = int(np.ceil(self.dynamics_rollout_batch_size / 10000))
         batch_size = min(self.dynamics_rollout_batch_size, 10000)
@@ -377,21 +409,22 @@ class GPIPD(MOPolicy, MOAgent):
             model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=len(w))
 
             for h in range(self.dynamics_rollout_len):
-                obs = th.tensor(obs).to(self.device)
-                M = th.stack(self.weight_support)
-                M = M.unsqueeze(0).repeat(len(obs), 1, 1)
-                obs_m = obs.unsqueeze(1).repeat(1, M.size(1), 1)
+                M = np.stack(self.weight_support)
+                M = np.expand_dims(M, axis=0)
+                M = np.repeat(M, len(obs), axis=0)
+                obs_m = np.expand_dims(obs, axis=1)
+                obs_m = np.repeat(obs_m, M.shape[1], axis=1)
 
                 psi_values = self.q_nets[0](obs_m, M)
-                q_values = th.einsum("r,bar->ba", w, psi_values).view(obs.size(0), len(self.weight_support), self.action_dim)
+                q_values = th.einsum("r,bar->ba", th.tensor(w).to(self.device), psi_values).view(obs.shape[0], len(self.weight_support), self.action_dim)
                 max_q, ac = th.max(q_values, dim=2)
                 pi = th.argmax(max_q, dim=1)
                 actions = ac.gather(1, pi.unsqueeze(1))
-                actions_one_hot = F.one_hot(actions, num_classes=self.action_dim).squeeze(1)
+                actions_one_hot = (F.one_hot(actions, num_classes=self.action_dim).squeeze(1)).cpu().numpy()
 
                 next_obs_pred, r_pred, dones, info = model_env.step(obs, actions_one_hot, deterministic=False)
                 uncertainties = info["uncertainty"]
-                obs, actions = obs.cpu().numpy(), actions.cpu().numpy()
+                actions = actions.cpu().numpy()
 
                 for i in range(len(obs)):
                     if uncertainties[i] < self.dynamics_uncertainty_threshold:
@@ -415,7 +448,7 @@ class GPIPD(MOPolicy, MOAgent):
                 },
             )
 
-    def update(self, weight: th.Tensor):
+    def update(self, weight: np.ndarray):
         """Update the parameters of the networks."""
         critic_losses = []
         for g in range(self.gradient_updates if self.global_step >= self.dynamics_rollout_starts else 1):
@@ -426,28 +459,30 @@ class GPIPD(MOPolicy, MOAgent):
 
             if len(self.weight_support) > 1:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
-                    s_obs.repeat(2, *(1 for _ in range(s_obs.dim() - 1))),
-                    s_actions.repeat(2, 1),
-                    s_rewards.repeat(2, 1),
-                    s_next_obs.repeat(2, *(1 for _ in range(s_obs.dim() - 1))),
-                    s_dones.repeat(2, 1),
+                    np.repeat(s_obs, 2, axis=0),
+                    np.repeat(s_actions, 2, axis=0),
+                    np.repeat(s_rewards, 2, axis=0),
+                    np.repeat(s_next_obs, 2, axis=0),
+                    np.repeat(s_dones, 2, axis=0),
                 )
                 # Half of the batch uses the given weight vector, the other half uses weights sampled from the support set
-                w = th.vstack(
-                    [weight for _ in range(s_obs.size(0) // 2)] + random.choices(self.weight_support, k=s_obs.size(0) // 2)
+                w = np.vstack(
+                    [weight for _ in range(s_obs.shape[0] // 2)] + random.choices(self.weight_support,
+                                                                                  k=s_obs.shape[0] // 2)
                 )
             else:
-                w = weight.repeat(s_obs.size(0), 1)
+                w = np.repeat(weight, s_obs.shape[0], axis=0)
 
             if len(self.weight_support) > 5:
-                sampled_w = th.stack([weight] + random.sample(self.weight_support, k=4))
+                sampled_w = np.stack([weight] + random.sample(self.weight_support, k=4))
             else:
-                sampled_w = th.stack(self.weight_support)
+                sampled_w = np.stack(self.weight_support)
 
             with th.no_grad():
                 # Compute min_i Q_i(s', a, w) . w
+                # Keep in mind that here the obs are not necessarily tensors
                 next_q_values = th.stack([target_psi_net(s_next_obs, w) for target_psi_net in self.target_q_nets])
-                scalarized_next_q_values = th.einsum("nbar,br->nba", next_q_values, w)  # q_i(s', a, w)
+                scalarized_next_q_values = th.einsum("nbar,br->nba", next_q_values, th.tensor(w).to(self.device))  # q_i(s', a, w)
                 min_inds = th.argmin(scalarized_next_q_values, dim=0)
                 min_inds = min_inds.reshape(1, next_q_values.size(1), next_q_values.size(2), 1).expand(
                     1, next_q_values.size(1), next_q_values.size(2), next_q_values.size(3)
@@ -455,7 +490,7 @@ class GPIPD(MOPolicy, MOAgent):
                 next_q_values = next_q_values.gather(0, min_inds).squeeze(0)
 
                 # Compute max_a Q(s', a, w) . w
-                max_q = th.einsum("br,bar->ba", w, next_q_values)
+                max_q = th.einsum("br,bar->ba", th.tensor(w).to(self.device), next_q_values)
                 max_acts = th.argmax(max_q, dim=1)
 
                 q_targets = next_q_values.gather(
@@ -488,7 +523,7 @@ class GPIPD(MOPolicy, MOAgent):
                     gtd_errors.append(gtd_error.abs())
                 if self.per:
                     td_errors.append(td_error.abs())
-            critic_loss = (1 / self.num_nets) * sum(losses)
+            critic_loss = th.tensor((1 / self.num_nets) * sum(losses)).to(self.device)
 
             self.q_optim.zero_grad()
             critic_loss.backward()
@@ -510,14 +545,14 @@ class GPIPD(MOPolicy, MOAgent):
                 if self.gpi_pd:
                     gtd_error = th.max(th.stack(gtd_errors), dim=0)[0]
                     gtd_error = gtd_error[: len(idxes)].detach()
-                    gper = th.einsum("br,br->b", w[: len(idxes)], gtd_error).abs()
+                    gper = th.einsum("br,br->b", th.tensor(w).to(self.device)[: len(idxes)], gtd_error).abs()
                     gpriority = gper.cpu().numpy().flatten()
                     gpriority = gpriority.clip(min=self.min_priority) ** self.alpha
 
                 if self.per:
                     td_error = th.max(th.stack(td_errors), dim=0)[0]
                     td_error = td_error[: len(idxes)].detach()
-                    per = th.einsum("br,br->b", w[: len(idxes)], td_error).abs()
+                    per = th.einsum("br,br->b", th.tensor(w).to(self.device)[: len(idxes)], td_error).abs()
                     priority = per.cpu().numpy().flatten()
                     priority = priority.clip(min=self.min_priority) ** self.alpha
 
@@ -564,17 +599,18 @@ class GPIPD(MOPolicy, MOAgent):
             )
 
     @th.no_grad()
-    def gpi_action(self, obs: th.Tensor, w: th.Tensor, return_policy_index=False, include_w=False):
+    def gpi_action(self, obs: np.ndarray, w: np.ndarray, return_policy_index=False, include_w=False):
         """Select an action using GPI."""
         if include_w:
-            M = th.stack(self.weight_support + [w])
+            M = np.stack(self.weight_support + [w])
         else:
-            M = th.stack(self.weight_support)
+            M = np.stack(self.weight_support)
 
-        obs_m = obs.repeat(M.size(0), *(1 for _ in range(obs.dim())))
+        obs_m = obs.repeat(M.shape[0], *(1 for _ in range(obs.ndim)))
+
         q_values = self.q_nets[0](obs_m, M)
 
-        scalar_q_values = th.einsum("r,bar->ba", w, q_values)  # q(s,a,w_i) = q(s,a,w_i) . w
+        scalar_q_values = th.einsum("r,bar->ba", th.tensor(w).to(self.device), q_values)  # q(s,a,w_i) = q(s,a,w_i) . w
         max_q, a = th.max(scalar_q_values, dim=1)
         policy_index = th.argmax(max_q)  # max_i max_a q(s,a,w_i)
         action = a[policy_index].detach().item()
@@ -586,15 +622,13 @@ class GPIPD(MOPolicy, MOAgent):
     @th.no_grad()
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         """Select an action for the given obs and weight vector."""
-        obs = th.as_tensor(obs).float().to(self.device)
-        w = th.as_tensor(w).float().to(self.device)
         if self.use_gpi:
             action = self.gpi_action(obs, w, include_w=False)
         else:
             action = self.max_action(obs, w)
         return action
 
-    def _act(self, obs: th.Tensor, w: th.Tensor) -> int:
+    def _act(self, obs: np.ndarray, w: np.ndarray) -> int:
         if self.np_random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
@@ -606,16 +640,16 @@ class GPIPD(MOPolicy, MOAgent):
                 return self.max_action(obs, w)
 
     @th.no_grad()
-    def max_action(self, obs: th.Tensor, w: th.Tensor) -> int:
+    def max_action(self, obs: np.ndarray, w: np.ndarray) -> int:
         """Select the greedy action."""
         psi = th.min(th.stack([psi_net(obs, w) for psi_net in self.q_nets]), dim=0)[0]
         # psi = self.psi_nets[0](obs, w)
-        q = th.einsum("r,bar->ba", w, psi)
+        q = th.einsum("r,bar->ba", th.tensor(w).to(self.device), psi)
         max_act = th.argmax(q, dim=1)
         return max_act.detach().item()
 
     @th.no_grad()
-    def _reset_priorities(self, w: th.Tensor):
+    def _reset_priorities(self, w: np.ndarray):
         inds = np.arange(self.replay_buffer.size)
         priorities = np.repeat(0.1, self.replay_buffer.size)
         (
@@ -630,45 +664,41 @@ class GPIPD(MOPolicy, MOAgent):
             b = i * 1000
             e = min((i + 1) * 1000, obs_s.shape[0])
             obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[b:e], dones_s[b:e]
-            obs, actions, rewards, next_obs, dones = (
-                th.tensor(obs).to(self.device),
-                th.tensor(actions).to(self.device),
-                th.tensor(rewards).to(self.device),
-                th.tensor(next_obs).to(self.device),
-                th.tensor(dones).to(self.device),
-            )
-            q_values = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
+            w = np.repeat(w, obs.shape[0], axis=0)
+            q_values = self.q_nets[0](obs, w)
             q_a = q_values.gather(1, actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2))).squeeze(1)
 
+            w_ten = th.tensor(w).to(self.device)
             if self.gpi_pd:
-                max_next_q, _ = self._envelope_target(next_obs, w.repeat(next_obs.size(0), 1), th.stack(self.weight_support))
+                max_next_q, _ = self._envelope_target(next_obs, w, self.weight_support)
             else:
-                next_q_values = self.q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
-                max_q = th.einsum("r,bar->ba", w, next_q_values)
+                next_q_values = self.q_nets[0](next_obs, w)
+                max_q = th.einsum("r,bar->ba", w_ten, next_q_values)
                 max_acts = th.argmax(max_q, dim=1)
-                q_targets = self.target_q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
+                q_targets = self.target_q_nets[0](next_obs, w)
                 q_targets = q_targets.gather(
                     1, max_acts.long().reshape(-1, 1, 1).expand(q_targets.size(0), 1, q_targets.size(2))
                 )
                 max_next_q = q_targets.reshape(-1, self.reward_dim)
 
-            gtderror = th.einsum("r,br->b", w, (rewards + (1 - dones) * self.gamma * max_next_q - q_a)).abs()
+            gtderror = th.einsum("r,br->b", w_ten, (rewards + (1 - dones) * self.gamma * max_next_q - q_a)).abs()
             priorities[b:e] = gtderror.clamp(min=self.min_priority).pow(self.alpha).cpu().detach().numpy().flatten()
 
-        self.replay_buffer.update_priorities(inds, priorities)
+        if self.per:
+            self.replay_buffer.update_priorities(inds, priorities)
 
     @th.no_grad()
-    def _envelope_target(self, obs: th.Tensor, w: th.Tensor, sampled_w: th.Tensor):
-        W = sampled_w.unsqueeze(0).repeat(obs.size(0), 1, 1)
-        next_obs = obs.unsqueeze(1).repeat(1, sampled_w.size(0), 1)
+    def _envelope_target(self, obs: np.ndarray, w: np.ndarray, sampled_w: np.ndarray):
+        W = np.repeat(sampled_w[None, :, :], obs.shape[0], axis=0)
+        next_obs = np.repeat(obs[:, None, :], sampled_w.shape[0], axis=1)
 
         next_q_target = th.stack(
             [
-                target_net(next_obs, W).view(obs.size(0), sampled_w.size(0), self.action_dim, self.reward_dim)
+                target_net(next_obs, W).view(obs.shape[0], sampled_w.shape[0], self.action_dim, self.reward_dim)
                 for target_net in self.target_q_nets
             ]
         )
-
+        w = th.tensor(w)
         q_values = th.einsum("br,nbpar->nbpa", w, next_q_target)
         min_inds = th.argmin(q_values, dim=0)
         min_inds = min_inds.reshape(1, next_q_target.size(1), next_q_target.size(2), next_q_target.size(3), 1).expand(
@@ -690,7 +720,7 @@ class GPIPD(MOPolicy, MOAgent):
     def set_weight_support(self, weight_list: List[np.ndarray]):
         """Set the weight support set."""
         weights_no_repeats = unique_tol(weight_list)
-        self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeats]
+        self.weight_support = [w for w in weights_no_repeats]
 
     def train_iteration(
         self,
@@ -717,7 +747,6 @@ class GPIPD(MOPolicy, MOAgent):
         """
         weight_support = unique_tol(weight_support)  # remove duplicates
         self.set_weight_support(weight_support)
-        tensor_w = th.tensor(weight).float().to(self.device)
 
         self.police_indices = []
         self.global_step = 0 if reset_num_timesteps else self.global_step
@@ -726,7 +755,7 @@ class GPIPD(MOPolicy, MOAgent):
             self.learning_starts = self.global_step
 
         if self.per and len(self.replay_buffer) > 0:
-            self._reset_priorities(tensor_w)
+            self._reset_priorities(weight)
 
         obs, info = self.env.reset()
         for _ in range(1, total_timesteps + 1):
@@ -735,7 +764,7 @@ class GPIPD(MOPolicy, MOAgent):
             if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
             else:
-                action = self._act(th.as_tensor(obs).float().to(self.device), tensor_w)
+                action = self._act(obs, weight)
 
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
@@ -756,9 +785,9 @@ class GPIPD(MOPolicy, MOAgent):
                             )
 
                     if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
-                        self._rollout_dynamics(tensor_w)
+                        self._rollout_dynamics(weight)
 
-                self.update(tensor_w)
+                self.update(weight)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval(eval_env, weights=weight, log=self.log)
@@ -781,7 +810,6 @@ class GPIPD(MOPolicy, MOAgent):
 
                 if change_w_every_episode:
                     weight = random.choice(weight_support)
-                    tensor_w = th.tensor(weight).float().to(self.device)
             else:
                 obs = next_obs
 

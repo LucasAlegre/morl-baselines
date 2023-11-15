@@ -8,27 +8,23 @@ class ReplayBuffer:
 
     def __init__(
         self,
-        obs_shape,
         action_dim,
         rew_dim=1,
         max_size=100000,
-        obs_dtype=np.float32,
         action_dtype=np.float32,
     ):
         """Initialize the replay buffer.
 
         Args:
-            obs_shape: Shape of the observations
             action_dim: Dimension of the actions
             rew_dim: Dimension of the rewards
             max_size: Maximum size of the buffer
-            obs_dtype: Data type of the observations
             action_dtype: Data type of the actions
         """
         self.max_size = max_size
         self.ptr, self.size = 0, 0
-        self.obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
-        self.next_obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
+        self.obs = np.zeros((max_size,), dtype=object)
+        self.next_obs = np.zeros((max_size,), dtype=object)
         self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
         self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
         self.dones = np.zeros((max_size, 1), dtype=np.float32)
@@ -98,11 +94,13 @@ class ReplayBuffer:
         else:
             return self.obs[inds]
 
-    def get_all_data(self, max_samples=None):
+    def get_all_data(self, max_samples=None, to_tensor=False, device=None):
         """Get all the data in the buffer (with a maximum specified).
 
         Args:
             max_samples: Maximum number of samples to return
+            to_tensor: Whether to convert the data to PyTorch tensors
+            device: Device to use
 
         Returns:
             A tuple of (observations, actions, rewards, next observations, dones)
@@ -111,13 +109,18 @@ class ReplayBuffer:
             inds = np.random.choice(self.size, min(max_samples, self.size), replace=False)
         else:
             inds = np.arange(self.size)
-        return (
+        samples = (
             self.obs[inds],
             self.actions[inds],
             self.rewards[inds],
             self.next_obs[inds],
             self.dones[inds],
         )
+
+        if to_tensor:
+            return tuple(map(lambda x: th.tensor(x, device=device), samples))
+        else:
+            return samples
 
     def __len__(self):
         """Get the size of the buffer."""

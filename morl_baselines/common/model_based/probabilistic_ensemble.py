@@ -27,16 +27,16 @@ class ProbabilisticEnsemble(nn.Module):
     """Probababilistic ensemble of neural networks."""
 
     def __init__(
-        self,
-        input_dim,
-        output_dim,
-        ensemble_size=5,
-        arch=[200, 200, 200, 200],
-        activation=F.relu,
-        learning_rate=0.001,
-        num_elites=2,
-        normalize_inputs=True,
-        device="auto",
+            self,
+            input_dim,
+            output_dim,
+            ensemble_size=5,
+            arch=[200, 200, 200, 200],
+            activation=F.relu,
+            learning_rate=0.001,
+            num_elites=2,
+            normalize_inputs=True,
+            device="auto",
     ):
         """Initialize the ensemble.
 
@@ -143,7 +143,7 @@ class ProbabilisticEnsemble(nn.Module):
 
         # Ensemble Standard Deviation/Variance (Lakshminarayanan et al., 2017)
         mean_ensemble = means.mean(axis=0)
-        var_ensemble = (means**2 + vars).mean(axis=0) - mean_ensemble**2
+        var_ensemble = (means ** 2 + vars).mean(axis=0) - mean_ensemble ** 2
         std_ensemble = np.sqrt(var_ensemble + 1e-12)
         uncertainties = std_ensemble.sum(-1)
 
@@ -193,14 +193,14 @@ class ProbabilisticEnsemble(nn.Module):
         self.inputs_sigma.data = th.tensor(sigma).to(self.device).float()
 
     def fit(
-        self,
-        X,
-        Y,
-        batch_size=256,
-        holdout_ratio=0.1,
-        max_holdout_size=5000,
-        max_epochs_no_improvement=5,
-        max_epochs=200,
+            self,
+            X,
+            Y,
+            batch_size=256,
+            holdout_ratio=0.1,
+            max_holdout_size=5000,
+            max_epochs_no_improvement=5,
+            max_epochs=200,
     ):
         """Trains the model on the given data.
 
@@ -252,7 +252,7 @@ class ProbabilisticEnsemble(nn.Module):
         while num_epochs_no_improvement < max_epochs_no_improvement and epoch < max_epochs:
             self.train()
             for batch_num in range(num_batches):
-                batch_idxs = idxs[:, batch_num * batch_size : (batch_num + 1) * batch_size]
+                batch_idxs = idxs[:, batch_num * batch_size: (batch_num + 1) * batch_size]
                 batch_x, batch_y = inputs[batch_idxs], targets[batch_idxs]
                 batch_x, batch_y = (
                     th.from_numpy(batch_x).to(self.device).float(),
