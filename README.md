@@ -75,7 +75,7 @@ We have run experiments of our algorithms on various environments from [MO-Gymna
 <!-- end benchmark -->
 
 An example visualization of our dashboards with Pareto support is shown below:
-<img src="docs/_static/_images/wandb.png" alt="WandB dahsboards"/>
+<img src="docs/_static/_images/wandb.png" alt="WandB dashboards"/>
 
 ## Structure
 
