@@ -14,73 +14,17 @@ from distutils.util import strtobool
 import mo_gymnasium as mo_gym
 import numpy as np
 import requests
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from gymnasium.wrappers import FlattenObservation
+from gymnasium.wrappers.record_video import RecordVideo
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.evaluation import seed_everything
-from morl_baselines.multi_policy.capql.capql import CAPQL
-from morl_baselines.multi_policy.envelope.envelope import Envelope
-from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPILS, GPIPD
-from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
-    GPILSContinuousAction,
-    GPIPDContinuousAction,
+from morl_baselines.common.experiments import (
+    ALGOS,
+    ENVS_WITH_KNOWN_PARETO_FRONT,
+    StoreDict,
 )
-from morl_baselines.multi_policy.morld.morld import MORLD
-from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
-    MPMOQLearning,
-)
-from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
-from morl_baselines.multi_policy.pcn.pcn import PCN
-from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
-
-
-ALGOS = {
-    "pgmorl": PGMORL,
-    "envelope": Envelope,
-    "gpi_pd_continuous": GPIPDContinuousAction,
-    "gpi_pd_discrete": GPIPD,
-    "gpi_ls_continuous": GPILSContinuousAction,
-    "gpi_ls_discrete": GPILS,
-    "capql": CAPQL,
-    "mpmoql": MPMOQLearning,
-    "pcn": PCN,
-    "pql": PQL,
-    "ols": MPMOQLearning,
-    "gpi-ls": MPMOQLearning,
-    "morld": MORLD,
-}
-
-ENVS_WITH_KNOWN_PARETO_FRONT = [
-    "deep-sea-treasure-concave-v0",
-    "deep-sea-treasure-v0",
-    "minecart-v0",
-    "minecart-deterministic-v0",
-    "resource-gathering-v0",
-    "fruit-tree-v0",
-]
-
-
-class StoreDict(argparse.Action):
-    """
-    Custom argparse action for storing dict.
-    In: args1:0.0 args2:"dict(a=1)"
-    Out: {'args1': 0.0, arg2: dict(a=1)}
-
-    From RL Baselines3 Zoo
-    """
-
-    def __init__(self, option_strings, dest, nargs=None, **kwargs):
-        self._nargs = nargs
-        super().__init__(option_strings, dest, nargs=nargs, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        arg_dict = {}
-        for arguments in values:
-            key = arguments.split(":")[0]
-            value = ":".join(arguments.split(":")[1:])
-            # Evaluate the string as python code
-            arg_dict[key] = eval(value)
-        setattr(namespace, self.dest, arg_dict)
 
 
 def parse_args():
@@ -102,6 +46,15 @@ def parse_args():
         const=True,
         help="if toggled, the runs will be tagged with git tags, commit, and pull request number if possible",
     )
+    parser.add_argument(
+        "--record-video",
+        type=lambda x: bool(strtobool(x)),
+        default=False,
+        nargs="?",
+        const=True,
+        help="if toggled, the runs will be recorded with RecordVideo wrapper.",
+    )
+    parser.add_argument("--record-video-ep-freq", type=int, default=5, help="Record video frequency (in episodes).")
     parser.add_argument(
         "--init-hyperparams",
         type=str,
@@ -191,11 +144,47 @@ def main():
         )
 
     else:
-        env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=args.gamma)
-        eval_env = mo_gym.make(args.env_id)
+        if "mario" in args.env_id:
+            env = mo_gym.make(args.env_id, death_as_penalty=True)
+            eval_env = mo_gym.make(args.env_id, death_as_penalty=True, render_mode="rgb_array" if args.record_video else None)
+        else:
+            env = mo_gym.make(args.env_id)
+            eval_env = mo_gym.make(args.env_id, render_mode="rgb_array" if args.record_video else None)
+        env = MORecordEpisodeStatistics(env, gamma=args.gamma)
+
         if "highway" in args.env_id:
             env = FlattenObservation(env)
             eval_env = FlattenObservation(eval_env)
+        elif "mario" in args.env_id:
+
+            def wrap_mario(env):
+                from gymnasium.wrappers import (
+                    FrameStack,
+                    GrayScaleObservation,
+                    ResizeObservation,
+                    TimeLimit,
+                )
+                from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
+                from mo_gymnasium.utils import MOMaxAndSkipObservation
+
+                env = JoypadSpace(env, SIMPLE_MOVEMENT)
+                env = MOMaxAndSkipObservation(env, skip=4)
+                env = ResizeObservation(env, (84, 84))
+                env = GrayScaleObservation(env)
+                env = FrameStack(env, 4)
+                env = TimeLimit(env, max_episode_steps=1000)
+                return env
+
+            env = wrap_mario(env)
+            eval_env = wrap_mario(eval_env)
+
+        if args.record_video:
+            eval_env = RecordVideo(
+                eval_env,
+                video_folder=f"videos/{args.algo}-{args.env_id}",
+                episode_trigger=lambda ep: ep % args.record_video_ep_freq == 0,
+            )
+
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
             args.init_hyperparams["experiment_name"] = "MultiPolicy MO Q-Learning (OLS)"

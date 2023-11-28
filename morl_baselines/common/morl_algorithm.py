@@ -239,7 +239,9 @@ class MOAgent(ABC):
         for key, value in conf.items():
             wandb.config[key] = value
 
-    def setup_wandb(self, project_name: str, experiment_name: str, entity: Optional[str] = None) -> None:
+    def setup_wandb(
+        self, project_name: str, experiment_name: str, entity: Optional[str] = None, group: Optional[str] = None
+    ) -> None:
         """Initializes the wandb writer.
 
         Args:
@@ -266,6 +268,7 @@ class MOAgent(ABC):
             name=self.full_experiment_name,
             monitor_gym=True,
             save_code=True,
+            group=group,
         )
         # The default "step" of wandb is not the actual time step (gloabl_step) of the MDP
         wandb.define_metric("*", step_metric="global_step")

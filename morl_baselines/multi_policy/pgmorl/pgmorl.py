@@ -325,6 +325,7 @@ class PGMORL(MOAgent):
         gae: bool = True,
         gae_lambda: float = 0.95,
         device: Union[th.device, str] = "auto",
+        group: Optional[str] = None,
     ):
         """Initializes the PGMORL agent.
 
@@ -364,6 +365,7 @@ class PGMORL(MOAgent):
             gae: whether to use generalized advantage estimation
             gae_lambda: lambda parameter for GAE
             device: device on which the code should run
+            group: The wandb group to use for logging.
         """
         super().__init__(env, device=device, seed=seed)
         # Env dimensions
@@ -425,7 +427,7 @@ class PGMORL(MOAgent):
         # Logging
         self.log = log
         if self.log:
-            self.setup_wandb(project_name, experiment_name, wandb_entity)
+            self.setup_wandb(project_name, experiment_name, wandb_entity, group)
 
         self.networks = [
             MOPPONet(

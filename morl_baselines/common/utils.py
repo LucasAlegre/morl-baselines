@@ -1,5 +1,6 @@
 """General utils for the MORL baselines."""
 import math
+import os
 from typing import Callable, List
 
 import numpy as np
@@ -103,3 +104,19 @@ def nearest_neighbors(
         nearest_neighbors_ids.append(closest_neighb_id)
 
     return nearest_neighbors_ids
+
+
+def reset_wandb_env():
+    """Reset the wandb environment variables.
+
+    This is useful when running multiple sweeps in parallel, as wandb
+    will otherwise try to use the same directory for all the runs.
+    """
+    exclude = {
+        "WANDB_PROJECT",
+        "WANDB_ENTITY",
+        "WANDB_API_KEY",
+    }
+    for k, v in os.environ.items():
+        if k.startswith("WANDB_") and k not in exclude:
+            del os.environ[k]
