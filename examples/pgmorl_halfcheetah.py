@@ -14,6 +14,7 @@ if __name__ == "__main__":
         warmup_iterations=80,
         evolutionary_iterations=20,
         num_weight_candidates=7,
+        origin=np.array([0.0, -5.0]),
     )
     algo.train(
         total_timesteps=int(5e6),
