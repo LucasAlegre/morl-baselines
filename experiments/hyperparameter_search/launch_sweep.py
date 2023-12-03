@@ -142,8 +142,12 @@ def main():
     # Get the sweep id
     sweep_run = wandb.init()
 
+    # Get the number of CPUs available
+    num_cpus = cpu_count()
+    print(f"Spinning up {num_cpus} workers")
+
     # Workers will be blocked on a queue waiting to start
-    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+    with ProcessPoolExecutor(max_workers=num_cpus) as executor:
         futures = []
         for num in range(args.num_seeds):
             # Get the seed for the worker
