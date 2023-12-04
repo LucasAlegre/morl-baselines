@@ -46,6 +46,10 @@ def parse_args():
     parser.add_argument("--sweep-count", type=int, help="Number of trials to do in the sweep worker", default=10)
     parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
 
+    # If num_workers is None, will use the number of processors on the machine, multiplied by 5
+    # https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor
+    parser.add_argument("num_workers", type=int, help="Number of workers to use for the sweep", default=None)
+
     parser.add_argument(
         "--seed", type=int, help="Random seed to start from, seeds will be in [seed, seed+num-seeds)", default=10
     )
@@ -142,12 +146,8 @@ def main():
     # Get the sweep id
     sweep_run = wandb.init()
 
-    # Get the number of CPUs available
-    num_cpus = cpu_count()
-    print(f"Spinning up {num_cpus} workers")
-
     # Workers will be blocked on a queue waiting to start
-    with ProcessPoolExecutor(max_workers=num_cpus) as executor:
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = []
         for num in range(args.num_seeds):
             # Get the seed for the worker
