@@ -1,6 +1,11 @@
 """Replay buffer for multi-objective reinforcement learning."""
+import copy
+import os
+
 import numpy as np
 import torch as th
+
+from morl_baselines.common.observation import Observation
 
 
 class ReplayBuffer:
@@ -8,7 +13,7 @@ class ReplayBuffer:
 
     def __init__(
         self,
-        action_dim,
+        action_shape,
         rew_dim=1,
         max_size=100000,
         action_dtype=np.float32,
@@ -16,16 +21,16 @@ class ReplayBuffer:
         """Initialize the replay buffer.
 
         Args:
-            action_dim: Dimension of the actions
+            action_shape: Dimension of the actions
             rew_dim: Dimension of the rewards
             max_size: Maximum size of the buffer
             action_dtype: Data type of the actions
         """
         self.max_size = max_size
         self.ptr, self.size = 0, 0
-        self.obs = np.zeros((max_size,), dtype=object)
+        self.obs = np.zeros((max_size,), dtype=Observation)
         self.next_obs = np.zeros((max_size,), dtype=object)
-        self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
+        self.actions = np.zeros((max_size,) + action_shape, dtype=action_dtype)
         self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
         self.dones = np.zeros((max_size, 1), dtype=np.float32)
 
@@ -39,8 +44,8 @@ class ReplayBuffer:
             next_obs: Next observation
             done: Done
         """
-        self.obs[self.ptr] = np.array(obs).copy()
-        self.next_obs[self.ptr] = np.array(next_obs).copy()
+        self.obs[self.ptr] = copy.deepcopy(obs)  # We could try to first call a .copy() method of the observation if implemented here, but it may be extra
+        self.next_obs[self.ptr] = copy.deepcopy(next_obs)
         self.actions[self.ptr] = np.array(action).copy()
         self.rewards[self.ptr] = np.array(reward).copy()
         self.dones[self.ptr] = np.array(done).copy()
@@ -72,7 +77,13 @@ class ReplayBuffer:
             self.dones[inds],
         )
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x, device=device), experience_tuples))
+            return (
+                np.array([observation.to_tensor(device=device) for observation in experience_tuples[0]]),
+                th.tensor(experience_tuples[1], device=device),
+                th.tensor(experience_tuples[2], device=device),
+                np.array([observation.to_tensor(device=device) for observation in experience_tuples[3]]),
+                th.tensor(experience_tuples[4], device=device),
+            )
         else:
             return experience_tuples
 
@@ -90,7 +101,7 @@ class ReplayBuffer:
         """
         inds = np.random.choice(self.size, batch_size, replace=replace)
         if to_tensor:
-            return th.tensor(self.obs[inds], device=device)
+            return np.array([observation.to_tensor(device=device) for observation in self.obs[inds]])
         else:
             return self.obs[inds]
 
@@ -118,9 +129,66 @@ class ReplayBuffer:
         )
 
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x, device=device), samples))
+            return (
+                np.array([observation.to_tensor(device=device) for observation in samples[0]]),
+                th.tensor(samples[1], device=device),
+                th.tensor(samples[2], device=device),
+                np.array([observation.to_tensor(device=device) for observation in samples[3]]),
+                th.tensor(samples[4], device=device),
+            )
         else:
             return samples
+
+    def save(self, path):
+        """Save the buffer to a file.
+
+        Args:
+            path: Path to the file
+        """
+
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+        np.savez_compressed(
+            path + "buffer_without_obs.npz",
+            actions=self.actions,
+            rewards=self.rewards,
+            dones=self.dones,
+            ptr=self.ptr,
+            size=self.size,
+        )
+        # Save the observations
+        # We save the observations separately because they can be large, as we don't know their type (maybe handle the case of np.ndarray separately?)
+        if not os.path.isdir(path + "obs"):
+            os.makedirs(path + "obs")
+        for i, obs in enumerate(self.obs):
+            obs.save(path + "obs/" + str(i))
+        if not os.path.isdir(path + "next_obs"):
+            os.makedirs(path + "next_obs")
+        for i, obs in enumerate(self.next_obs):
+            obs.save(path + "next_obs/" + str(i))
+
+    def load(self, path):
+        """Load the buffer from a file.
+
+        Args:
+            path: Path to the file
+        """
+
+        data = np.load(path, allow_pickle=True)
+        self.actions = data["actions"]
+        self.rewards = data["rewards"]
+        self.dones = data["dones"]
+        self.ptr = data["ptr"]
+        self.size = data["size"]
+
+        # Load the observations
+        self.obs = np.zeros((self.max_size,), dtype=Observation)
+        self.next_obs = np.zeros((self.max_size,), dtype=Observation)
+
+        for i in range(self.size):
+            self.obs[i] = Observation().load(path + "obs/" + str(i))
+            self.next_obs[i] = Observation().load(path + "next_obs/" + str(i))
 
     def __len__(self):
         """Get the size of the buffer."""

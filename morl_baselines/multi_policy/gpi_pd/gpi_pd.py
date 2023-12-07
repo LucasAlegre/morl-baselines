@@ -2,7 +2,7 @@
 import os
 import random
 from itertools import chain
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Union, Type
 
 import gymnasium as gym
 import numpy as np
@@ -31,6 +31,7 @@ from morl_baselines.common.networks import (
     mlp,
     polyak_update,
 )
+from morl_baselines.common.observation import Observation, ConversionWrapper
 from morl_baselines.common.prioritized_buffer import PrioritizedReplayBuffer
 from morl_baselines.common.utils import linearly_decaying_value, unique_tol
 from morl_baselines.common.weights import equally_spaced_weights
@@ -69,8 +70,14 @@ class QNet(nn.Module):
 
     def forward(self, obs, w):
         """Forward pass."""
-        obs = th.tensor(obs, device=self.weights_features[0].weight.device)
-        w = th.tensor(w, device=self.weights_features[0].weight.device)
+        device = self.weights_features[0].weight.device
+        # If obs is an np.array of observations, we need to convert it to a tensor of tensors of observations
+        if isinstance(obs, np.ndarray):
+            obs = [observation.to_tensor(device=device) for observation in obs]
+            obs = th.stack(obs)
+        else:
+            obs = obs.to_tensor(device=device)
+        w = th.tensor(w, device=device)
 
         sf = self.state_features(obs)
         wf = self.weights_features(w)
@@ -129,9 +136,10 @@ class GPIPD(MOPolicy, MOAgent):
         wandb_entity: Optional[str] = None,
         log: bool = True,
         seed: Optional[int] = None,
-        device: Union[th.device, str] = "auto",
+        device: Union[th.device, str] = "cpu",
         custom_qnet: Optional[nn.Module] = None,
         custom_model_env: Optional[ModelEnv] = None,
+        observation_class: Type[Observation] = Observation,
     ):
         """Initialize the GPI-PD algorithm.
 
@@ -179,7 +187,10 @@ class GPIPD(MOPolicy, MOAgent):
             device: The device to use.
             custom_qnet: A custom Q network.
             custom_model_env: A custom model environment.
+            observation_class: The observation class to use. (It will wrap the observations returned by the environment to ensure that they implement the Observation interface and all necessary methods.)
         """
+        self.observation_class = observation_class
+        env = ConversionWrapper(env, observation_class=observation_class)  # From this point on the observations are of type Observation (or a subclass of it) and are treated as black boxes
         MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
@@ -204,35 +215,42 @@ class GPIPD(MOPolicy, MOAgent):
         self.custom_model_env = custom_model_env
         self.device = device
 
+        # Maybe make additional checks on the observation shape and dtype for the qnet ?
         # Q-Networks
+        dummy_obs, _ = env.reset()
         if not self.custom_qnet:
-            self.q_nets = [
-                QNet(
-                    self.observation_shape,
-                    self.action_dim,
-                    self.reward_dim,
-                    net_arch=net_arch,
-                    drop_rate=drop_rate,
-                    layer_norm=layer_norm,
-                ).to(self.device)
-                for _ in range(self.num_nets)
-            ]
-            self.target_q_nets = [
-                QNet(
-                    self.observation_shape,
-                    self.action_dim,
-                    self.reward_dim,
-                    net_arch=net_arch,
-                    drop_rate=drop_rate,
-                    layer_norm=layer_norm,
-                ).to(self.device)
-                for _ in range(self.num_nets)
-            ]
-            for q, target_q in zip(self.q_nets, self.target_q_nets):
-                target_q.load_state_dict(q.state_dict())
-                for param in target_q.parameters():
-                    param.requires_grad = False
-            self.q_optim = optim.Adam(chain(*[net.parameters() for net in self.q_nets]), lr=self.learning_rate)
+            if isinstance(dummy_obs.item, np.ndarray):
+                self.observation_shape = dummy_obs.item.shape
+                self.q_nets = [
+                    QNet(
+                        self.observation_shape,
+                        self.action_dim,
+                        self.reward_dim,
+                        net_arch=net_arch,
+                        drop_rate=drop_rate,
+                        layer_norm=layer_norm,
+                    ).to(self.device)
+                    for _ in range(self.num_nets)
+                ]
+                self.target_q_nets = [
+                    QNet(
+                        self.observation_shape,
+                        self.action_dim,
+                        self.reward_dim,
+                        net_arch=net_arch,
+                        drop_rate=drop_rate,
+                        layer_norm=layer_norm,
+                    ).to(self.device)
+                    for _ in range(self.num_nets)
+                ]
+                for q, target_q in zip(self.q_nets, self.target_q_nets):
+                    target_q.load_state_dict(q.state_dict())
+                    for param in target_q.parameters():
+                        param.requires_grad = False
+                self.q_optim = optim.Adam(chain(*[net.parameters() for net in self.q_nets]), lr=self.learning_rate)
+            else:
+                if not self.custom_qnet:
+                    raise ValueError("The observation type is not supported by the default Q network, please provide a custom Q network.")
         else:
             self.q_nets = [custom_qnet.to(self.device) for _ in range(self.num_nets)]
             self.target_q_nets = [custom_qnet.to(self.device) for _ in range(self.num_nets)]
@@ -246,16 +264,14 @@ class GPIPD(MOPolicy, MOAgent):
         self.per = per
         self.gpi_pd = gpi_pd
 
-        # Get action dim
-        self.action_dim = len(self.env.action_space.shape)
-
+        # Got rid of the information about the observation shape and dtype, as it is now handled by the Observation class, we shouldn't lose much performance for array observations as we aren't performing any operations on them
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
-                action_dim=self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                action_dim=self.action_shape, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         else:
             self.replay_buffer = ReplayBuffer(
-                action_dim=self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                action_shape=self.action_shape, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         self.min_priority = min_priority
         self.alpha = alpha_per
@@ -279,7 +295,7 @@ class GPIPD(MOPolicy, MOAgent):
             else:
                 raise NotImplementedError
             self.dynamics_buffer = ReplayBuffer(
-                 action_dim=self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
+                 action_shape=self.action_shape, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
             )
         self.dynamics_train_freq = dynamics_train_freq
         self.dynamics_buffer_size = dynamics_buffer_size
@@ -350,10 +366,8 @@ class GPIPD(MOPolicy, MOAgent):
         if self.dyna:
             saved_params["dynamics_state_dict"] = self.dynamics.state_dict()
         filename = self.experiment_name if filename is None else filename
-        if save_replay_buffer and self.obs_dtype == np.ndarray:
-            saved_params["replay_buffer"] = self.replay_buffer
-        elif save_replay_buffer:  # Save replay buffer to separate folder using the observation's type save function
-            self.replay_buffer.save(save_dir + "/", filename + "_replay_buffer")
+        if save_replay_buffer:  # Save replay buffer to separate folder using the observation's type save function
+            self.replay_buffer.save(save_dir + "/" + filename + "_replay_buffer")
         th.save(saved_params, save_dir + "/" + filename + ".tar")
 
     def load(self, path, load_replay_buffer=True):
@@ -366,9 +380,7 @@ class GPIPD(MOPolicy, MOAgent):
         self.weight_support = params["M"]
         if self.dyna:
             self.dynamics.load_state_dict(params["dynamics_state_dict"])
-        if load_replay_buffer and "replay_buffer" in params:
-            self.replay_buffer = params["replay_buffer"]
-        elif load_replay_buffer:  # Load replay buffer from separate folder
+        if load_replay_buffer:  # Load replay buffer from separate folder
             self.replay_buffer.load(path[:-4] + "_replay_buffer")
 
     def _sample_batch_experiences(self):
@@ -465,6 +477,11 @@ class GPIPD(MOPolicy, MOAgent):
                     np.repeat(s_next_obs, 2, axis=0),
                     np.repeat(s_dones, 2, axis=0),
                 )
+                s_actions, s_rewards, s_dones = (
+                    th.tensor(s_actions, device=self.device),
+                    th.tensor(s_rewards, device=self.device),
+                    th.tensor(s_dones, device=self.device),
+                )
                 # Half of the batch uses the given weight vector, the other half uses weights sampled from the support set
                 w = np.vstack(
                     [weight for _ in range(s_obs.shape[0] // 2)] + random.choices(self.weight_support,
@@ -523,7 +540,7 @@ class GPIPD(MOPolicy, MOAgent):
                     gtd_errors.append(gtd_error.abs())
                 if self.per:
                     td_errors.append(td_error.abs())
-            critic_loss = th.tensor((1 / self.num_nets) * sum(losses)).to(self.device)
+            critic_loss = (1 / self.num_nets) * sum(losses)
 
             self.q_optim.zero_grad()
             critic_loss.backward()
@@ -599,14 +616,15 @@ class GPIPD(MOPolicy, MOAgent):
             )
 
     @th.no_grad()
-    def gpi_action(self, obs: np.ndarray, w: np.ndarray, return_policy_index=False, include_w=False):
+    def gpi_action(self, obs: Observation, w: np.ndarray, return_policy_index=False, include_w=False):
         """Select an action using GPI."""
         if include_w:
             M = np.stack(self.weight_support + [w])
         else:
             M = np.stack(self.weight_support)
 
-        obs_m = obs.repeat(M.shape[0], *(1 for _ in range(obs.ndim)))
+        # From my understanding this should only result in a 1d array of observations, if not we need to move some things around on the nn side
+        obs_m = np.array([obs for _ in range(M.shape[0])])
 
         q_values = self.q_nets[0](obs_m, M)
 
@@ -620,7 +638,7 @@ class GPIPD(MOPolicy, MOAgent):
         return action
 
     @th.no_grad()
-    def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
+    def eval(self, obs: Observation, w: np.ndarray) -> int:
         """Select an action for the given obs and weight vector."""
         if self.use_gpi:
             action = self.gpi_action(obs, w, include_w=False)
@@ -628,7 +646,7 @@ class GPIPD(MOPolicy, MOAgent):
             action = self.max_action(obs, w)
         return action
 
-    def _act(self, obs: np.ndarray, w: np.ndarray) -> int:
+    def _act(self, obs: Observation, w: np.ndarray) -> int:
         if self.np_random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
@@ -640,7 +658,7 @@ class GPIPD(MOPolicy, MOAgent):
                 return self.max_action(obs, w)
 
     @th.no_grad()
-    def max_action(self, obs: np.ndarray, w: np.ndarray) -> int:
+    def max_action(self, obs: Observation, w: np.ndarray) -> int:
         """Select the greedy action."""
         psi = th.min(th.stack([psi_net(obs, w) for psi_net in self.q_nets]), dim=0)[0]
         # psi = self.psi_nets[0](obs, w)
@@ -745,6 +763,8 @@ class GPIPD(MOPolicy, MOAgent):
             eval_freq (int): Number of timesteps between evaluations
             reset_learning_starts (bool): Whether to reset the learning starts
         """
+        if eval_env is not None:
+            eval_env = ConversionWrapper(eval_env, observation_class=self.observation_class)
         weight_support = unique_tol(weight_support)  # remove duplicates
         self.set_weight_support(weight_support)
 

@@ -39,6 +39,7 @@ def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 15000):
         project_name="MORL-Baselines",
         experiment_name="GPI-PD",
         log=True,
+        device="mps"
     )
 
     agent.train(

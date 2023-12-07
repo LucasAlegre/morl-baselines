@@ -194,7 +194,7 @@ class MOAgent(ABC):
                 self.action_dim = self.env.action_space.n
             else:
                 self.action_shape = self.env.action_space.shape
-                self.action_dim = self.env.action_space.shape[0]
+                self.action_dim = self.env.action_space.n
             self.reward_dim = self.env.reward_space.shape[0]
 
     @abstractmethod

@@ -4,10 +4,13 @@ Code adapted from https://github.com/sfujim/LAP-PAL
 
 Code modified to fit the MoDMSE environement
 """
+import copy
 import os
 
 import numpy as np
 import torch as th
+
+from morl_baselines.common.observation import Observation
 
 
 class SumTree:
@@ -111,8 +114,8 @@ class PrioritizedReplayBuffer:
             0,
             0,
         )
-        self.obs = np.zeros((max_size,), dtype=object)
-        self.next_obs = np.zeros((max_size,), dtype=object)
+        self.obs = np.zeros((max_size,), dtype=Observation)
+        self.next_obs = np.zeros((max_size,), dtype=Observation)
         self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
         self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
         self.dones = np.zeros((max_size, 1), dtype=np.float32)
@@ -132,8 +135,9 @@ class PrioritizedReplayBuffer:
             priority: Priority of the new experience
 
         """
-        self.obs[self.ptr] = obs.copy()
-        self.next_obs[self.ptr] = next_obs.copy()
+        self.obs[self.ptr] = copy.deepcopy(
+            obs)  # We could try to first call a .copy() method of the observation if implemented here, but it may be extra
+        self.next_obs[self.ptr] = copy.deepcopy(next_obs)
         self.actions[self.ptr] = np.array(action).copy()
         self.rewards[self.ptr] = np.array(reward).copy()
         self.dones[self.ptr] = np.array(done).copy()
@@ -164,7 +168,14 @@ class PrioritizedReplayBuffer:
             self.dones[idxes],
         )
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples)) + (idxes,)  # , weights)
+            return (
+                np.array([observation.to_tensor(device=device) for observation in experience_tuples[0]]),
+                th.tensor(experience_tuples[1]).to(device),
+                th.tensor(experience_tuples[2]).to(device),
+                np.array([observation.to_tensor(device=device) for observation in experience_tuples[3]]),
+                th.tensor(experience_tuples[4]).to(device),
+                idxes,
+            )
         else:
             return experience_tuples + (idxes,)
 
@@ -181,10 +192,7 @@ class PrioritizedReplayBuffer:
         """
         idxes = self.tree.sample(batch_size)
         if to_tensor:
-            try:
-                return th.tensor(self.obs[idxes]).float().to(device)
-            except TypeError:
-                print("Observation class cannot be converted to tensor.")
+            return np.array([observation.to_tensor(device=device) for observation in self.obs[idxes]])
         else:
             return self.obs[idxes]
 
@@ -221,7 +229,13 @@ class PrioritizedReplayBuffer:
             self.dones[inds],
         )
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x).to(device), tuples))
+            return (
+                np.array([observation.to_tensor(device=device) for observation in tuples[0]]),
+                th.tensor(tuples[1], device=device),
+                th.tensor(tuples[2], device=device),
+                np.array([observation.to_tensor(device=device) for observation in tuples[3]]),
+                th.tensor(tuples[4], device=device),
+            )
         else:
             return tuples
 
@@ -239,36 +253,26 @@ class PrioritizedReplayBuffer:
         if not os.path.isdir(path):
             os.makedirs(path)
 
-        if isinstance(self.obs[0], np.ndarray):
-            np.savez_compressed(
-                path+"buffer.npz",
-                obs=self.obs,
-                actions=self.actions,
-                rewards=self.rewards,
-                next_obs=self.next_obs,
-                dones=self.dones,
-                tree=self.tree.nodes,
-                min_priority=self.min_priority,
-                ptr=self.ptr,
-                size=self.size,
-            )
-        else:
-            np.savez_compressed(
-                path+"buffer_without_obs.npz",
-                actions=self.actions,
-                rewards=self.rewards,
-                dones=self.dones,
-                tree=self.tree.nodes,
-                min_priority=self.min_priority,
-                ptr=self.ptr,
-                size=self.size,
-            )
-            # Check if the observation's class implements a save method
-            try:
-                self.obs[0].save(self.obs, path + "obs")
-                self.obs[0].save(self.next_obs, path + "next_obs")
-            except AttributeError:
-                print("Observation class does not implement a save method.")
+        np.savez_compressed(
+            path + "buffer_without_obs.npz",
+            actions=self.actions,
+            rewards=self.rewards,
+            dones=self.dones,
+            tree=self.tree.nodes,
+            min_priority=self.min_priority,
+            ptr=self.ptr,
+            size=self.size,
+        )
+        # Save the observations
+        # We save the observations separately because they can be large, as we don't know their type (maybe handle the case of np.ndarray separately?)
+        if not os.path.isdir(path + "obs"):
+            os.makedirs(path + "obs")
+        for i, obs in enumerate(self.obs):
+            obs.save(path + "obs/" + str(i))
+        if not os.path.isdir(path + "next_obs"):
+            os.makedirs(path + "next_obs")
+        for i, obs in enumerate(self.next_obs):
+            obs.save(path + "next_obs/" + str(i))
 
     def load(self, path):
         """Load the buffer from a file.
@@ -276,26 +280,20 @@ class PrioritizedReplayBuffer:
         Args:
             path: Path to the file
         """
-        if isinstance(self.obs[0], np.ndarray):
-            data = np.load(path, allow_pickle=True)
-            self.obs = data["obs"]
-            self.actions = data["actions"]
-            self.rewards = data["rewards"]
-            self.next_obs = data["next_obs"]
-            self.dones = data["dones"]
-        else:
-            data = np.load(path, allow_pickle=True)
-            self.actions = data["actions"]
-            self.rewards = data["rewards"]
-            self.next_obs = data["next_obs"]
-            self.dones = data["dones"]
-            # Check if the observation's class implements a load method
-            try:
-                self.obs = self.obs[0].load(path + "obs")
-                self.next_obs = self.obs[0].load(path + "next_obs")
-            except AttributeError:
-                print("Observation class does not implement a load method.")
+
+        data = np.load(path, allow_pickle=True)
+        self.actions = data["actions"]
+        self.rewards = data["rewards"]
+        self.dones = data["dones"]
         self.tree.nodes = data["tree"]
         self.min_priority = data["min_priority"]
         self.ptr = data["ptr"]
         self.size = data["size"]
+
+        # Load the observations
+        self.obs = np.zeros((self.max_size,), dtype=Observation)
+        self.next_obs = np.zeros((self.max_size,), dtype=Observation)
+
+        for i in range(self.size):
+            self.obs[i] = Observation().load(path + "obs/" + str(i))
+            self.next_obs[i] = Observation().load(path + "next_obs/" + str(i))

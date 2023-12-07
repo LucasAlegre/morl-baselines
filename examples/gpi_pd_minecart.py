@@ -8,7 +8,7 @@ from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
 # from gymnasium.wrappers.record_video import RecordVideo
 
 
-def main(algo: str, gpi_pd: bool, g: int, timesteps_per_iter: int = 10000, seed: int = 0):
+def main(algo: str = "gpi-ls", gpi_pd: bool = False, g: int = 20, timesteps_per_iter: int = 10000, seed: int = 0):
     def make_env():
         env = mo_gym.make("minecart-v0")
         env = mo_gym.MORecordEpisodeStatistics(env, gamma=0.98)

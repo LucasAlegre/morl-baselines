@@ -87,7 +87,7 @@ class NatureCNN(nn.Module):
         return self.linear(self.cnn(observations / 255.0))
 
 
-def huber(x, min_priority=0.01):
+def huber(x, min_priority=0.01) -> th.Tensor:
     """Huber loss function.
 
     Args:
