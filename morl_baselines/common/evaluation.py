@@ -164,6 +164,7 @@ def log_all_multi_policy_metrics(
         global_step: global step for logging
         n_sample_weights: number of weights to sample for EUM and MUL computation
         ref_front: reference front, if known
+        horizons (List): Horizons for current_front list, used by some algorithms, like PCN
     """
     filtered_front = list(filter_pareto_dominated(current_front))
     hv = hypervolume(hv_ref_point, filtered_front)

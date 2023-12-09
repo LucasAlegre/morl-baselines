@@ -1,9 +1,9 @@
 """Pareto Conditioned Network. Code adapted from https://github.com/mathieu-reymond/pareto-conditioned-networks ."""
 import heapq
 import os
-from dataclasses import dataclass
-from typing import List, Optional, Union, Type
 from abc import ABC
+from dataclasses import dataclass
+from typing import List, Optional, Type, Union
 
 import gymnasium as gym
 import numpy as np
@@ -75,6 +75,7 @@ class DiscreteActionsDefaultModel(BasePCNModel):
     """Model for the PCN with discrete actions."""
 
     def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int):
+        """Initialize the PCN model for discrete actions."""
         super().__init__(state_dim, action_dim, reward_dim, scaling_factor, hidden_dim)
         self.s_emb = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim), nn.Sigmoid())
         self.c_emb = nn.Sequential(nn.Linear(self.reward_dim + 1, self.hidden_dim), nn.Sigmoid())
@@ -90,6 +91,7 @@ class ContinuousActionsDefaultModel(BasePCNModel):
     """Model for the PCN with continuous actions."""
 
     def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int):
+        """Initialize the PCN model for continuous actions."""
         super().__init__(state_dim, action_dim, reward_dim, scaling_factor, hidden_dim)
         self.s_emb = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim), nn.Sigmoid())
         self.c_emb = nn.Sequential(nn.Linear(self.reward_dim + 1, self.hidden_dim), nn.Sigmoid())
@@ -305,7 +307,7 @@ class PCN(MOAgent, MOPolicy):
             else:
                 # Generate noise that is a percentage of the prediction's magnitude - https://arxiv.org/pdf/2204.05027.pdf
                 noise_ratio = 0.1
-                noise = (th.rand_like(prediction) * 2 - 1)
+                noise = th.rand_like(prediction) * 2 - 1
                 prediction = prediction * (1 - noise_ratio) + noise * noise_ratio
                 action = prediction.detach().cpu().numpy()[0]
 
