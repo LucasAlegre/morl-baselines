@@ -2,7 +2,8 @@
 import heapq
 import os
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Type
+from abc import ABC
 
 import gymnasium as gym
 import numpy as np
@@ -40,16 +41,16 @@ class Transition:
     """Transition dataclass."""
 
     observation: np.ndarray
-    action: int
+    action: Union[float, int]
     reward: np.ndarray
     next_observation: np.ndarray
     terminal: bool
 
 
-class Model(nn.Module):
-    """Model for the PCN."""
+class BasePCNModel(nn.Module, ABC):
+    """Base Model for the PCN."""
 
-    def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int = 64):
+    def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int):
         """Initialize the PCN model."""
         super().__init__()
         self.state_dim = state_dim
@@ -58,25 +59,45 @@ class Model(nn.Module):
         self.scaling_factor = nn.Parameter(th.tensor(scaling_factor).float(), requires_grad=False)
         self.hidden_dim = hidden_dim
 
-        self.s_emb = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim), nn.Sigmoid())
-        self.c_emb = nn.Sequential(nn.Linear(self.reward_dim + 1, self.hidden_dim), nn.Sigmoid())
-        self.fc = nn.Sequential(
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.action_dim),
-            nn.LogSoftmax(1),
-        )
-
     def forward(self, state, desired_return, desired_horizon):
-        """Return log-probabilities of actions."""
+        """Return log-probabilities of actions or return action directly in case of continuous action space."""
         c = th.cat((desired_return, desired_horizon), dim=-1)
         # commands are scaled by a fixed factor
         c = c * self.scaling_factor
         s = self.s_emb(state.float())
         c = self.c_emb(c)
         # element-wise multiplication of state-embedding and command
-        log_prob = self.fc(s * c)
-        return log_prob
+        prediction = self.fc(s * c)
+        return prediction
+
+
+class DiscreteActionsDefaultModel(BasePCNModel):
+    """Model for the PCN with discrete actions."""
+
+    def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int):
+        super().__init__(state_dim, action_dim, reward_dim, scaling_factor, hidden_dim)
+        self.s_emb = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim), nn.Sigmoid())
+        self.c_emb = nn.Sequential(nn.Linear(self.reward_dim + 1, self.hidden_dim), nn.Sigmoid())
+        self.fc = nn.Sequential(
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.action_dim),
+            nn.LogSoftmax(dim=1),
+        )
+
+
+class ContinuousActionsDefaultModel(BasePCNModel):
+    """Model for the PCN with continuous actions."""
+
+    def __init__(self, state_dim: int, action_dim: int, reward_dim: int, scaling_factor: np.ndarray, hidden_dim: int):
+        super().__init__(state_dim, action_dim, reward_dim, scaling_factor, hidden_dim)
+        self.s_emb = nn.Sequential(nn.Linear(self.state_dim, self.hidden_dim), nn.Sigmoid())
+        self.c_emb = nn.Sequential(nn.Linear(self.reward_dim + 1, self.hidden_dim), nn.Sigmoid())
+        self.fc = nn.Sequential(
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.action_dim),
+        )
 
 
 class PCN(MOAgent, MOPolicy):
@@ -107,6 +128,8 @@ class PCN(MOAgent, MOPolicy):
         log: bool = True,
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
+        continuous: bool = False,
+        model_class: Optional[Type[BasePCNModel]] = None,
     ) -> None:
         """Initialize PCN agent.
 
@@ -123,6 +146,8 @@ class PCN(MOAgent, MOPolicy):
             log (bool, optional): Whether to log to wandb. Defaults to True.
             seed (Optional[int], optional): Seed for reproducibility. Defaults to None.
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
+            continuous (bool, optional): Whether to use continuous actions. Defaults to False.
+            model_class (Optional[Type[BasePCNModel]], optional): Model class to use. Defaults to None.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
@@ -135,8 +160,18 @@ class PCN(MOAgent, MOPolicy):
         self.scaling_factor = scaling_factor
         self.desired_return = None
         self.desired_horizon = None
+        self.continuous = continuous
 
-        self.model = Model(
+        if model_class and not issubclass(model_class, BasePCNModel):
+            raise ValueError("model_class must be a subclass of BasePCNModel")
+
+        if model_class is None:
+            if self.continuous:
+                model_class = ContinuousActionsDefaultModel
+            else:
+                model_class = DiscreteActionsDefaultModel
+
+        self.model = model_class(
             self.observation_dim, self.action_dim, self.reward_dim, self.scaling_factor, hidden_dim=self.hidden_dim
         ).to(self.device)
         self.opt = th.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -173,22 +208,25 @@ class PCN(MOAgent, MOPolicy):
             batch.append((s_t, a_t, r_t, h_t))
 
         obs, actions, desired_return, desired_horizon = zip(*batch)
-        log_prob = self.model(
+        prediction = self.model(
             th.tensor(obs).to(self.device),
             th.tensor(desired_return).to(self.device),
             th.tensor(desired_horizon).unsqueeze(1).to(self.device),
         )
 
         self.opt.zero_grad()
-        # one-hot of action for CE loss
-        actions = F.one_hot(th.tensor(actions).long().to(self.device), len(log_prob[0]))
-        # cross-entropy loss
-        l = th.sum(-actions * log_prob, -1)
-        l = l.mean()
+        if self.continuous:
+            l = F.mse_loss(th.tensor(actions).float().to(self.device), prediction)
+        else:
+            # one-hot of action for CE loss
+            actions = F.one_hot(th.tensor(actions).long().to(self.device), len(prediction[0]))
+            # cross-entropy loss
+            l = th.sum(-actions * prediction, -1)
+            l = l.mean()
         l.backward()
         self.opt.step()
 
-        return l, log_prob
+        return l, prediction
 
     def _add_episode(self, transitions: List[Transition], max_size: int, step: int) -> None:
         # compute return
@@ -255,12 +293,26 @@ class PCN(MOAgent, MOPolicy):
         return desired_return, desired_horizon
 
     def _act(self, obs: np.ndarray, desired_return, desired_horizon, eval_mode=False) -> int:
-        log_probs = self.model(
+        prediction = self.model(
             th.tensor([obs]).float().to(self.device),
             th.tensor([desired_return]).float().to(self.device),
             th.tensor([desired_horizon]).unsqueeze(1).float().to(self.device),
         )
-        log_probs = log_probs.detach().cpu().numpy()[0]
+
+        if self.continuous:
+            if eval_mode:
+                action = prediction.detach().cpu().numpy()[0]
+            else:
+                # Generate noise that is a percentage of the prediction's magnitude - https://arxiv.org/pdf/2204.05027.pdf
+                noise_ratio = 0.1
+                noise = (th.rand_like(prediction) * 2 - 1)
+                prediction = prediction * (1 - noise_ratio) + noise * noise_ratio
+                action = prediction.detach().cpu().numpy()[0]
+
+            return action
+
+        log_probs = prediction.detach().cpu().numpy()[0]
+
         if eval_mode:
             action = np.argmax(log_probs)
         else:
@@ -382,9 +434,10 @@ class PCN(MOAgent, MOPolicy):
             for _ in range(num_model_updates):
                 l, lp = self.update()
                 loss.append(l.detach().cpu().numpy())
-                lp = lp.detach().cpu().numpy()
-                ent = np.sum(-np.exp(lp) * lp)
-                entropy.append(ent)
+                if not self.continuous:
+                    lp = lp.detach().cpu().numpy()
+                    ent = np.sum(-np.exp(lp) * lp)
+                    entropy.append(ent)
 
             desired_return, desired_horizon = self._choose_commands(num_er_episodes)
 
@@ -436,7 +489,7 @@ class PCN(MOAgent, MOPolicy):
                         },
                     )
             print(
-                f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E}"
+                f"step {self.global_step} \t return {np.mean(returns, axis=0)}, ({np.std(returns, axis=0)}) \t loss {np.mean(loss):.3E} \t horizons {np.mean(horizons)}"
             )
 
             if self.global_step >= (n_checkpoints + 1) * total_timesteps / 1000:
