@@ -147,7 +147,7 @@ def main():
     sweep_run = wandb.init()
 
     # Workers will be blocked on a queue waiting to start
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+    with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
         futures = []
         for num in range(args.num_seeds):
             # Get the seed for the worker
