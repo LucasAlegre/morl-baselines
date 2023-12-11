@@ -48,7 +48,7 @@ def parse_args():
 
     # If num_workers is None, will use the number of processors on the machine, multiplied by 5
     # https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor
-    parser.add_argument("num_workers", type=int, help="Number of workers to use for the sweep", default=None)
+    parser.add_argument("--num-workers", type=int, help="Number of workers to use for the sweep", default=None)
 
     parser.add_argument(
         "--seed", type=int, help="Random seed to start from, seeds will be in [seed, seed+num-seeds)", default=10
@@ -145,6 +145,8 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
 def main():
     # Get the sweep id
     sweep_run = wandb.init()
+
+    print("Num workers: {}".format(args.num_workers))
 
     # Workers will be blocked on a queue waiting to start
     with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
