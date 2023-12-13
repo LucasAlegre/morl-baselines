@@ -178,7 +178,17 @@ class MPMOQLearning(MOAgent):
             eval_freq: The frequency of evaluation.
         """
         if self.log:
-            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+            self.register_additional_config(
+                {
+                    "total_timesteps": total_timesteps,
+                    "ref_point": ref_point.tolist(),
+                    "known_front": known_pareto_front,
+                    "timesteps_per_iteration": timesteps_per_iteration,
+                    "num_eval_weights_for_front": num_eval_weights_for_front,
+                    "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "eval_freq": eval_freq,
+                }
+            )
         num_iterations = int(total_timesteps / timesteps_per_iteration)
         if eval_env is None:
             eval_env = deepcopy(self.env)
