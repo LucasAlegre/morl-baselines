@@ -355,7 +355,19 @@ class PCN(MOAgent, MOPolicy):
             num_points_pf: number of points to sample from pareto front for metrics calculation
         """
         if self.log:
-            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+            self.register_additional_config(
+                {
+                    "total_timesteps": total_timesteps,
+                    "ref_point": ref_point.tolist(),
+                    "known_front": known_pareto_front,
+                    "num_er_episodes": num_er_episodes,
+                    "num_step_episodes": num_step_episodes,
+                    "num_model_updates": num_model_updates,
+                    "max_return": max_return.tolist(),
+                    "max_buffer_size": max_buffer_size,
+                    "num_points_pf": num_points_pf,
+                }
+            )
         self.global_step = 0
         total_episodes = num_er_episodes
         n_checkpoints = 0
