@@ -104,8 +104,6 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     # If we launch multiple workers, then they will fight for the CPU.
     th.set_num_threads(1)
 
-    print("Spinning up worker {}".format(worker_num) + f" on device {device}")
-
     # Set the seed
     seed_everything(seed)
 
@@ -172,6 +170,7 @@ def main():
             seed = seeds[num]
             # Get the device for the worker
             device = args.devices[num] if args.devices else "auto"
+            print("Spinning up worker {}".format(num) + f" on device {device}")
             # Add the worker to the queue
             futures.append(
                 executor.submit(
