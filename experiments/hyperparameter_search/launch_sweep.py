@@ -56,7 +56,7 @@ def parse_args():
         "--devices",
         type=str,
         nargs="+",
-        help="List of devices assigned to workers, e.g., 'cuda:0 cuda:1 cpu'. If not provided, defaults to 'cpu'.",
+        help="List of devices assigned to workers, e.g., 'cuda:0 cuda:1 cpu'. If not provided, defaults to 'auto'.",
         default=None,
     )
 
