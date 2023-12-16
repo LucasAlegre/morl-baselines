@@ -148,7 +148,7 @@ class Envelope(MOPolicy, MOAgent):
             group: The wandb group to use for logging.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -168,6 +168,8 @@ class Envelope(MOPolicy, MOAgent):
         self.initial_homotopy_lambda = initial_homotopy_lambda
         self.final_homotopy_lambda = final_homotopy_lambda
         self.homotopy_decay_steps = homotopy_decay_steps
+
+        print("Envelope device: ", self.device)
 
         self.q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
         self.target_q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
