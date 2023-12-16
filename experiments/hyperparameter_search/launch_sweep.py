@@ -100,8 +100,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     device = worker_data.device
 
     # Set the number of threads to one.
-    # Otherwise, PyTorch will use all the available cores to run computations on CPU.
-    # If we launch multiple workers, then they will fight for the CPU.
+    # Otherwise, PyTorch will use all the available cores to run computations on CPU which will slow down the training.
     th.set_num_threads(1)
 
     # Set the seed
