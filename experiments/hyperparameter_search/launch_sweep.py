@@ -1,7 +1,6 @@
 import argparse
 import os
 from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import cpu_count
 from dataclasses import dataclass
 
 import numpy as np
@@ -87,6 +86,11 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     config = worker_data.config
     worker_num = worker_data.worker_num
     device = worker_data.device
+
+    # Set the number of threads
+    # Otherwise, PyTorch will use all the available cores to run computations on CPU.
+    # So if we launch multiple processes, then they will fight for the CPU.
+    torch.set_num_threads(1)
 
     # Set the seed
     seed_everything(seed)
