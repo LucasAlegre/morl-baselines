@@ -125,7 +125,7 @@ class PCN(MOAgent, MOPolicy):
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
 
         self.experience_replay = []  # List of (distance, time_step, transition)
         self.batch_size = batch_size
