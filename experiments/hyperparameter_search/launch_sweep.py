@@ -48,9 +48,7 @@ def parse_args():
     parser.add_argument("--sweep-count", type=int, help="Number of hyperparameter search trials to run", default=10)
     parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
 
-    # If num_workers is None, will use the number of processors on the machine, multiplied by 5
-    # https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor
-    parser.add_argument("--num-workers", type=int, help="Number of workers to use for the sweep", default=None)
+    parser.add_argument("--num-workers", type=int, help="Number of workers to use for the sweep", default=3)
 
     parser.add_argument(
         "--devices",
