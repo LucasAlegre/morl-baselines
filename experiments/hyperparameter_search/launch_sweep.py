@@ -19,6 +19,7 @@ from morl_baselines.common.experiments import (
 )
 from morl_baselines.common.utils import reset_wandb_env
 
+
 @dataclass
 class WorkerInitData:
     sweep_id: str
@@ -26,9 +27,11 @@ class WorkerInitData:
     config: dict
     worker_num: int
 
+
 @dataclass
 class WorkerDoneData:
     hypervolume: float
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -76,6 +79,7 @@ def parse_args():
 
     return args
 
+
 def train(worker_data: WorkerInitData) -> WorkerDoneData:
     # Reset the wandb environment variables
     reset_wandb_env()
@@ -91,7 +95,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     torch.set_num_threads(1)
 
     # Assign the worker to a GPU if available in a round robin fashion
-    device = f'cuda:{worker_num % torch.cuda.device_count()}' if torch.cuda.is_available() else 'cpu'
+    device = f"cuda:{worker_num % torch.cuda.device_count()}" if torch.cuda.is_available() else "cpu"
     print("Spinning up worker {}".format(worker_num) + f" on device {device}")
 
     # Set the seed

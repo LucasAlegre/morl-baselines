@@ -104,10 +104,7 @@ class PrioritizedReplayBuffer:
             min_priority: Minimum priority of the buffer
         """
         self.max_size = max_size
-        (
-            self.ptr,
-            self.size,
-        ) = (
+        (self.ptr, self.size,) = (
             0,
             0,
         )
