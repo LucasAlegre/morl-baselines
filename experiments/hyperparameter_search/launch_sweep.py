@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument("--wandb-entity", type=str, help="Wandb entity to use for the sweep", required=False)
     parser.add_argument("--project-name", type=str, help="Project name to use for the sweep", default="MORL-Baselines")
 
-    parser.add_argument("--sweep-count", type=int, help="Number of trials to do in the sweep worker", default=10)
+    parser.add_argument("--sweep-count", type=int, help="Number of hyperparameter search trials to run", default=10)
     parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
 
     # If num_workers is None, will use the number of processors on the machine, multiplied by 5
@@ -56,7 +56,7 @@ def parse_args():
         "--devices",
         type=str,
         nargs="+",
-        help="List of devices assigned to workers, e.g., 'cuda:0 cuda:1 cpu'. If not provided, defaults to 'auto'.",
+        help="List of devices to use. Each device is assigned to a worker, e.g., 'cuda:0 cuda:1 cpu'. If not provided, defaults to 'auto'.",
         default=None,
     )
 
@@ -161,6 +161,8 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
 def main():
     # Get the sweep id
     sweep_run = wandb.init()
+
+    print("Num workers: {}".format(args.num_workers))
 
     # Workers will be blocked on a queue waiting to start
     with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
