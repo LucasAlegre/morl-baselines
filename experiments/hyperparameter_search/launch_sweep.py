@@ -25,7 +25,6 @@ class WorkerInitData:
     seed: int
     config: dict
     worker_num: int
-    device: str
 
 @dataclass
 class WorkerDoneData:
@@ -85,12 +84,15 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     group = worker_data.sweep_id
     config = worker_data.config
     worker_num = worker_data.worker_num
-    device = worker_data.device
 
-    # Set the number of threads
+    # Set the number of threads to one.
     # Otherwise, PyTorch will use all the available cores to run computations on CPU.
-    # So if we launch multiple processes, then they will fight for the CPU.
+    # If we launch multiple workers, then they will fight for the CPU.
     torch.set_num_threads(1)
+
+    # Assign the worker to a GPU if available in a round robin fashion
+    device = f'cuda:{worker_num % torch.cuda.device_count()}' if torch.cuda.is_available() else 'cpu'
+    print("Spinning up worker {}".format(worker_num) + f" on device {device}")
 
     # Set the seed
     seed_everything(seed)
@@ -150,21 +152,16 @@ def main():
     # Get the sweep id
     sweep_run = wandb.init()
 
-    print("Num workers: {}".format(args.num_workers))
-
     # Workers will be blocked on a queue waiting to start
     with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
         futures = []
         for num in range(args.num_seeds):
             # Get the seed for the worker
             seed = seeds[num]
-            # Assign the worker to a GPU if available in a round robin fashion
-            device = f'cuda:{num % torch.cuda.device_count()}' if torch.cuda.is_available() else 'cpu'
-            print("Spinning up worker {}".format(num) + f" on device {device}")
             # Add the worker to the queue
             futures.append(
                 executor.submit(
-                    train, WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num, device=device)
+                    train, WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num)
                 )
             )
 
