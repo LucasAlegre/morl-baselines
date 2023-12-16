@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import wandb
-import torch
+import torch as th
 import yaml
 
 import mo_gymnasium as mo_gym
@@ -26,6 +26,7 @@ class WorkerInitData:
     seed: int
     config: dict
     worker_num: int
+    device: str
 
 
 @dataclass
@@ -50,6 +51,14 @@ def parse_args():
     # If num_workers is None, will use the number of processors on the machine, multiplied by 5
     # https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor
     parser.add_argument("--num-workers", type=int, help="Number of workers to use for the sweep", default=None)
+
+    parser.add_argument(
+        "--devices",
+        type=str,
+        nargs="+",
+        help="List of devices assigned to workers, e.g., 'cuda:0 cuda:1 cpu'. If not provided, defaults to 'cpu'.",
+        default=None,
+    )
 
     parser.add_argument(
         "--seed", type=int, help="Random seed to start from, seeds will be in [seed, seed+num-seeds)", default=10
@@ -88,14 +97,13 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     group = worker_data.sweep_id
     config = worker_data.config
     worker_num = worker_data.worker_num
+    device = worker_data.device
 
     # Set the number of threads to one.
     # Otherwise, PyTorch will use all the available cores to run computations on CPU.
     # If we launch multiple workers, then they will fight for the CPU.
-    torch.set_num_threads(1)
+    th.set_num_threads(1)
 
-    # Assign the worker to a GPU if available in a round robin fashion
-    device = f"cuda:{worker_num % torch.cuda.device_count()}" if torch.cuda.is_available() else "cpu"
     print("Spinning up worker {}".format(worker_num) + f" on device {device}")
 
     # Set the seed
@@ -162,10 +170,13 @@ def main():
         for num in range(args.num_seeds):
             # Get the seed for the worker
             seed = seeds[num]
+            # Get the device for the worker
+            device = args.devices[num] if args.devices else "auto"
             # Add the worker to the queue
             futures.append(
                 executor.submit(
-                    train, WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num)
+                    train,
+                    WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num, device=device),
                 )
             )
 
