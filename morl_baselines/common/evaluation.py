@@ -145,7 +145,6 @@ def log_all_multi_policy_metrics(
     global_step: int,
     n_sample_weights: int = 50,
     ref_front: Optional[List[np.ndarray]] = None,
-    horizons: Optional[List[np.ndarray]] = None,
 ):
     """Logs all metrics for multi-policy training.
 
@@ -164,7 +163,6 @@ def log_all_multi_policy_metrics(
         global_step: global step for logging
         n_sample_weights: number of weights to sample for EUM and MUL computation
         ref_front: reference front, if known
-        horizons (List): Horizons for current_front list, used by some algorithms, like PCN
     """
     filtered_front = list(filter_pareto_dominated(current_front))
     hv = hypervolume(hv_ref_point, filtered_front)
@@ -180,23 +178,10 @@ def log_all_multi_policy_metrics(
         },
         commit=False,
     )
-    columns = [f"objective_{i}" for i in range(1, reward_dim + 1)]
-    data = [p.tolist() for p in filtered_front]
-
-    # Filter the horizons array using filtered_front so that filtered horizons would contain horizons for the filtered front
-    if horizons is not None:
-        filtered_indices = []
-        for i, item in enumerate(current_front):
-            for filtered_item in filtered_front:
-                if np.array_equal(item, filtered_item):
-                    filtered_indices.append(i)
-                    break
-
-        filtered_horizons = [horizons[i] for i in filtered_indices]
-        columns.append("horizons")
-        data = [p.tolist() + [h] for p, h in zip(filtered_front, filtered_horizons)]
-
-    front = wandb.Table(columns=columns, data=data)
+    front = wandb.Table(
+        columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
+        data=[p.tolist() for p in filtered_front],
+    )
     wandb.log({"eval/front": front})
 
     # If PF is known, log the additional metrics
