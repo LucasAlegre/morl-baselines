@@ -124,13 +124,13 @@ class PCN(MOAgent, MOPolicy):
         gamma: float = 1.0,
         batch_size: int = 256,
         hidden_dim: int = 64,
+        noise: float = 0.1,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "PCN",
         wandb_entity: Optional[str] = None,
         log: bool = True,
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
-        continuous: bool = False,
         model_class: Optional[Type[BasePCNModel]] = None,
     ) -> None:
         """Initialize PCN agent.
@@ -142,13 +142,13 @@ class PCN(MOAgent, MOPolicy):
             gamma (float, optional): Discount factor. Defaults to 1.0.
             batch_size (int, optional): Batch size. Defaults to 32.
             hidden_dim (int, optional): Hidden dimension. Defaults to 64.
+            noise (float, optional): Standard deviation of the noise to add to the action in the continous action case. Defaults to 0.1.
             project_name (str, optional): Name of the project for wandb. Defaults to "MORL-Baselines".
             experiment_name (str, optional): Name of the experiment for wandb. Defaults to "PCN".
             wandb_entity (Optional[str], optional): Entity for wandb. Defaults to None.
             log (bool, optional): Whether to log to wandb. Defaults to True.
             seed (Optional[int], optional): Seed for reproducibility. Defaults to None.
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
-            continuous (bool, optional): Whether to use continuous actions. Defaults to False.
             model_class (Optional[Type[BasePCNModel]], optional): Model class to use. Defaults to None.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
@@ -162,13 +162,14 @@ class PCN(MOAgent, MOPolicy):
         self.scaling_factor = scaling_factor
         self.desired_return = None
         self.desired_horizon = None
-        self.continuous = continuous
+        self.continuous_action = True if type(self.env.action_space) is gym.spaces.Box else False
+        self.noise = noise
 
         if model_class and not issubclass(model_class, BasePCNModel):
             raise ValueError("model_class must be a subclass of BasePCNModel")
 
         if model_class is None:
-            if self.continuous:
+            if self.continuous_action:
                 model_class = ContinuousActionsDefaultModel
             else:
                 model_class = DiscreteActionsDefaultModel
@@ -180,6 +181,7 @@ class PCN(MOAgent, MOPolicy):
 
         self.log = log
         if log:
+            experiment_name += " continuous action" if self.continuous_action else ""
             self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self) -> dict:
@@ -191,6 +193,8 @@ class PCN(MOAgent, MOPolicy):
             "learning_rate": self.learning_rate,
             "hidden_dim": self.hidden_dim,
             "scaling_factor": self.scaling_factor,
+            "continuous_action": self.continuous_action,
+            "noise": self.noise,
             "seed": self.seed,
         }
 
@@ -217,7 +221,7 @@ class PCN(MOAgent, MOPolicy):
         )
 
         self.opt.zero_grad()
-        if self.continuous:
+        if self.continuous_action:
             l = F.mse_loss(th.tensor(actions).float().to(self.device), prediction)
         else:
             # one-hot of action for CE loss
@@ -301,25 +305,20 @@ class PCN(MOAgent, MOPolicy):
             th.tensor([desired_horizon]).unsqueeze(1).float().to(self.device),
         )
 
-        if self.continuous:
-            if eval_mode:
-                action = prediction.detach().cpu().numpy()[0]
-            else:
-                # Generate noise that is a percentage of the prediction's magnitude - https://arxiv.org/pdf/2204.05027.pdf
-                noise_ratio = 0.1
-                noise = th.rand_like(prediction) * 2 - 1
-                prediction = prediction * (1 - noise_ratio) + noise * noise_ratio
-                action = prediction.detach().cpu().numpy()[0]
-
+        if self.continuous_action:
+            action = prediction.detach().cpu().numpy()[0]
+            if not eval_mode:
+                # Add Gaussian noise: https://arxiv.org/pdf/2204.05027.pdf
+                action = action + np.random.normal(0.0, self.noise)
             return action
-
-        log_probs = prediction.detach().cpu().numpy()[0]
-
-        if eval_mode:
-            action = np.argmax(log_probs)
         else:
-            action = self.np_random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
-        return action
+            log_probs = prediction.detach().cpu().numpy()[0]
+
+            if eval_mode:
+                action = np.argmax(log_probs)
+            else:
+                action = self.np_random.choice(np.arange(len(log_probs)), p=np.exp(log_probs))
+            return action
 
     def _run_episode(self, env, desired_return, desired_horizon, max_return, eval_mode=False):
         transitions = []
@@ -436,7 +435,7 @@ class PCN(MOAgent, MOPolicy):
             for _ in range(num_model_updates):
                 l, lp = self.update()
                 loss.append(l.detach().cpu().numpy())
-                if not self.continuous:
+                if not self.continuous_action:
                     lp = lp.detach().cpu().numpy()
                     ent = np.sum(-np.exp(lp) * lp)
                     entropy.append(ent)
@@ -454,10 +453,16 @@ class PCN(MOAgent, MOPolicy):
                     {
                         "train/hypervolume": hv_est,
                         "train/loss": np.mean(loss),
-                        "train/entropy": np.mean(entropy),
                         "global_step": self.global_step,
                     },
                 )
+                if not self.continuous_action:
+                    wandb.log(
+                        {
+                            "train/entropy": np.mean(entropy),
+                            "global_step": self.global_step,
+                        },
+                    )
 
             returns = []
             horizons = []
