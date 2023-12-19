@@ -142,7 +142,7 @@ class PCN(MOAgent, MOPolicy):
             gamma (float, optional): Discount factor. Defaults to 1.0.
             batch_size (int, optional): Batch size. Defaults to 32.
             hidden_dim (int, optional): Hidden dimension. Defaults to 64.
-            noise (float, optional): Standard deviation of the noise to add to the action in the continous action case. Defaults to 0.1.
+            noise (float, optional): Standard deviation of the noise to add to the action in the continuous action case. Defaults to 0.1.
             project_name (str, optional): Name of the project for wandb. Defaults to "MORL-Baselines".
             experiment_name (str, optional): Name of the experiment for wandb. Defaults to "PCN".
             wandb_entity (Optional[str], optional): Entity for wandb. Defaults to None.
