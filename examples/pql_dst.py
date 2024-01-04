@@ -1,7 +1,7 @@
 import mo_gymnasium as mo_gym
 import numpy as np
 
-from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
+from morl_baselines_modmse.multi_policy.pareto_q_learning.pql import PQL
 
 
 if __name__ == "__main__":

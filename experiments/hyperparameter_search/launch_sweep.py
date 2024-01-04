@@ -9,13 +9,13 @@ import wandb
 import yaml
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.evaluation import seed_everything
-from morl_baselines.common.experiments import (
+from morl_baselines_modmse.common.evaluation import seed_everything
+from morl_baselines_modmse.common.experiments import (
     ALGOS,
     ENVS_WITH_KNOWN_PARETO_FRONT,
     StoreDict,
 )
-from morl_baselines.common.utils import reset_wandb_env
+from morl_baselines_modmse.common.utils import reset_wandb_env
 
 
 @dataclass

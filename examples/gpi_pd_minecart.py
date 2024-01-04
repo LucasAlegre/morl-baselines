@@ -2,7 +2,7 @@ import fire
 import mo_gymnasium as mo_gym
 import numpy as np
 
-from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
+from morl_baselines_modmse.multi_policy.gpi_pd.gpi_pd import GPIPD
 
 
 # from gymnasium.wrappers.record_video import RecordVideo

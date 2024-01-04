@@ -2,8 +2,8 @@ import mo_gymnasium as mo_gym
 import numpy as np
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.evaluation import eval_mo_reward_conditioned
-from morl_baselines.single_policy.esr.eupg import EUPG
+from morl_baselines_modmse.common.evaluation import eval_mo_reward_conditioned
+from morl_baselines_modmse.single_policy.esr.eupg import EUPG
 
 
 if __name__ == "__main__":

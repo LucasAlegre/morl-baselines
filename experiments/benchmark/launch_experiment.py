@@ -19,8 +19,8 @@ from gymnasium.wrappers import FlattenObservation
 from gymnasium.wrappers.record_video import RecordVideo
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.evaluation import seed_everything
-from morl_baselines.common.experiments import (
+from morl_baselines_modmse.common.evaluation import seed_everything
+from morl_baselines_modmse.common.experiments import (
     ALGOS,
     ENVS_WITH_KNOWN_PARETO_FRONT,
     StoreDict,

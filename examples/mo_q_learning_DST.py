@@ -4,9 +4,9 @@ import mo_gymnasium as mo_gym
 import numpy as np
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
-from morl_baselines.common.evaluation import eval_mo
-from morl_baselines.common.scalarization import tchebicheff
-from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
+from morl_baselines_modmse.common.evaluation import eval_mo
+from morl_baselines_modmse.common.scalarization import tchebicheff
+from morl_baselines_modmse.single_policy.ser.mo_q_learning import MOQLearning
 
 
 if __name__ == "__main__":

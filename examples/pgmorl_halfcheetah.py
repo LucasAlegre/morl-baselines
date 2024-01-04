@@ -1,8 +1,8 @@
 import numpy as np
 
-from morl_baselines.common.evaluation import eval_mo
-from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
-from morl_baselines.single_policy.ser.mo_ppo import make_env
+from morl_baselines_modmse.common.evaluation import eval_mo
+from morl_baselines_modmse.multi_policy.pgmorl.pgmorl import PGMORL
+from morl_baselines_modmse.single_policy.ser.mo_ppo import make_env
 
 
 if __name__ == "__main__":

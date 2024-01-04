@@ -5,23 +5,23 @@ import mo_gymnasium as mo_gym
 import numpy as np
 from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
-from morl_baselines.common.evaluation import eval_mo, eval_mo_reward_conditioned
-from morl_baselines.common.scalarization import tchebicheff
-from morl_baselines.multi_policy.capql.capql import CAPQL
-from morl_baselines.multi_policy.envelope.envelope import Envelope
-from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPIPD
-from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
+from morl_baselines_modmse.common.evaluation import eval_mo, eval_mo_reward_conditioned
+from morl_baselines_modmse.common.scalarization import tchebicheff
+from morl_baselines_modmse.multi_policy.capql.capql import CAPQL
+from morl_baselines_modmse.multi_policy.envelope.envelope import Envelope
+from morl_baselines_modmse.multi_policy.gpi_pd.gpi_pd import GPIPD
+from morl_baselines_modmse.multi_policy.gpi_pd.gpi_pd_continuous_action import (
     GPIPDContinuousAction,
 )
-from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
-from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
+from morl_baselines_modmse.multi_policy.linear_support.linear_support import LinearSupport
+from morl_baselines_modmse.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (
     MPMOQLearning,
 )
-from morl_baselines.multi_policy.pareto_q_learning.pql import PQL
-from morl_baselines.multi_policy.pcn.pcn import PCN
-from morl_baselines.multi_policy.pgmorl.pgmorl import PGMORL
-from morl_baselines.single_policy.esr.eupg import EUPG
-from morl_baselines.single_policy.ser.mo_q_learning import MOQLearning
+from morl_baselines_modmse.multi_policy.pareto_q_learning.pql import PQL
+from morl_baselines_modmse.multi_policy.pcn.pcn import PCN
+from morl_baselines_modmse.multi_policy.pgmorl.pgmorl import PGMORL
+from morl_baselines_modmse.single_policy.esr.eupg import EUPG
+from morl_baselines_modmse.single_policy.ser.mo_q_learning import MOQLearning
 
 
 def test_pql():

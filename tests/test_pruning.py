@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial import ConvexHull
 from scipy.stats import halfnorm
 
-from morl_baselines.common.pareto import (
+from morl_baselines_modmse.common.pareto import (
     filter_convex_dominated,
     filter_pareto_dominated,
 )

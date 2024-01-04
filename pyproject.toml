@@ -59,7 +59,7 @@ Documentation = "https://lucasalegre.github.io/morl-baselines/"
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["morl_baselines", "morl_baselines.*", "examples", "examples.*"]
+include = ["morl_baselines_modmse", "morl_baselines_modmse.*", "examples", "examples.*"]
 
 [tool.setuptools.package-data]
 morl_baselines = ["*.json", "assets/*"]
@@ -74,7 +74,7 @@ include = '\.pyi?$'
 [tool.isort]
 atomic = true
 profile = "black"
-src_paths = ["morl_baselines"]
+src_paths = ["morl_baselines_modmse"]
 extra_standard_library = ["typing_extensions"]
 indent = 4
 lines_after_imports = 2
