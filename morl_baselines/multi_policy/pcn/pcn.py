@@ -389,7 +389,7 @@ class PCN(MOAgent, MOPolicy):
         num_er_episodes: int = 20,
         num_step_episodes: int = 10,
         num_model_updates: int = 50,
-        max_return: np.ndarray = 100.0,
+        max_return: np.ndarray = None,
         max_buffer_size: int = 100,
         num_points_pf: int = 100,
     ):
@@ -403,10 +403,11 @@ class PCN(MOAgent, MOPolicy):
             num_er_episodes: number of episodes to fill experience replay buffer
             num_step_episodes: number of steps per episode
             num_model_updates: number of model updates per episode
-            max_return: maximum return for clipping desired return
+            max_return: maximum return for clipping desired return. When None, this will be set to 100 for all objectives.
             max_buffer_size: maximum buffer size
             num_points_pf: number of points to sample from pareto front for metrics calculation
         """
+        max_return = max_return if max_return is not None else np.full(self.reward_dim, 100.0, dtype=np.float32)
         if self.log:
             self.register_additional_config(
                 {
