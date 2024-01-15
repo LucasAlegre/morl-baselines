@@ -10,6 +10,7 @@ from pymoo.util.ref_dirs import get_reference_directions
 
 from morl_baselines.common.pareto import filter_pareto_dominated
 from morl_baselines.common.performance_indicators import (
+    cardinality,
     expected_utility,
     hypervolume,
     igd,
@@ -168,12 +169,14 @@ def log_all_multi_policy_metrics(
     hv = hypervolume(hv_ref_point, filtered_front)
     sp = sparsity(filtered_front)
     eum = expected_utility(filtered_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
+    card = cardinality(filtered_front)
 
     wandb.log(
         {
             "eval/hypervolume": hv,
             "eval/sparsity": sp,
             "eval/eum": eum,
+            "eval/cardinality": card,
             "global_step": global_step,
         },
         commit=False,
