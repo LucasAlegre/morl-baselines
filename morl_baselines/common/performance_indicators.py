@@ -87,6 +87,20 @@ def expected_utility(front: List[np.ndarray], weights_set: List[np.ndarray], uti
     return np.mean(np.array(maxs), axis=0)
 
 
+def cardinality(front: List[np.ndarray]) -> float:
+    """Cardinality Metric.
+
+    Cardinality of the Pareto front approximation.
+
+    Args:
+        front: current pareto front to compute the cardinality on
+
+    Returns:
+        float: cardinality metric
+    """
+    return len(front)
+
+
 def maximum_utility_loss(
     front: List[np.ndarray], reference_set: List[np.ndarray], weights_set: np.ndarray, utility: Callable = np.dot
 ) -> float:
