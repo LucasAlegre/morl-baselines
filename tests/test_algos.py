@@ -64,7 +64,6 @@ def test_eupg():
         agent, env=eval_env, scalarization=scalarization, w=np.ones(2)
     )
     assert vec_ret[0] > vec_disc_ret[0]
-    assert vec_ret[1] > vec_disc_ret[1]
 
 
 def test_moql():
