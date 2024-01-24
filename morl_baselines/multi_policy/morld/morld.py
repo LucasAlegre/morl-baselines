@@ -1,4 +1,7 @@
-"""MORL/D Multi-Objective Reinforcement Learning based on Decomposition."""
+"""MORL/D Multi-Objective Reinforcement Learning based on Decomposition.
+
+See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
+"""
 import math
 import time
 from typing import Callable, List, Optional, Tuple, Union
@@ -19,9 +22,6 @@ from morl_baselines.common.utils import nearest_neighbors
 from morl_baselines.common.weights import equally_spaced_weights, random_weights
 from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
-
-
-np.set_printoptions(threshold=np.inf)
 
 
 POLICIES = {
@@ -111,7 +111,8 @@ class MORLD(MOAgent):
             self.np_random = rng
         else:
             self.np_random = np.random.default_rng(self.seed)
-        # This is helpful for scalarization
+
+        # (!) This is helpful for scalarization (!)
         for i in range(env.unwrapped.reward_space.shape[0]):
             env = MONormalizeReward(env, idx=i)
 
@@ -127,9 +128,6 @@ class MORLD(MOAgent):
             self.delta = None
         if self.weight_init_method == "uniform":
             self.weights = np.array(equally_spaced_weights(self.reward_dim, self.pop_size, self.seed))
-            # Often, the objectives requiring a lot of exploration are the last ones. Reversing allows to first execute those
-            # And benefit from transfer learning for the subsequent candidates, requiring less exploration
-            # self.weights = np.flip(self.weights, 1).copy()
         elif self.weight_init_method == "random":
             self.weights = random_weights(self.reward_dim, n=self.pop_size, dist="dirichlet", rng=self.np_random)
         else:
@@ -137,9 +135,9 @@ class MORLD(MOAgent):
 
         self.scalarization_method = scalarization_method
         if scalarization_method == "ws":
-            self.scalarization: Callable[[np.ndarray, np.ndarray], float] = weighted_sum
+            self.scalarization = weighted_sum
         elif scalarization_method == "tch":
-            self.scalarization: Callable[[np.ndarray, np.ndarray], float] = tchebicheff(tau=0.5, reward_dim=self.reward_dim)
+            self.scalarization = tchebicheff(tau=0.5, reward_dim=self.reward_dim)
         else:
             raise Exception(f"Unsupported scalarization method: ${self.scalarization_method}")
 

@@ -315,10 +315,9 @@ class MOSAC(MOPolicy):
         copied.global_step = self.global_step
         copied.actor_optimizer = optim.Adam(copied.actor.parameters(), lr=self.policy_lr, eps=1e-5)
         copied.q_optimizer = optim.Adam(list(copied.qf1.parameters()) + list(copied.qf2.parameters()), lr=self.q_lr)
-        copied.a_optimizer = optim.Adam(list(copied.qf1.parameters()) + list(copied.qf2.parameters()), lr=self.q_lr)
-
         if self.autotune:
-            optim.Adam([copied.log_alpha], lr=self.q_lr)
+            copied.a_optimizer = optim.Adam([copied.log_alpha], lr=self.q_lr)
+        copied.alpha_tensor = th.scalar_tensor(copied.alpha).to(self.device)
         copied.buffer = deepcopy(self.buffer)
         return copied
 
@@ -362,10 +361,9 @@ class MOSAC(MOPolicy):
             self.batch_size, to_tensor=True, device=self.device
         )
 
-        # TODO maybe we can avoid scalarizing next_q_value?
         with th.no_grad():
             next_state_actions, next_state_log_pi, _ = self.actor.get_action(mb_next_obs)
-            # Q values are scalarized before being compared (min of ensemble networks)
+            # (!) Q values are scalarized before being compared (min of ensemble networks)
             qf1_next_target = self.scalarization(self.qf1_target(mb_next_obs, next_state_actions), self.weights_tensor)
             qf2_next_target = self.scalarization(self.qf2_target(mb_next_obs, next_state_actions), self.weights_tensor)
             min_qf_next_target = th.min(qf1_next_target, qf2_next_target) - (self.alpha_tensor * next_state_log_pi).flatten()
@@ -385,7 +383,7 @@ class MOSAC(MOPolicy):
         if self.global_step % self.policy_freq == 0:  # TD 3 Delayed update support
             for _ in range(self.policy_freq):  # compensate for the delay by doing 'actor_update_interval' instead of 1
                 pi, log_pi, _ = self.actor.get_action(mb_obs)
-                # Q values are scalarized before being compared (min of ensemble networks)
+                # (!) Q values are scalarized before being compared (min of ensemble networks)
                 qf1_pi = self.scalarization(self.qf1(mb_obs, pi), self.weights_tensor)
                 qf2_pi = self.scalarization(self.qf2(mb_obs, pi), self.weights_tensor)
                 min_qf_pi = th.min(qf1_pi, qf2_pi).view(-1)

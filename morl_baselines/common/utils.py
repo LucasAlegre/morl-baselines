@@ -71,7 +71,7 @@ def nearest_neighbors(
     n: int,
     current_weight: np.ndarray,
     all_weights: List[np.ndarray],
-    dist_metric: Callable[[np.ndarray, np.ndarray], float] = np.dot,
+    dist_metric: Callable[[np.ndarray, np.ndarray], float],
 ) -> List[int]:
     """Returns the n closest neighbors of current_weight in all_weights, according to similarity metric.
 

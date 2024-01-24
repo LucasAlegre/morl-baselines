@@ -35,7 +35,6 @@ def tchebicheff(tau: float, reward_dim: int):
         for i, r in enumerate(reward):
             if best_so_far[i] < r + tau:
                 best_so_far[i] = r + tau
-        # Losses have to be positive for gradient descent in EUPG, hence 1/distance instead of -distance
         return -tch.do(F=reward, weights=weights, utopian_point=np.array(best_so_far))[0][0]
 
     return thunk
