@@ -54,7 +54,7 @@ def test_eupg():
     env = mo_gym.make("fishwood-v0")
     eval_env = mo_gym.make("fishwood-v0")
 
-    def scalarization(reward: np.ndarray):
+    def scalarization(reward: np.ndarray, w):
         return min(reward[0], reward[1] // 2)
 
     agent = EUPG(env, scalarization=scalarization, gamma=0.99, log=False)
