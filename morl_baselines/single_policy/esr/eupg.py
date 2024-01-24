@@ -313,7 +313,7 @@ class EUPG(MOPolicy, MOAgent):
             else:
                 obs = next_obs
 
-            if self.global_step % 1000 == 0:
+            if self.log and self.global_step % 1000 == 0:
                 print("SPS:", int(self.global_step / (time.time() - start_time)))
                 wandb.log({"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step})
 
