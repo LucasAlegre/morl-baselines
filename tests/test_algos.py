@@ -61,7 +61,7 @@ def test_eupg():
     agent.train(total_timesteps=10000, eval_env=eval_env, eval_freq=100)
 
     scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo_reward_conditioned(
-        agent, env=eval_env, scalarization=scalarization
+        agent, env=eval_env, scalarization=scalarization, w=np.ones(2)
     )
     assert scalar_return > scalarized_disc_return
     assert scalarized_disc_return > 0
