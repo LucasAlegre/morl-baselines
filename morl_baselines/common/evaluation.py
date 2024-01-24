@@ -102,8 +102,9 @@ def eval_mo_reward_conditioned(
         scalarized_return = scalarization(vec_return)
         scalarized_discounted_return = scalarization(disc_vec_return)
     else:
-        scalarized_return = scalarization(w, vec_return)
-        scalarized_discounted_return = scalarization(w, disc_vec_return)
+        # watch out with the order here
+        scalarized_return = scalarization(vec_return, w)
+        scalarized_discounted_return = scalarization(disc_vec_return, w)
 
     return (
         scalarized_return,

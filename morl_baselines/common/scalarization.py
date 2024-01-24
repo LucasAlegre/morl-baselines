@@ -13,7 +13,7 @@ def weighted_sum(reward: np.ndarray, weights: np.ndarray) -> float:
     Returns:
         float: Weighted sum
     """
-    return np.dot(weights, reward)
+    return np.dot(reward, weights)
 
 
 def tchebicheff(tau: float, reward_dim: int):
