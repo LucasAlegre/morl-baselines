@@ -94,14 +94,9 @@ def eval_mo_reward_conditioned(
         if render:
             env.render()
         obs, r, terminated, truncated, info = env.step(agent.eval(obs, disc_vec_return))
-        print("obs", obs)
         done = terminated or truncated
-        print("done?", done)
         vec_return += r
         disc_vec_return += gamma * r
-        print("reward", r)
-        print("vec return", vec_return)
-        print("dis reward", disc_vec_return)
         gamma *= agent.gamma
     if w is None:
         scalarized_return = scalarization(vec_return)
@@ -110,8 +105,6 @@ def eval_mo_reward_conditioned(
         # watch out with the order here
         scalarized_return = scalarization(vec_return, w)
         scalarized_discounted_return = scalarization(disc_vec_return, w)
-        print("scalarized_return", scalarized_return)
-        print("scalarized_discounted_return", scalarized_discounted_return)
 
     return (
         scalarized_return,
