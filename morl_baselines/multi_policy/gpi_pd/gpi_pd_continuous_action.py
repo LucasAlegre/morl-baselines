@@ -616,7 +616,18 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             checkpoints (bool): Whether to save checkpoints.
         """
         if self.log:
-            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+            self.register_additional_config(
+                {
+                    "total_timesteps": total_timesteps,
+                    "ref_point": ref_point.tolist(),
+                    "known_front": known_pareto_front,
+                    "num_eval_weights_for_front": num_eval_weights_for_front,
+                    "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "weight_selection_algo": weight_selection_algo,
+                    "timesteps_per_iter": timesteps_per_iter,
+                    "eval_freq": eval_freq,
+                }
+            )
         max_iter = total_timesteps // timesteps_per_iter
         linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
 

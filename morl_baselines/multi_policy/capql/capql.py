@@ -402,7 +402,17 @@ class CAPQL(MOAgent, MOPolicy):
             checkpoints (bool): Whether to save checkpoints.
         """
         if self.log:
-            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+            self.register_additional_config(
+                {
+                    "total_timesteps": total_timesteps,
+                    "ref_point": ref_point.tolist(),
+                    "known_front": known_pareto_front,
+                    "num_eval_weights_for_front": num_eval_weights_for_front,
+                    "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "eval_freq": eval_freq,
+                    "reset_num_timesteps": reset_num_timesteps,
+                }
+            )
 
         eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
 

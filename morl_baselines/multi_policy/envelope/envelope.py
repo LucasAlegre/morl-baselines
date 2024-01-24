@@ -504,7 +504,20 @@ class Envelope(MOPolicy, MOAgent):
         if eval_env is not None:
             assert ref_point is not None, "Reference point must be provided for the hypervolume computation."
         if self.log:
-            self.register_additional_config({"ref_point": ref_point.tolist(), "known_front": known_pareto_front})
+            self.register_additional_config(
+                {
+                    "total_timesteps": total_timesteps,
+                    "ref_point": ref_point.tolist() if ref_point is not None else None,
+                    "known_front": known_pareto_front,
+                    "weight": weight.tolist() if weight is not None else None,
+                    "total_episodes": total_episodes,
+                    "reset_num_timesteps": reset_num_timesteps,
+                    "eval_freq": eval_freq,
+                    "num_eval_weights_for_front": num_eval_weights_for_front,
+                    "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "reset_learning_starts": reset_learning_starts,
+                }
+            )
 
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
