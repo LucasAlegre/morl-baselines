@@ -88,7 +88,7 @@ def eval_mo_reward_conditioned(
     """
     obs, _ = env.reset()
     done = False
-    vec_return, disc_vec_return = np.zeros(env.reward_space.shape[0]), np.zeros(env.reward_space.shape[0])
+    vec_return, disc_vec_return = np.zeros(env.unwrapped.reward_space.shape[0]), np.zeros(env.unwrapped.reward_space.shape[0])
     gamma = 1.0
     while not done:
         if render:

@@ -283,7 +283,7 @@ class EUPG(MOPolicy, MOAgent):
 
             with th.no_grad():
                 # For training, takes action according to the policy
-                action = self.__choose_action(th.Tensor(obs).to(self.device), accrued_reward_tensor)
+                action = self.__choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update

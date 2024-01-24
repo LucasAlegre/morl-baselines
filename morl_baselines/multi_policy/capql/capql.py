@@ -417,7 +417,7 @@ class CAPQL(MOAgent, MOPolicy):
         eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
 
         angle = th.pi * (22.5 / 180)
-        weight_sampler = WeightSamplerAngle(self.env.reward_dim, angle)
+        weight_sampler = WeightSamplerAngle(self.env.unwrapped.reward_dim, angle)
 
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
