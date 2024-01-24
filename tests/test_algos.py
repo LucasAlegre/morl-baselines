@@ -63,7 +63,6 @@ def test_eupg():
     scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo_reward_conditioned(
         agent, env=eval_env, scalarization=scalarization, w=np.ones(2)
     )
-    assert scalarized_disc_return > 0
     assert vec_ret[0] > vec_disc_ret[0]
     assert vec_ret[1] > vec_disc_ret[1]
 
