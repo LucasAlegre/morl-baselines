@@ -610,7 +610,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
             weight_selection_algo (str): Weight selection algorithm to use.
             timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
-            eval_freq (int): Number of timesteps between each MO evaluation.
+            eval_freq (int): Number of timesteps between evaluations during an iteration.
             checkpoints (bool): Whether to save checkpoints.
         """
         if self.log:
