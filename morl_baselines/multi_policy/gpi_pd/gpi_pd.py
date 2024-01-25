@@ -588,10 +588,14 @@ class GPIPD(MOPolicy, MOAgent):
         """Select an action for the given obs and weight vector."""
         obs = th.as_tensor(obs).float().to(self.device)
         w = th.as_tensor(w).float().to(self.device)
+        for q_net in self.q_nets:
+            q_net.eval()
         if self.use_gpi:
             action = self.gpi_action(obs, w, include_w=False)
         else:
             action = self.max_action(obs, w)
+        for q_net in self.q_nets:
+            q_net.train()
         return action
 
     def _act(self, obs: th.Tensor, w: th.Tensor) -> int:
