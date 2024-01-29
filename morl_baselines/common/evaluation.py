@@ -88,7 +88,7 @@ def eval_mo_reward_conditioned(
     """
     obs, _ = env.reset()
     done = False
-    vec_return, disc_vec_return = np.zeros(env.reward_space.shape[0]), np.zeros(env.reward_space.shape[0])
+    vec_return, disc_vec_return = np.zeros(env.unwrapped.reward_space.shape[0]), np.zeros(env.unwrapped.reward_space.shape[0])
     gamma = 1.0
     while not done:
         if render:
@@ -102,8 +102,9 @@ def eval_mo_reward_conditioned(
         scalarized_return = scalarization(vec_return)
         scalarized_discounted_return = scalarization(disc_vec_return)
     else:
-        scalarized_return = scalarization(w, vec_return)
-        scalarized_discounted_return = scalarization(w, disc_vec_return)
+        # watch out with the order here
+        scalarized_return = scalarization(vec_return, w)
+        scalarized_discounted_return = scalarization(disc_vec_return, w)
 
     return (
         scalarized_return,
@@ -113,19 +114,22 @@ def eval_mo_reward_conditioned(
     )
 
 
-def policy_evaluation_mo(agent, env, w: np.ndarray, rep: int = 5) -> Tuple[float, float, np.ndarray, np.ndarray]:
+def policy_evaluation_mo(
+    agent, env, w: np.ndarray, scalarization=np.dot, rep: int = 5
+) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates the value of a policy by running the policy for multiple episodes. Returns the average returns.
 
     Args:
         agent: Agent
         env: MO-Gymnasium environment
         w (np.ndarray): Weight vector
+        scalarization: scalarization function, taking reward and weight as parameters
         rep (int, optional): Number of episodes for averaging. Defaults to 5.
 
     Returns:
         (float, float, np.ndarray, np.ndarray): Avg scalarized return, Avg scalarized discounted return, Avg vectorized return, Avg vectorized discounted return
     """
-    evals = [eval_mo(agent, env, w) for _ in range(rep)]
+    evals = [eval_mo(agent=agent, env=env, w=w, scalarization=scalarization) for _ in range(rep)]
     avg_scalarized_return = np.mean([eval[0] for eval in evals])
     avg_scalarized_discounted_return = np.mean([eval[1] for eval in evals])
     avg_vec_return = np.mean([eval[2] for eval in evals], axis=0)

@@ -133,7 +133,7 @@ wandb/
 
 # Pycharm
 .idea/
-.DS_Store
+**/.DS_Store
 
 # Saved weights
 weights/

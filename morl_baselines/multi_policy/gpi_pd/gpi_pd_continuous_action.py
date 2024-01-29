@@ -597,6 +597,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         weight_selection_algo: str = "gpi-ls",
         timesteps_per_iter: int = 10000,
         eval_freq: int = 1000,
+        eval_mo_freq: int = 10000,
+        checkpoints: bool = True,
     ):
         """Train the agent.
 
@@ -610,6 +612,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             weight_selection_algo (str): Weight selection algorithm to use.
             timesteps_per_iter (int): Number of timesteps to train the agent for each iteration.
             eval_freq (int): Number of timesteps between evaluations during an iteration.
+            eval_mo_freq (int): Number of timesteps between multi-objective evaluations.
+            checkpoints (bool): Whether to save checkpoints.
         """
         if self.log:
             self.register_additional_config(
@@ -622,6 +626,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     "weight_selection_algo": weight_selection_algo,
                     "timesteps_per_iter": timesteps_per_iter,
                     "eval_freq": eval_freq,
+                    "eval_mo_freq": eval_mo_freq,
                 }
             )
         max_iter = total_timesteps // timesteps_per_iter
@@ -672,7 +677,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
-            if self.log:
+            if self.log and self.global_step % eval_mo_freq == 0:
                 # Evaluation
                 gpi_returns_test_tasks = [
                     policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
@@ -691,7 +696,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
 
             # Checkpoint
-            self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
+            if checkpoints:
+                self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}", save_replay_buffer=False)
 
         self.close_wandb()
 
