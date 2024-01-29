@@ -89,7 +89,7 @@ class AccruedRewardReplayBuffer:
         self.size, self.ptr = 0, 0
 
     def get_all_data(self, to_tensor=False, device=None):
-        """Returns the whole buffer (with a specified maximum number of samples).
+        """Returns the whole buffer.
 
         Args:
             to_tensor: Whether to convert the data to tensors or not

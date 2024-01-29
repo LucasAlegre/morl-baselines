@@ -796,6 +796,7 @@ class GPIPD(MOPolicy, MOAgent):
         timesteps_per_iter: int = 10000,
         weight_selection_algo: str = "gpi-ls",
         eval_freq: int = 1000,
+        eval_mo_freq: int = 10000,
         checkpoints: bool = True,
     ):
         """Train agent.
@@ -810,6 +811,7 @@ class GPIPD(MOPolicy, MOAgent):
             timesteps_per_iter (int): Number of timesteps to train for per iteration.
             weight_selection_algo (str): Weight selection algorithm to use.
             eval_freq (int): Number of timesteps between evaluations.
+            eval_mo_freq (int): Number of timesteps between multi-objective evaluations.
             checkpoints (bool): Whether to save checkpoints.
         """
         if self.log:
@@ -822,6 +824,8 @@ class GPIPD(MOPolicy, MOAgent):
                     "num_eval_episodes_for_front": num_eval_episodes_for_front,
                     "timesteps_per_iter": timesteps_per_iter,
                     "weight_selection_algo": weight_selection_algo,
+                    "eval_freq": eval_freq,
+                    "eval_mo_freq": eval_mo_freq,
                 }
             )
         max_iter = total_timesteps // timesteps_per_iter
@@ -877,7 +881,7 @@ class GPIPD(MOPolicy, MOAgent):
                     n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
-            if self.log and self.global_step % (eval_freq * 10) == 0:
+            if self.log and self.global_step % eval_mo_freq == 0:
                 # Evaluation
                 gpi_returns_test_tasks = [
                     policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
