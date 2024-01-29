@@ -166,6 +166,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/envelope/">Envelope Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/capql/">Concave-Augmented Pareto Q-Learning (CAPQL)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pgmorl/">PGMORL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/morld/">MORL/D</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pcn/">Pareto Conditioned Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/pareto_q_learning/">Pareto Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../algos/multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
@@ -723,12 +724,11 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.get_all_data">
-<span class="sig-name descname"><span class="pre">get_all_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_tensor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.get_all_data" title="Link to this definition">#</a></dt>
-<dd><p>Returns the whole buffer (with a specified maximum number of samples).</p>
+<span class="sig-name descname"><span class="pre">get_all_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_tensor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.accrued_reward_buffer.AccruedRewardReplayBuffer.get_all_data" title="Link to this definition">#</a></dt>
+<dd><p>Returns the whole buffer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>max_samples</strong> – the number of samples to return, if not specified, returns the full buffer (ordered!)</p></li>
 <li><p><strong>to_tensor</strong> – Whether to convert the data to tensors or not</p></li>
 <li><p><strong>device</strong> – Device to use for the tensors</p></li>
 </ul>
