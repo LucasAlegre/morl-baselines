@@ -169,21 +169,15 @@ class EUPG(MOPolicy, MOAgent):
             next_obs,
             terminateds,
         ) = self.buffer.get_all_data(to_tensor=True, device=self.device)
-        # Scalarized episodic reward
+        # Scalarized episodic reward, our target :-)
         episodic_return = th.sum(rewards, dim=0)
         scalarized_return = self.scalarization(episodic_return)
 
-        # discounted_accrued_reward + discounted_future_rewards, the target for scalarization
-        forward_rewards = self.forward_cumulative_rewards(rewards)
-        vector_values = forward_rewards + accrued_rewards
-        scalarized_values = self.scalarization(vector_values)
-
         # For each sample in the batch, get the distribution over actions
         current_distribution = self.net.distribution(obs, accrued_rewards)
-
         # Policy gradient
-        log_probs = current_distribution.log_prob(actions.squeeze())
-        loss = -th.mean(log_probs * scalarized_values.squeeze())
+        log_probs = current_distribution.log_prob(actions)
+        loss = -th.mean(log_probs * scalarized_return)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -197,15 +191,6 @@ class EUPG(MOPolicy, MOAgent):
                     "global_step": self.global_step,
                 },
             )
-
-    def forward_cumulative_rewards(self, rewards):
-        flip_rewards = rewards.flip(dims=[0])
-        cumulative_rewards = th.zeros(self.reward_dim).to(self.device)
-        for i in range(len(rewards)):
-            cumulative_rewards = self.gamma * cumulative_rewards + flip_rewards[i]
-            flip_rewards[i] = cumulative_rewards
-        forward_rewards = flip_rewards.flip(dims=[0])
-        return forward_rewards
 
     def train(
         self,
@@ -238,8 +223,7 @@ class EUPG(MOPolicy, MOAgent):
 
             # Memory update
             self.buffer.add(obs, accrued_reward_tensor.cpu().numpy(), action, vec_reward, next_obs, terminated)
-
-            accrued_reward_tensor = th.from_numpy(vec_reward).to(self.device) + self.gamma * accrued_reward_tensor
+            accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
                 self.policy_eval_esr(eval_env, scalarization=self.scalarization, log=self.log)
