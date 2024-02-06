@@ -113,8 +113,10 @@ def test_ols():
 
     ols = LinearSupport(num_objectives=2, epsilon=0.1, verbose=False)
     policies = []
-    while not ols.ended():
+    while True:
         w = ols.next_weight()
+        if ols.ended():
+            break
 
         new_policy = MOQLearning(
             env,
