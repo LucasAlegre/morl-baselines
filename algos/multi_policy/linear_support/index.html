@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" />
 
-    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
+    <!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
         <title>Linear Support - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=135e06be" />
@@ -291,7 +291,15 @@ Obs: there is a typo in the definition of the corner weights in the thesis, the 
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.multi_policy.linear_support.linear_support.LinearSupport.ended">
 <span class="sig-name descname"><span class="pre">ended</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.linear_support.linear_support.LinearSupport.ended" title="Link to this definition">#</a></dt>
-<dd><p>Returns True if the queue is empty.</p>
+<dd><p>Returns True if there are no more corner weights to test.</p>
+<p>Warning: This method must be called AFTER calling next_weight().
+Ex: w = ols.next_weight()</p>
+<blockquote>
+<div><dl class="simple">
+<dt>if ols.ended():</dt><dd><p>print(“OLS ended.”)</p>
+</dd>
+</dl>
+</div></blockquote>
 </dd></dl>
 
 <dl class="py method">
