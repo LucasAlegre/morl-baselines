@@ -139,10 +139,12 @@ class ParetoArchive:
 
         # Reconstruct the pareto archive (because Non-Dominated sorting might change the order of candidates)
         non_dominated_evals = []
+        non_dominated_evals_tuples = []
         non_dominated_individuals = []
         for e, i in zip(self.evaluations, self.individuals):
-            if tuple(e) in nd_candidates:
+            if tuple(e) in nd_candidates and tuple(e) not in non_dominated_evals_tuples:
                 non_dominated_evals.append(e)
+                non_dominated_evals_tuples.append(tuple(e))
                 non_dominated_individuals.append(i)
         self.evaluations = non_dominated_evals
         self.individuals = non_dominated_individuals

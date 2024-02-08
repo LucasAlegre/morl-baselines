@@ -1,6 +1,7 @@
 """General utils for the MORL baselines."""
+import math
 import os
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
@@ -64,6 +65,45 @@ def make_gif(env, agent, weight: np.ndarray, fullpath: str, fps: int = 50, lengt
     clip = ImageSequenceClip(list(frames), fps=fps)
     clip.write_gif(fullpath + ".gif", fps=fps)
     print("Saved gif at: " + fullpath + ".gif")
+
+
+def nearest_neighbors(
+    n: int,
+    current_weight: np.ndarray,
+    all_weights: List[np.ndarray],
+    dist_metric: Callable[[np.ndarray, np.ndarray], float],
+) -> List[int]:
+    """Returns the n closest neighbors of current_weight in all_weights, according to similarity metric.
+
+    Args:
+        n: number of neighbors
+        current_weight: weight vector where we want the nearest neighbors
+        all_weights: all the possible weights, can contain current_weight as well
+        dist_metric: distance metric
+    Return:
+        the ids of the nearest neighbors in all_weights
+    """
+    assert n < len(all_weights)
+    current_weight_tuple = tuple(current_weight)
+    nearest_neighbors_ids = []
+    nearest_neighbors = []
+
+    while len(nearest_neighbors_ids) < n:
+        closest_neighb_id = -1
+        closest_neighb = np.zeros_like(current_weight)
+        closest_neigh_dist = math.inf
+
+        for i, w in enumerate(all_weights):
+            w_tuple = tuple(w)
+            if w_tuple not in nearest_neighbors and current_weight_tuple != w_tuple:
+                if closest_neigh_dist > dist_metric(current_weight, w):
+                    closest_neighb = w
+                    closest_neighb_id = i
+                    closest_neigh_dist = dist_metric(current_weight, w)
+        nearest_neighbors.append(tuple(closest_neighb))
+        nearest_neighbors_ids.append(closest_neighb_id)
+
+    return nearest_neighbors_ids
 
 
 def reset_wandb_env():

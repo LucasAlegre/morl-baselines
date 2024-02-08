@@ -88,21 +88,17 @@ class AccruedRewardReplayBuffer:
         """Cleanup the buffer."""
         self.size, self.ptr = 0, 0
 
-    def get_all_data(self, max_samples=None, to_tensor=False, device=None):
-        """Returns the whole buffer (with a specified maximum number of samples).
+    def get_all_data(self, to_tensor=False, device=None):
+        """Returns the whole buffer.
 
         Args:
-            max_samples: the number of samples to return, if not specified, returns the full buffer (ordered!)
             to_tensor: Whether to convert the data to tensors or not
             device: Device to use for the tensors
 
         Returns:
             Tuple of (obs, accrued_rewards, actions, rewards, next_obs, dones)
         """
-        if max_samples is not None:
-            inds = np.random.choice(self.size, min(max_samples, self.size), replace=False)
-        else:
-            inds = np.arange(self.size)
+        inds = np.arange(self.size)
         experience_tuples = (
             self.obs[inds],
             self.accrued_rewards[inds],
