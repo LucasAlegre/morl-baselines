@@ -1,4 +1,5 @@
 """MORL algorithm base classes."""
+import os
 import time
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Union
@@ -259,14 +260,15 @@ class MOAgent(ABC):
 
         config = self.get_config()
         config["algo"] = self.experiment_name
+        # looks for whether we're using a Gymnasium based env in env_variable
+        monitor_gym = os.environ.get("MONITOR_GYM", True)
 
         wandb.init(
             project=project_name,
             entity=entity,
-            sync_tensorboard=True,
             config=config,
             name=self.full_experiment_name,
-            monitor_gym=True,
+            monitor_gym=monitor_gym,
             save_code=True,
             group=group,
         )
