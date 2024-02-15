@@ -365,7 +365,7 @@ class PCN(MOAgent, MOPolicy):
         horizons = np.float32(horizons)
         e_returns = []
         for i in range(n):
-            transitions = self._run_episode(env, returns[i], np.float32(horizons[i] - 2), max_return, eval_mode=True)
+            transitions = self._run_episode(env, returns[i], np.float32(horizons[i]), max_return, eval_mode=True)
             # compute return
             for i in reversed(range(len(transitions) - 1)):
                 transitions[i].reward += self.gamma * transitions[i + 1].reward
