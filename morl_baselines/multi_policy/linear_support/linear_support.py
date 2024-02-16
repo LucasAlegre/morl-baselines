@@ -385,13 +385,11 @@ if __name__ == "__main__":
 
     num_objectives = 2
     ols = LinearSupport(num_objectives=num_objectives, epsilon=0.0001, verbose=True)
-    while True:
-        w = ols.next_weight()
-        if ols.ended():
-            print("OLS ended.")
-            break
+    w = ols.next_weight()
+    while not ols.ended():
         print("w:", w)
         value = _solve(w)
         ols.add_solution(value, w)
 
         print("hv:", hypervolume(np.zeros(num_objectives), ols.ccs))
+        w = ols.next_weight()
