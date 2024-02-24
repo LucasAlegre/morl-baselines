@@ -197,6 +197,7 @@ class PQL(MOAgent):
         eval_env: gym.Env,
         ref_point: Optional[np.ndarray] = None,
         known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_eval_weights_for_eval: int = 50,
         log_every: Optional[int] = 10000,
         action_eval: Optional[str] = "hypervolume",
     ):
@@ -207,6 +208,7 @@ class PQL(MOAgent):
             eval_env (gym.Env): The environment to evaluate the policies on.
             eval_ref_point (ndarray, optional): The reference point for the hypervolume metric during evaluation. If none, use the same ref point as training.
             known_pareto_front (List[ndarray], optional): The optimal Pareto front, if known.
+            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             log_every (int, optional): Log the results every number of timesteps. (Default value = 1000)
             action_eval (str, optional): The action evaluation function name. (Default value = 'hypervolume')
 
@@ -227,6 +229,7 @@ class PQL(MOAgent):
                     "total_timesteps": total_timesteps,
                     "ref_point": ref_point.tolist(),
                     "known_front": known_pareto_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
                     "log_every": log_every,
                     "action_eval": action_eval,
                 }
@@ -257,6 +260,7 @@ class PQL(MOAgent):
                         hv_ref_point=ref_point,
                         reward_dim=self.reward_dim,
                         global_step=self.global_step,
+                        n_sample_weights=num_eval_weights_for_eval,
                         ref_front=known_pareto_front,
                     )
 

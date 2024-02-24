@@ -482,6 +482,7 @@ class Envelope(MOPolicy, MOAgent):
         eval_freq: int = 10000,
         num_eval_weights_for_front: int = 100,
         num_eval_episodes_for_front: int = 5,
+        num_eval_weights_for_eval: int = 50,
         reset_learning_starts: bool = False,
         verbose: bool = False,
     ):
@@ -498,6 +499,7 @@ class Envelope(MOPolicy, MOAgent):
             eval_freq: policy evaluation frequency (in number of steps).
             num_eval_weights_for_front: number of weights to sample for creating the pareto front when evaluating.
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
+            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             reset_learning_starts: whether to reset the learning starts. Useful when training multiple times.
             verbose: whether to print the episode info.
         """
@@ -515,6 +517,7 @@ class Envelope(MOPolicy, MOAgent):
                     "eval_freq": eval_freq,
                     "num_eval_weights_for_front": num_eval_weights_for_front,
                     "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
                     "reset_learning_starts": reset_learning_starts,
                 }
             )
@@ -557,6 +560,7 @@ class Envelope(MOPolicy, MOAgent):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
+                    n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
                 )
 

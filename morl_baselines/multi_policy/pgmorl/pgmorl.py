@@ -538,6 +538,7 @@ class PGMORL(MOAgent):
                 hv_ref_point=ref_point,
                 reward_dim=self.reward_dim,
                 global_step=self.global_step,
+                n_sample_weights=self.num_eval_weights_for_eval,
                 ref_front=known_pareto_front,
             )
 
@@ -617,12 +618,19 @@ class PGMORL(MOAgent):
         eval_env: gym.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_eval_weights_for_eval: int = 50,
     ):
         """Trains the agents."""
         if self.log:
             self.register_additional_config(
-                {"total_timesteps": total_timesteps, "ref_point": ref_point.tolist(), "known_front": known_pareto_front}
+                {
+                    "total_timesteps": total_timesteps,
+                    "ref_point": ref_point.tolist(),
+                    "known_front": known_pareto_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
+                }
             )
+        self.num_eval_weights_for_eval = num_eval_weights_for_eval
         max_iterations = total_timesteps // self.steps_per_iteration // self.num_envs
         iteration = 0
         # Init

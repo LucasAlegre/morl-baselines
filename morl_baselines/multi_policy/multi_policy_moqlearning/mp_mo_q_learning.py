@@ -163,6 +163,7 @@ class MPMOQLearning(MOAgent):
         timesteps_per_iteration: int = int(2e5),
         num_eval_weights_for_front: int = 100,
         num_eval_episodes_for_front: int = 5,
+        num_eval_weights_for_eval: int = 50,
         eval_freq: int = 1000,
     ):
         """Learn a set of policies.
@@ -175,6 +176,7 @@ class MPMOQLearning(MOAgent):
             timesteps_per_iteration: The number of timesteps per iteration.
             num_eval_weights_for_front: The number of weights to use to construct a Pareto front for evaluation.
             num_eval_episodes_for_front: The number of episodes to run when evaluating the policy.
+            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             eval_freq: The frequency of evaluation.
         """
         if self.log:
@@ -186,6 +188,7 @@ class MPMOQLearning(MOAgent):
                     "timesteps_per_iteration": timesteps_per_iteration,
                     "num_eval_weights_for_front": num_eval_weights_for_front,
                     "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
                     "eval_freq": eval_freq,
                 }
             )
@@ -267,6 +270,7 @@ class MPMOQLearning(MOAgent):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
+                    n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
                 )
 

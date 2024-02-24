@@ -290,6 +290,7 @@ class MORLD(MOAgent):
         self,
         eval_env: gym.Env,
         num_eval_episodes_for_front: int,
+        num_eval_weights_for_eval: int,
         ref_point: np.ndarray,
         known_front: Optional[List[np.ndarray]] = None,
     ):
@@ -307,7 +308,12 @@ class MORLD(MOAgent):
 
         if self.log:
             log_all_multi_policy_metrics(
-                self.archive.evaluations, ref_point, self.reward_dim, self.global_step, ref_front=known_front
+                self.archive.evaluations,
+                ref_point,
+                self.reward_dim,
+                self.global_step,
+                n_sample_weights=num_eval_weights_for_eval,
+                ref_front=known_front,
             )
         return evals
 
@@ -415,6 +421,7 @@ class MORLD(MOAgent):
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
         num_eval_episodes_for_front: int = 5,
+        num_eval_weights_for_eval: int = 50,
         reset_num_timesteps: bool = False,
     ):
         """Trains the algorithm.
@@ -425,8 +432,20 @@ class MORLD(MOAgent):
             ref_point: reference point for the hypervolume metric
             known_pareto_front: optimal pareto front for the problem if known
             num_eval_episodes_for_front: number of episodes for each policy evaluation
+            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             reset_num_timesteps: whether to reset the number of timesteps or not
         """
+        if self.log:
+            self.register_additional_config(
+                {
+                    "total_timesteps": total_timesteps,
+                    "ref_point": ref_point.tolist(),
+                    "known_front": known_pareto_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
+                    "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                }
+            )
+
         # Init
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
@@ -434,7 +453,9 @@ class MORLD(MOAgent):
 
         obs, _ = self.env.reset()
         print("Starting training...")
-        self.__eval_all_policies(eval_env, num_eval_episodes_for_front, ref_point, known_pareto_front)
+        self.__eval_all_policies(
+            eval_env, num_eval_episodes_for_front, num_eval_weights_for_eval, ref_point, known_pareto_front
+        )
 
         while self.global_step < total_timesteps:
             # selection
@@ -448,7 +469,9 @@ class MORLD(MOAgent):
             self.__update_others(policy)
 
             # Update archive
-            evals = self.__eval_all_policies(eval_env, num_eval_episodes_for_front, ref_point, known_pareto_front)
+            evals = self.__eval_all_policies(
+                eval_env, num_eval_episodes_for_front, num_eval_weights_for_eval, ref_point, known_pareto_front
+            )
 
             # cooperation
             self.__share(policy)

@@ -386,6 +386,7 @@ class PCN(MOAgent, MOPolicy):
         eval_env: gym.Env,
         ref_point: np.ndarray,
         known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_eval_weights_for_eval: int = 50,
         num_er_episodes: int = 20,
         num_step_episodes: int = 10,
         num_model_updates: int = 50,
@@ -400,6 +401,7 @@ class PCN(MOAgent, MOPolicy):
             eval_env: environment for evaluation
             ref_point: reference point for hypervolume calculation
             known_pareto_front: Optimal pareto front for metrics calculation, if known.
+            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             num_er_episodes: number of episodes to fill experience replay buffer
             num_step_episodes: number of steps per episode
             num_model_updates: number of model updates per episode
@@ -414,6 +416,7 @@ class PCN(MOAgent, MOPolicy):
                     "total_timesteps": total_timesteps,
                     "ref_point": ref_point.tolist(),
                     "known_front": known_pareto_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
                     "num_er_episodes": num_er_episodes,
                     "num_step_episodes": num_step_episodes,
                     "num_model_updates": num_model_updates,
@@ -523,5 +526,6 @@ class PCN(MOAgent, MOPolicy):
                         hv_ref_point=ref_point,
                         reward_dim=self.reward_dim,
                         global_step=self.global_step,
+                        n_sample_weights=num_eval_weights_for_eval,
                         ref_front=known_pareto_front,
                     )
