@@ -148,7 +148,7 @@ def log_all_multi_policy_metrics(
     hv_ref_point: np.ndarray,
     reward_dim: int,
     global_step: int,
-    n_sample_weights: int = 50,
+    n_sample_weights: int,
     ref_front: Optional[List[np.ndarray]] = None,
 ):
     """Logs all metrics for multi-policy training.

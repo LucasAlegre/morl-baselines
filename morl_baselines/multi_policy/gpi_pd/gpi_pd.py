@@ -797,6 +797,7 @@ class GPIPD(MOPolicy, MOAgent):
         known_pareto_front: Optional[List[np.ndarray]] = None,
         num_eval_weights_for_front: int = 100,
         num_eval_episodes_for_front: int = 5,
+        num_eval_weights_for_eval: int = 50,
         timesteps_per_iter: int = 10000,
         weight_selection_algo: str = "gpi-ls",
         eval_freq: int = 1000,
@@ -812,6 +813,7 @@ class GPIPD(MOPolicy, MOAgent):
             known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front if known.
             num_eval_weights_for_front: Number of weights to evaluate for the Pareto front.
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
+            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             timesteps_per_iter (int): Number of timesteps to train for per iteration.
             weight_selection_algo (str): Weight selection algorithm to use.
             eval_freq (int): Number of timesteps between evaluations.
@@ -826,6 +828,7 @@ class GPIPD(MOPolicy, MOAgent):
                     "known_front": known_pareto_front,
                     "num_eval_weights_for_front": num_eval_weights_for_front,
                     "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
                     "timesteps_per_iter": timesteps_per_iter,
                     "weight_selection_algo": weight_selection_algo,
                     "eval_freq": eval_freq,
@@ -895,6 +898,7 @@ class GPIPD(MOPolicy, MOAgent):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
+                    n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
                 )
                 # This is the EU computed in the paper

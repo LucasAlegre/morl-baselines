@@ -384,6 +384,7 @@ class CAPQL(MOAgent, MOPolicy):
         known_pareto_front: Optional[List[np.ndarray]] = None,
         num_eval_weights_for_front: int = 100,
         num_eval_episodes_for_front: int = 5,
+        num_eval_weights_for_eval: int = 50,
         eval_freq: int = 10000,
         reset_num_timesteps: bool = False,
         checkpoints: bool = False,
@@ -397,6 +398,7 @@ class CAPQL(MOAgent, MOPolicy):
             known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front, if known.
             num_eval_weights_for_front (int): Number of weights to evaluate for the Pareto front.
             num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
+            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             eval_freq (int): Number of timesteps between evaluations during an iteration.
             reset_num_timesteps (bool): Whether to reset the number of timesteps.
             checkpoints (bool): Whether to save checkpoints.
@@ -409,6 +411,7 @@ class CAPQL(MOAgent, MOPolicy):
                     "known_front": known_pareto_front,
                     "num_eval_weights_for_front": num_eval_weights_for_front,
                     "num_eval_episodes_for_front": num_eval_episodes_for_front,
+                    "num_eval_weights_for_eval": num_eval_weights_for_eval,
                     "eval_freq": eval_freq,
                     "reset_num_timesteps": reset_num_timesteps,
                 }
@@ -467,6 +470,7 @@ class CAPQL(MOAgent, MOPolicy):
                     hv_ref_point=ref_point,
                     reward_dim=self.reward_dim,
                     global_step=self.global_step,
+                    n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
                 )
 
