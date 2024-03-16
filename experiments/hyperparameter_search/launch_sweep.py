@@ -3,10 +3,12 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 
-import mo_gymnasium as mo_gym
 import numpy as np
 import wandb
+import torch as th
 import yaml
+
+import mo_gymnasium as mo_gym
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.evaluation import seed_everything
@@ -24,6 +26,7 @@ class WorkerInitData:
     seed: int
     config: dict
     worker_num: int
+    device: str
 
 
 @dataclass
@@ -42,8 +45,18 @@ def parse_args():
     parser.add_argument("--wandb-entity", type=str, help="Wandb entity to use for the sweep", required=False)
     parser.add_argument("--project-name", type=str, help="Project name to use for the sweep", default="MORL-Baselines")
 
-    parser.add_argument("--sweep-count", type=int, help="Number of trials to do in the sweep worker", default=10)
+    parser.add_argument("--sweep-count", type=int, help="Number of hyperparameter search trials to run", default=10)
     parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
+
+    parser.add_argument("--num-workers", type=int, help="Number of workers to use for the sweep", default=3)
+
+    parser.add_argument(
+        "--devices",
+        type=str,
+        nargs="+",
+        help="List of devices to use. Each device is assigned to a worker, e.g., 'cuda:0 cuda:1 cpu'. If not provided, defaults to 'auto' for each worker.",
+        default=None,
+    )
 
     parser.add_argument(
         "--seed", type=int, help="Random seed to start from, seeds will be in [seed, seed+num-seeds)", default=10
@@ -82,6 +95,11 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
     group = worker_data.sweep_id
     config = worker_data.config
     worker_num = worker_data.worker_num
+    device = worker_data.device
+
+    # Set the number of threads to one.
+    # Otherwise, PyTorch will use all the available cores which will slow down the training.
+    th.set_num_threads(1)
 
     # Set the seed
     seed_everything(seed)
@@ -97,6 +115,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
             **config,
             seed=seed,
             group=group,
+            device=device,
         )
 
         # Launch the agent training
@@ -113,7 +132,7 @@ def train(worker_data: WorkerInitData) -> WorkerDoneData:
         env = MORecordEpisodeStatistics(mo_gym.make(args.env_id), gamma=config["gamma"])
         eval_env = mo_gym.make(args.env_id)
 
-        algo = ALGOS[args.algo](env=env, wandb_entity=args.wandb_entity, **config, seed=seed, group=group)
+        algo = ALGOS[args.algo](env=env, wandb_entity=args.wandb_entity, **config, seed=seed, group=group, device=device)
 
         if args.env_id in ENVS_WITH_KNOWN_PARETO_FRONT:
             known_pareto_front = env.unwrapped.pareto_front(gamma=config["gamma"])
@@ -140,16 +159,22 @@ def main():
     # Get the sweep id
     sweep_run = wandb.init()
 
-    # Spin up workers before calling wandb.init()
+    print("Num workers: {}".format(args.num_workers))
+
     # Workers will be blocked on a queue waiting to start
-    with ProcessPoolExecutor(max_workers=args.num_seeds) as executor:
+    with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
         futures = []
         for num in range(args.num_seeds):
-            # print("Spinning up worker {}".format(num))
+            # Get the seed for the worker
             seed = seeds[num]
+            # Get the device for the worker
+            device = args.devices[num] if args.devices else "auto"
+            print("Spinning up worker {}".format(num) + f" on device {device}")
+            # Add the worker to the queue
             futures.append(
                 executor.submit(
-                    train, WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num)
+                    train,
+                    WorkerInitData(sweep_id=sweep_id, seed=seed, config=dict(sweep_run.config), worker_num=num, device=device),
                 )
             )
 
