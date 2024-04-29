@@ -214,9 +214,7 @@ class EUPG(MOPolicy, MOAgent):
         else:
             obs = th.as_tensor(obs).to(self.device)
         accrued_reward = th.as_tensor(accrued_reward).float().to(self.device)
-        probas = self.net(obs, accrued_reward)
-        greedy_act = th.argmax(probas)
-        return greedy_act.detach().item()
+        return self.__choose_action(obs, accrued_reward)
 
     @th.no_grad()
     def __choose_action(self, obs: th.Tensor, accrued_reward: th.Tensor) -> int:
@@ -234,16 +232,18 @@ class EUPG(MOPolicy, MOAgent):
             next_obs,
             terminateds,
         ) = self.buffer.get_all_data(to_tensor=True, device=self.device)
-        # Scalarized episodic reward, our target :-)
+
         episodic_return = th.sum(rewards, dim=0)
         scalarized_return = self.scalarization(episodic_return.cpu().numpy(), self.weights)
         scalarized_return = th.scalar_tensor(scalarized_return).to(self.device)
 
+        discounted_forward_rewards = self._forward_cumulative_rewards(rewards)
+        scalarized_values = self.scalarization(discounted_forward_rewards)
         # For each sample in the batch, get the distribution over actions
         current_distribution = self.net.distribution(obs, accrued_rewards)
         # Policy gradient
-        log_probs = current_distribution.log_prob(actions)
-        loss = -th.mean(log_probs * scalarized_return)
+        log_probs = current_distribution.log_prob(actions.squeeze())
+        loss = -th.mean(log_probs * scalarized_values)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -258,6 +258,15 @@ class EUPG(MOPolicy, MOAgent):
                     "global_step": self.global_step,
                 },
             )
+
+    def _forward_cumulative_rewards(self, rewards):
+        flip_rewards = rewards.flip(dims=[0])
+        cumulative_rewards = th.zeros(self.reward_dim).to(self.device)
+        for i in range(len(rewards)):
+            cumulative_rewards = self.gamma * cumulative_rewards + flip_rewards[i]
+            flip_rewards[i] = cumulative_rewards
+        forward_rewards = flip_rewards.flip(dims=[0])
+        return forward_rewards
 
     def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None, eval_freq: int = 1000, start_time=None):
         """Train the agent.

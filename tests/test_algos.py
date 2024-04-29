@@ -1,6 +1,6 @@
 """Mostly tests to make sure the algorithms are able to run."""
 import time
-
+import torch as th
 import mo_gymnasium as mo_gym
 import numpy as np
 from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
@@ -54,8 +54,15 @@ def test_eupg():
     env = mo_gym.make("fishwood-v0")
     eval_env = mo_gym.make("fishwood-v0")
 
-    def scalarization(reward: np.ndarray, w):
-        return min(reward[0], (reward[1] // 2) + 1)
+    def scalarization(reward: np.ndarray, w=None):
+        reward = th.tensor(reward) if not isinstance(reward, th.Tensor) else reward
+        # Handle the case when reward is a single tensor of shape (2, )
+        if reward.dim() == 1 and reward.size(0) == 2:
+            return min(reward[0], reward[1] // 2).item()
+
+        # Handle the case when reward is a tensor of shape (200, 2)
+        elif reward.dim() == 2 and reward.size(1) == 2:
+            return th.min(reward[:, 0], reward[:, 1] // 2)
 
     agent = EUPG(env, scalarization=scalarization, gamma=0.99, log=False)
     agent.train(total_timesteps=10000, eval_env=eval_env, eval_freq=100)
