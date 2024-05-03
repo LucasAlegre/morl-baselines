@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Pareto utils" href="../../features/pareto/" /><link rel="prev" title="EUPG" href="../single_policy/eupg/" />
 
-    <!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+    <!-- Generated with Sphinx 7.3.7 and Furo 2024.04.27 -->
         <title>Performance assessments - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=437aa6ec" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
@@ -111,6 +111,8 @@
 <label class="overlay toc-overlay" for="__toc">
   <div class="visually-hidden">Hide table of contents sidebar</div>
 </label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
 
 
@@ -236,22 +238,22 @@
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
-        <article role="main">
+        <article role="main" id="furo-main-content">
           <section id="performance-assessments">
-<h1>Performance assessments<a class="headerlink" href="#performance-assessments" title="Link to this heading">#</a></h1>
+<h1>Performance assessments<a class="headerlink" href="#performance-assessments" title="Link to this heading">¶</a></h1>
 <p>:warning: This document is a work in progress.</p>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
 <p>To ensure the implementation of the algorithms are correct, we want to test them on various environments. For the sake of reproducibility, we want to run for 10 seeds on various environments. For maintenance purposes and long-term support, these tests will be conducted on environments available in <a class="reference internal" href="#www.github.com/farama-foundation/mo-gymnasium"><span class="xref myst">MO-Gymnasium</span></a>. Hence, we will not be able to test on some environments that were presented in original papers.</p>
 </section>
 <section id="metrics">
-<h2>Metrics<a class="headerlink" href="#metrics" title="Link to this heading">#</a></h2>
+<h2>Metrics<a class="headerlink" href="#metrics" title="Link to this heading">¶</a></h2>
 <section id="single-policy-algorithms">
-<h3>Single-policy algorithms<a class="headerlink" href="#single-policy-algorithms" title="Link to this heading">#</a></h3>
+<h3>Single-policy algorithms<a class="headerlink" href="#single-policy-algorithms" title="Link to this heading">¶</a></h3>
 <p>For single-policy algorithms, the metric used will be the scalarized return of the policy on the evaluation env (utility). Keywords: <code class="docutils literal notranslate"><span class="pre">eval/scalarized_return</span></code> and <code class="docutils literal notranslate"><span class="pre">eval/scalarized_discounted_return</span></code>.</p>
 </section>
 <section id="multi-policy-algorithms">
-<h3>Multi-policy algorithms<a class="headerlink" href="#multi-policy-algorithms" title="Link to this heading">#</a></h3>
+<h3>Multi-policy algorithms<a class="headerlink" href="#multi-policy-algorithms" title="Link to this heading">¶</a></h3>
 <p>For multi-policy algorithms, we propose to rely on various metrics to assess the quality of the <strong>discounted</strong> Pareto Fronts (PF) or Convex Coverage Set (CCS). In general, we want to have a metric that is able to assess the convergence of the PF, a metric that is able to assess the diversity of the PF, and a hybrid metric assessing both. The metrics are implemented in <code class="docutils literal notranslate"><span class="pre">common/performance_indicators</span></code>. We propose to use the following metrics:</p>
 <ul class="simple">
 <li><p>(Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1]. Keyword: <code class="docutils literal notranslate"><span class="pre">eval/sparsity</span></code>.</p></li>
@@ -270,20 +272,20 @@ For both these metrics, we propose to generate a number of equally spaced weight
 </section>
 </section>
 <section id="storage">
-<h2>Storage<a class="headerlink" href="#storage" title="Link to this heading">#</a></h2>
+<h2>Storage<a class="headerlink" href="#storage" title="Link to this heading">¶</a></h2>
 <p>Our official performance metrics are sent to <a class="reference external" href="https://wandb.ai/openrlbenchmark/MORL-Baselines">openrlbenchmark</a> on wandb. From there, it is possible to use <a class="reference external" href="https://github.com/openrlbenchmark/openrlbenchmark">openrlbenchmark API</a> to query and plot the wanted results for paper format. Life is good when the full flow is automated 🥸.</p>
 </section>
 <section id="benchmarking-script">
-<h2>Benchmarking script<a class="headerlink" href="#benchmarking-script" title="Link to this heading">#</a></h2>
+<h2>Benchmarking script<a class="headerlink" href="#benchmarking-script" title="Link to this heading">¶</a></h2>
 <p>It is possible to run algorithms from a CLI and configure the parameters accordingly. The script is located in <code class="docutils literal notranslate"><span class="pre">benchmark/launch_experiment.py</span></code>.</p>
 </section>
 <section id="algorithms">
-<h2>Algorithms<a class="headerlink" href="#algorithms" title="Link to this heading">#</a></h2>
+<h2>Algorithms<a class="headerlink" href="#algorithms" title="Link to this heading">¶</a></h2>
 <p>Below are the algorithms that we want to test along with the environments from their original papers which are supported in MO-Gymnasium.</p>
 <p>This <a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/issues/43">issue</a> tracks the current performance assessment of the algorithms.</p>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
 <p>[1]  J. Xu, Y. Tian, P. Ma, D. Rus, S. Sueda, and W. Matusik, “Prediction-Guided Multi-Objective Reinforcement Learning for Continuous Robot Control,” in Proceedings of the 37th International Conference on Machine Learning, Nov. 2020, pp. 10607–10616. Available: https://proceedings.mlr.press/v119/xu20h.html</p>
 <p>[2] C. Hayes et al., “A practical guide to multi-objective reinforcement learning and planning,” Autonomous Agents and Multi-Agent Systems, vol. 36, Apr. 2022, doi: 10.1007/s10458-022-09552-y.</p>
 <p>[3] L. M. Zintgraf, T. V. Kanters, D. M. Roijers, F. A. Oliehoek, and P. Beau, “Quality Assessment of MORL Algorithms: A Utility-Based Approach,” 2015.</p>
@@ -368,8 +370,8 @@ For both these metrics, we propose to generate a number of equally spaced weight
     </aside>
   </div>
 </div><script src="../../_static/documentation_options.js?v=51fd25b1"></script>
-    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../../_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="../../_static/scripts/furo.js?v=4e2eecee"></script>
     </body>
 </html>

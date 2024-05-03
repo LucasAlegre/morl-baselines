@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Evaluations" href="../evaluations/" /><link rel="prev" title="Performance assessments" href="../../algos/performances/" />
 
-    <!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+    <!-- Generated with Sphinx 7.3.7 and Furo 2024.04.27 -->
         <title>Pareto utils - MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=437aa6ec" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=36a5483c" />
     
     
@@ -111,6 +111,8 @@
 <label class="overlay toc-overlay" for="__toc">
   <div class="visually-hidden">Hide table of contents sidebar</div>
 </label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
 
 
@@ -236,18 +238,18 @@
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
-        <article role="main">
+        <article role="main" id="furo-main-content">
           <section id="module-morl_baselines.common.pareto">
-<span id="pareto-utils"></span><h1>Pareto utils<a class="headerlink" href="#module-morl_baselines.common.pareto" title="Link to this heading">#</a></h1>
+<span id="pareto-utils"></span><h1>Pareto utils<a class="headerlink" href="#module-morl_baselines.common.pareto" title="Link to this heading">¶</a></h1>
 <p>Pareto utilities.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.ParetoArchive">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">ParetoArchive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">convex_hull</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.ParetoArchive" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">ParetoArchive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">convex_hull</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.ParetoArchive" title="Link to this definition">¶</a></dt>
 <dd><p>Pareto archive.</p>
 <p>Initializes the Pareto archive.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.ParetoArchive.add">
-<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.ParetoArchive.add" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.common.pareto.ParetoArchive.add" title="Link to this definition">¶</a></dt>
 <dd><p>Adds the candidate to the memory and removes Pareto inefficient points.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -263,7 +265,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.filter_convex_dominated">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">filter_convex_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.filter_convex_dominated" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">filter_convex_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.filter_convex_dominated" title="Link to this definition">¶</a></dt>
 <dd><p>A fast version to prune a set of points to its convex hull. This leverages the QuickHull algorithm.</p>
 <p>This algorithm first computes the convex hull of the set of points and then prunes the Pareto dominated points.</p>
 <dl class="field-list simple">
@@ -278,7 +280,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.filter_pareto_dominated">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">filter_pareto_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.filter_pareto_dominated" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">filter_pareto_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.filter_pareto_dominated" title="Link to this definition">¶</a></dt>
 <dd><p>A batched and fast version of the Pareto coverage set algorithm.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -295,7 +297,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.get_non_dominated">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated" title="Link to this definition">¶</a></dt>
 <dd><p>This function returns the non-dominated subset of elements.</p>
 <p>Source: <a class="reference external" href="https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python">https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python</a>
 The code provided in all the stackoverflow answers is wrong. Important changes have been made in this function.</p>
@@ -311,13 +313,13 @@ The code provided in all the stackoverflow answers is wrong. Important changes h
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.get_non_dominated_inds">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated_inds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solutions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated_inds" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_dominated_inds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solutions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_dominated_inds" title="Link to this definition">¶</a></dt>
 <dd><p>Returns a boolean array indicating which points are non-dominated.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="morl_baselines.common.pareto.get_non_pareto_dominated_inds">
-<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_pareto_dominated_inds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_pareto_dominated_inds" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">morl_baselines.common.pareto.</span></span><span class="sig-name descname"><span class="pre">get_non_pareto_dominated_inds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#morl_baselines.common.pareto.get_non_pareto_dominated_inds" title="Link to this definition">¶</a></dt>
 <dd><p>A batched and fast version of the Pareto coverage set algorithm.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -411,8 +413,8 @@ The code provided in all the stackoverflow answers is wrong. Important changes h
     </aside>
   </div>
 </div><script src="../../_static/documentation_options.js?v=51fd25b1"></script>
-    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../../_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="../../_static/scripts/furo.js?v=4e2eecee"></script>
     </body>
 </html>

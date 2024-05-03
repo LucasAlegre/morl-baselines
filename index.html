@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex/" /><link rel="search" title="Search" href="search/" /><link rel="next" title="Overview" href="quickstart/overview/" />
 
-    <!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+    <!-- Generated with Sphinx 7.3.7 and Furo 2024.04.27 -->
         <title>MORL-Baselines 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=437aa6ec" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
     
@@ -111,6 +111,8 @@
 <label class="overlay toc-overlay" for="__toc">
   <div class="visually-hidden">Hide table of contents sidebar</div>
 </label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
 
 
@@ -236,11 +238,12 @@
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
-        <article role="main">
+        <article role="main" id="furo-main-content">
           <section id="morl-baselines-a-collection-of-multi-objective-reinforcement-learning-algorithms">
-<h1>MORL-Baselines: A collection of multi-objective reinforcement learning algorithms.<a class="headerlink" href="#morl-baselines-a-collection-of-multi-objective-reinforcement-learning-algorithms" title="Link to this heading">#</a></h1>
+<h1>MORL-Baselines: A collection of multi-objective reinforcement learning algorithms.<a class="headerlink" href="#morl-baselines-a-collection-of-multi-objective-reinforcement-learning-algorithms" title="Link to this heading">¶</a></h1>
 <figure class="align-default">
-<a class="reference internal image-reference" href="_images/mo_cheetah.gif"><img alt="Multiple policies" src="_images/mo_cheetah.gif" style="width: 500px;" /></a>
+<a class="reference internal image-reference" href="_images/mo_cheetah.gif"><img alt="Multiple policies" src="_images/mo_cheetah.gif" style="width: 500px;" />
+</a>
 </figure>
 <p>MORL-Baselines is a library of Multi-Objective Reinforcement Learning (MORL) algorithms.
 This repository aims to contain reliable MORL algorithms implementations in PyTorch.</p>
@@ -248,7 +251,7 @@ This repository aims to contain reliable MORL algorithms implementations in PyTo
 <p>For details on multi-objective MDPs (MOMDPs) and other MORL definitions, we suggest reading <a class="reference external" href="https://link.springer.com/article/10.1007/s10458-022-09552-y">A practical guide to multi-objective reinforcement learning and planning</a>. An overview of some techniques used in various MORL algorithms is also provided in <a class="reference external" href="https://doi.org/10.1613/jair.1.15702">Multi-Objective Reinforcement Learning Based on Decomposition: A Taxonomy and Framework</a>.</p>
 <p>A tutorial on MO-Gymnasium and MORL-Baselines is also available: <a class="reference external" href="https://colab.research.google.com/drive/1ByjuUp8-CJeh1giPOACqPGiglPxDnlSq?usp=sharing"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
 <section id="features-of-morl-baselines">
-<h2>Features of MORL-Baselines<a class="headerlink" href="#features-of-morl-baselines" title="Link to this heading">#</a></h2>
+<h2>Features of MORL-Baselines<a class="headerlink" href="#features-of-morl-baselines" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Single and multi-policy algorithms under both SER and ESR criteria are implemented.</p></li>
 <li><p>All algorithms follow the <a class="reference external" href="https://www.github.com/Farama-Foundation/mo-gymnasium">MO-Gymnasium</a> API.</p></li>
@@ -262,7 +265,7 @@ This repository aims to contain reliable MORL algorithms implementations in PyTo
 </ul>
 </section>
 <section id="benchmarks">
-<h2>Benchmarks<a class="headerlink" href="#benchmarks" title="Link to this heading">#</a></h2>
+<h2>Benchmarks<a class="headerlink" href="#benchmarks" title="Link to this heading">¶</a></h2>
 <p>MORL-Baselines participates to <a class="reference external" href="https://github.com/openrlbenchmark/openrlbenchmark">Open RL Benchmark</a> which contains tracked experiments from popular RL libraries such as <a class="reference external" href="https://github.com/vwxyzjn/cleanrl">cleanRL</a> and <a class="reference external" href="https://github.com/DLR-RM/stable-baselines3">Stable Baselines 3</a>.</p>
 <p>We have run experiments of our algorithms on various environments from <a class="reference external" href="https://www.github.com/Farama-Foundation/mo-gymnasium">MO-Gymnasium</a>. The results can be found here: https://wandb.ai/openrlbenchmark/MORL-Baselines. An issue tracking all the settings is available at <a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/issues/43">#43</a>. Some design documentation for the experimentation protocol are also available on our <a class="reference external" href="https://lucasalegre.github.io/morl-baselines/algos/performances/">Documentation website</a>.</p>
 <p>Here is an example of our dashboards with Pareto support in WandB:</p>
@@ -271,7 +274,7 @@ This repository aims to contain reliable MORL algorithms implementations in PyTo
 </figure>
 </section>
 <section id="citing-morl-baselines">
-<h2>Citing MORL-Baselines<a class="headerlink" href="#citing-morl-baselines" title="Link to this heading">#</a></h2>
+<h2>Citing MORL-Baselines<a class="headerlink" href="#citing-morl-baselines" title="Link to this heading">¶</a></h2>
 <p>If you use MORL-Baselines in your research, please cite our <a class="reference external" href="https://openreview.net/pdf?id=jfwRLudQyj">NeurIPS 2023 paper</a>:</p>
 <div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@inproceedings</span><span class="p">{</span><span class="nl">felten_toolkit_2023</span><span class="p">,</span>
 <span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Felten, Florian and Alegre, Lucas N. and Now{\&#39;e}, Ann and Bazzan, Ana L. C. and Talbi, El Ghazali and Danoy, Gr{\&#39;e}goire and Silva, Bruno Castro da}</span><span class="p">,</span>
@@ -332,8 +335,8 @@ This repository aims to contain reliable MORL algorithms implementations in PyTo
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=51fd25b1"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="_static/scripts/furo.js?v=4e2eecee"></script>
     </body>
 </html>
