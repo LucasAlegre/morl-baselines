@@ -1,8 +1,9 @@
 """Mostly tests to make sure the algorithms are able to run."""
 import time
-import torch as th
+
 import mo_gymnasium as mo_gym
 import numpy as np
+import torch as th
 from mo_gymnasium.envs.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
 from morl_baselines.common.evaluation import eval_mo, eval_mo_reward_conditioned

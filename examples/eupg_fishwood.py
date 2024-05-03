@@ -1,10 +1,11 @@
 import mo_gymnasium as mo_gym
 import numpy as np
+import torch as th
 from mo_gymnasium.utils import MORecordEpisodeStatistics
 
 from morl_baselines.common.evaluation import eval_mo_reward_conditioned
 from morl_baselines.single_policy.esr.eupg import EUPG
-import torch as th
+
 
 if __name__ == "__main__":
     env = MORecordEpisodeStatistics(mo_gym.make("fishwood-v0"), gamma=0.99)
