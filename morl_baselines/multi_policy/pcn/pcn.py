@@ -117,21 +117,23 @@ class PCN(MOAgent, MOPolicy):
     """
 
     def __init__(
-        self,
-        env: Optional[gym.Env],
-        scaling_factor: np.ndarray,
-        learning_rate: float = 1e-3,
-        gamma: float = 1.0,
-        batch_size: int = 256,
-        hidden_dim: int = 64,
-        noise: float = 0.1,
-        project_name: str = "MORL-Baselines",
-        experiment_name: str = "PCN",
-        wandb_entity: Optional[str] = None,
-        log: bool = True,
-        seed: Optional[int] = None,
-        device: Union[th.device, str] = "auto",
-        model_class: Optional[Type[BasePCNModel]] = None,
+            self,
+            env: Optional[gym.Env],
+            scaling_factor: np.ndarray,
+            min_val: Optional[np.ndarray] = None,
+            max_val: Optional[np.ndarray] = None,
+            learning_rate: float = 1e-3,
+            gamma: float = 1.0,
+            batch_size: int = 256,
+            hidden_dim: int = 64,
+            noise: float = 0.1,
+            project_name: str = "MORL-Baselines",
+            experiment_name: str = "PCN",
+            wandb_entity: Optional[str] = None,
+            log: bool = True,
+            seed: Optional[int] = None,
+            device: Union[th.device, str] = "auto",
+            model_class: Optional[Type[BasePCNModel]] = None,
     ) -> None:
         """Initialize PCN agent.
 
@@ -151,7 +153,7 @@ class PCN(MOAgent, MOPolicy):
             device (Union[th.device, str], optional): Device to use. Defaults to "auto".
             model_class (Optional[Type[BasePCNModel]], optional): Model class to use. Defaults to None.
         """
-        MOAgent.__init__(self, env, device=device, seed=seed)
+        MOAgent.__init__(self, env, min_val=min_val, max_val=max_val, device=device, seed=seed)
         MOPolicy.__init__(self, device)
 
         self.experience_replay = []  # List of (distance, time_step, transition)
@@ -381,18 +383,18 @@ class PCN(MOAgent, MOPolicy):
         th.save(self.model, f"{savedir}/{filename}.pt")
 
     def train(
-        self,
-        total_timesteps: int,
-        eval_env: gym.Env,
-        ref_point: np.ndarray,
-        known_pareto_front: Optional[List[np.ndarray]] = None,
-        num_eval_weights_for_eval: int = 50,
-        num_er_episodes: int = 20,
-        num_step_episodes: int = 10,
-        num_model_updates: int = 50,
-        max_return: np.ndarray = None,
-        max_buffer_size: int = 100,
-        num_points_pf: int = 100,
+            self,
+            total_timesteps: int,
+            eval_env: gym.Env,
+            ref_point: np.ndarray,
+            known_pareto_front: Optional[List[np.ndarray]] = None,
+            num_eval_weights_for_eval: int = 50,
+            num_er_episodes: int = 20,
+            num_step_episodes: int = 10,
+            num_model_updates: int = 50,
+            max_return: np.ndarray = None,
+            max_buffer_size: int = 100,
+            num_points_pf: int = 100,
     ):
         """Train PCN.
 
@@ -459,7 +461,7 @@ class PCN(MOAgent, MOPolicy):
             desired_return, desired_horizon = self._choose_commands(num_er_episodes)
 
             # get all leaves, contain biggest elements, experience_replay got heapified in choose_commands
-            leaves_r = np.array([e[2][0].reward for e in self.experience_replay[len(self.experience_replay) // 2 :]])
+            leaves_r = np.array([e[2][0].reward for e in self.experience_replay[len(self.experience_replay) // 2:]])
             # leaves_h = np.array([len(e[2]) for e in self.experience_replay[len(self.experience_replay) // 2 :]])
 
             if self.log:
@@ -528,4 +530,5 @@ class PCN(MOAgent, MOPolicy):
                         global_step=self.global_step,
                         n_sample_weights=num_eval_weights_for_eval,
                         ref_front=known_pareto_front,
+                        utility_fns=self.utility_fns,
                     )

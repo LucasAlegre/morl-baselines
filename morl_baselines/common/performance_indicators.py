@@ -5,6 +5,7 @@ We mostly rely on pymoo for the computation of axiomatic indicators (HV and IGD)
 from copy import deepcopy
 from typing import Callable, List
 
+import torch
 import numpy as np
 import numpy.typing as npt
 from pymoo.indicators.hv import HV
@@ -122,3 +123,20 @@ def maximum_utility_loss(
     max_scalarized_values = [np.max([utility(weight, point) for point in front]) for weight in weights_set]
     utility_losses = [max_scalarized_values_ref[i] - max_scalarized_values[i] for i in range(len(max_scalarized_values))]
     return np.max(utility_losses)
+
+
+def generalised_maximum_utility_loss(front, reference_set, utility_fns):
+    """Compute the maximum utility loss for a front and utility functions wrt a reference set."""
+    utility_losses = []
+    for utility_fn in utility_fns:
+        front_utilities = utility_fn(reference_set)  # Compute the utility for the front
+        approx_utilities = utility_fn(front)  # Compute the utility for the approximate front
+        max_utility_loss = torch.max(front_utilities) - torch.max(approx_utilities)  # Compute the utility loss.
+        utility_losses.append(max_utility_loss)
+    return torch.max(torch.stack(utility_losses))
+
+
+def generalised_expected_utility(front, utility_fns):
+    """Compute the expected utility for the set of utility functions when taking vectors from the front."""
+    utilities = [torch.max(utility_fn(front)) for utility_fn in utility_fns]
+    return torch.mean(torch.stack(utilities))

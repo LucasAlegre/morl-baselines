@@ -13,6 +13,7 @@ import wandb
 from gymnasium import spaces
 from mo_gymnasium.utils import MOSyncVectorEnv
 
+from morl_baselines.common.monotonic_utility import UtilityFunction
 from morl_baselines.common.evaluation import (
     eval_mo_reward_conditioned,
     policy_evaluation_mo,
@@ -54,11 +55,11 @@ class MOPolicy(ABC):
         """
 
     def __report(
-        self,
-        scalarized_return,
-        scalarized_discounted_return,
-        vec_return,
-        discounted_vec_return,
+            self,
+            scalarized_return,
+            scalarized_discounted_return,
+            vec_return,
+            discounted_vec_return,
     ):
         """Writes the data to wandb summary."""
         if self.id is None:
@@ -79,12 +80,12 @@ class MOPolicy(ABC):
             )
 
     def policy_eval(
-        self,
-        eval_env,
-        num_episodes: int = 5,
-        scalarization=np.dot,
-        weights: Optional[np.ndarray] = None,
-        log: bool = False,
+            self,
+            eval_env,
+            num_episodes: int = 5,
+            scalarization=np.dot,
+            weights: Optional[np.ndarray] = None,
+            log: bool = False,
     ):
         """Runs a policy evaluation (typically over a few episodes) on eval_env and logs some metrics if asked.
 
@@ -116,11 +117,11 @@ class MOPolicy(ABC):
         return scalarized_return, scalarized_discounted_return, vec_return, discounted_vec_return
 
     def policy_eval_esr(
-        self,
-        eval_env,
-        scalarization,
-        weights: Optional[np.ndarray] = None,
-        log: bool = False,
+            self,
+            eval_env,
+            scalarization,
+            weights: Optional[np.ndarray] = None,
+            log: bool = False,
     ):
         """Runs a policy evaluation (typically on one episode) on eval_env and logs some metrics if asked.
 
@@ -182,7 +183,15 @@ class MOPolicy(ABC):
 class MOAgent(ABC):
     """An MORL Agent, can contain one or multiple MOPolicies. Contains helpers to extract features from the environment, setup logging etc."""
 
-    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto", seed: Optional[int] = None) -> None:
+    def __init__(
+            self,
+            env: Optional[gym.Env],
+            num_utility_fns: int = 100,
+            min_val: Optional[np.ndarray] = None,
+            max_val: Optional[np.ndarray] = None,
+            device: Union[th.device, str] = "auto",
+            seed: Optional[int] = None
+    ) -> None:
         """Initializes the agent.
 
         Args:
@@ -197,6 +206,16 @@ class MOAgent(ABC):
         self.num_episodes = 0
         self.seed = seed
         self.np_random = np.random.default_rng(self.seed)
+        self.min_val = min_val if min_val is not None else np.zeros(self.reward_dim)
+        self.max_val = max_val if max_val is not None else np.ones(self.reward_dim)
+        self.utility_fns = [UtilityFunction(  # These are used in evaluation
+            self.min_val,
+            self.max_val,
+            frozen=True,
+            normalise=True,
+            max_weight=0.1,
+            size_factor=1)
+        ]
 
     def extract_env_info(self, env: Optional[gym.Env]) -> None:
         """Extracts all the features of the environment: observation space, action space, ...
@@ -242,7 +261,7 @@ class MOAgent(ABC):
             wandb.config[key] = value
 
     def setup_wandb(
-        self, project_name: str, experiment_name: str, entity: Optional[str] = None, group: Optional[str] = None
+            self, project_name: str, experiment_name: str, entity: Optional[str] = None, group: Optional[str] = None
     ) -> None:
         """Initializes the wandb writer.
 
@@ -269,9 +288,6 @@ class MOAgent(ABC):
             entity=entity,
             config=config,
             name=self.full_experiment_name,
-            monitor_gym=monitor_gym,
-            save_code=True,
-            group=group,
         )
         # The default "step" of wandb is not the actual time step (gloabl_step) of the MDP
         wandb.define_metric("*", step_metric="global_step")

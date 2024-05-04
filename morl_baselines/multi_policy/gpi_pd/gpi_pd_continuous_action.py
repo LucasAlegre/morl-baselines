@@ -85,6 +85,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
     def __init__(
         self,
         env,
+            min_val: Optional[np.ndarray] = None,
+            max_val: Optional[np.ndarray] = None,
         learning_rate: float = 3e-4,
         gamma: float = 0.99,
         tau: float = 0.005,
@@ -158,7 +160,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             seed (Optional[int], optional): The seed to use. Defaults to None.
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
-        MOAgent.__init__(self, env, device=device, seed=seed)
+        MOAgent.__init__(self, env, min_val=min_val, max_val=max_val, device=device, seed=seed)
         MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.tau = tau
@@ -692,6 +694,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     global_step=self.global_step,
                     n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
+                    utility_fns=self.utility_fns,
                 )
                 # This is the EU computed in the paper
                 mean_gpi_returns_test_tasks = np.mean(

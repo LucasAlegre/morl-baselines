@@ -85,48 +85,50 @@ class GPIPD(MOPolicy, MOAgent):
     """
 
     def __init__(
-        self,
-        env,
-        learning_rate: float = 3e-4,
-        initial_epsilon: float = 0.01,
-        final_epsilon: float = 0.01,
-        epsilon_decay_steps: int = None,  # None == fixed epsilon
-        tau: float = 1.0,
-        target_net_update_freq: int = 1000,  # ignored if tau != 1.0
-        buffer_size: int = int(1e6),
-        net_arch: List = [256, 256, 256, 256],
-        num_nets: int = 2,
-        batch_size: int = 128,
-        learning_starts: int = 100,
-        gradient_updates: int = 20,
-        gamma: float = 0.99,
-        max_grad_norm: Optional[float] = None,
-        use_gpi: bool = True,
-        dyna: bool = True,
-        per: bool = True,
-        gpi_pd: bool = True,
-        alpha_per: float = 0.6,
-        min_priority: float = 0.01,
-        drop_rate: float = 0.01,
-        layer_norm: bool = True,
-        dynamics_normalize_inputs: bool = False,
-        dynamics_uncertainty_threshold: float = 1.5,
-        dynamics_train_freq: Callable = lambda timestep: 250,
-        dynamics_rollout_len: int = 1,
-        dynamics_rollout_starts: int = 5000,
-        dynamics_rollout_freq: int = 250,
-        dynamics_rollout_batch_size: int = 25000,
-        dynamics_buffer_size: int = 100000,
-        dynamics_net_arch: List = [256, 256, 256],
-        dynamics_ensemble_size: int = 5,
-        dynamics_num_elites: int = 2,
-        real_ratio: float = 0.5,
-        project_name: str = "MORL-Baselines",
-        experiment_name: str = "GPI-PD",
-        wandb_entity: Optional[str] = None,
-        log: bool = True,
-        seed: Optional[int] = None,
-        device: Union[th.device, str] = "auto",
+            self,
+            env,
+            min_val: Optional[np.ndarray] = None,
+            max_val: Optional[np.ndarray] = None,
+            learning_rate: float = 3e-4,
+            initial_epsilon: float = 0.01,
+            final_epsilon: float = 0.01,
+            epsilon_decay_steps: int = None,  # None == fixed epsilon
+            tau: float = 1.0,
+            target_net_update_freq: int = 1000,  # ignored if tau != 1.0
+            buffer_size: int = int(1e6),
+            net_arch: List = [256, 256, 256, 256],
+            num_nets: int = 2,
+            batch_size: int = 128,
+            learning_starts: int = 100,
+            gradient_updates: int = 20,
+            gamma: float = 0.99,
+            max_grad_norm: Optional[float] = None,
+            use_gpi: bool = True,
+            dyna: bool = True,
+            per: bool = True,
+            gpi_pd: bool = True,
+            alpha_per: float = 0.6,
+            min_priority: float = 0.01,
+            drop_rate: float = 0.01,
+            layer_norm: bool = True,
+            dynamics_normalize_inputs: bool = False,
+            dynamics_uncertainty_threshold: float = 1.5,
+            dynamics_train_freq: Callable = lambda timestep: 250,
+            dynamics_rollout_len: int = 1,
+            dynamics_rollout_starts: int = 5000,
+            dynamics_rollout_freq: int = 250,
+            dynamics_rollout_batch_size: int = 25000,
+            dynamics_buffer_size: int = 100000,
+            dynamics_net_arch: List = [256, 256, 256],
+            dynamics_ensemble_size: int = 5,
+            dynamics_num_elites: int = 2,
+            real_ratio: float = 0.5,
+            project_name: str = "MORL-Baselines",
+            experiment_name: str = "GPI-PD",
+            wandb_entity: Optional[str] = None,
+            log: bool = True,
+            seed: Optional[int] = None,
+            device: Union[th.device, str] = "auto",
     ):
         """Initialize the GPI-PD algorithm.
 
@@ -173,7 +175,7 @@ class GPIPD(MOPolicy, MOAgent):
             seed: The seed for random number generators.
             device: The device to use.
         """
-        MOAgent.__init__(self, env, device=device, seed=seed)
+        MOAgent.__init__(self, env, min_val=min_val, max_val=max_val, device=device, seed=seed)
         MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
@@ -383,7 +385,8 @@ class GPIPD(MOPolicy, MOAgent):
                 obs_m = obs.unsqueeze(1).repeat(1, M.size(1), 1)
 
                 psi_values = self.q_nets[0](obs_m, M)
-                q_values = th.einsum("r,bar->ba", w, psi_values).view(obs.size(0), len(self.weight_support), self.action_dim)
+                q_values = th.einsum("r,bar->ba", w, psi_values).view(obs.size(0), len(self.weight_support),
+                                                                      self.action_dim)
                 max_q, ac = th.max(q_values, dim=2)
                 pi = th.argmax(max_q, dim=1)
                 actions = ac.gather(1, pi.unsqueeze(1))
@@ -434,7 +437,8 @@ class GPIPD(MOPolicy, MOAgent):
                 )
                 # Half of the batch uses the given weight vector, the other half uses weights sampled from the support set
                 w = th.vstack(
-                    [weight for _ in range(s_obs.size(0) // 2)] + random.choices(self.weight_support, k=s_obs.size(0) // 2)
+                    [weight for _ in range(s_obs.size(0) // 2)] + random.choices(self.weight_support,
+                                                                                 k=s_obs.size(0) // 2)
                 )
             else:
                 w = weight.repeat(s_obs.size(0), 1)
@@ -532,7 +536,8 @@ class GPIPD(MOPolicy, MOAgent):
 
         if self.epsilon_decay_steps is not None:
             self.epsilon = linearly_decaying_value(
-                self.initial_epsilon, self.epsilon_decay_steps, self.global_step, self.learning_starts, self.final_epsilon
+                self.initial_epsilon, self.epsilon_decay_steps, self.global_step, self.learning_starts,
+                self.final_epsilon
             )
 
         if self.log and self.global_step % 100 == 0:
@@ -633,7 +638,8 @@ class GPIPD(MOPolicy, MOAgent):
         for i in range(num_batches):
             b = i * 1000
             e = min((i + 1) * 1000, obs_s.shape[0])
-            obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[b:e], dones_s[b:e]
+            obs, actions, rewards, next_obs, dones = obs_s[b:e], actions_s[b:e], rewards_s[b:e], next_obs_s[
+                                                                                                 b:e], dones_s[b:e]
             obs, actions, rewards, next_obs, dones = (
                 th.tensor(obs).to(self.device),
                 th.tensor(actions).to(self.device),
@@ -642,10 +648,12 @@ class GPIPD(MOPolicy, MOAgent):
                 th.tensor(dones).to(self.device),
             )
             q_values = self.q_nets[0](obs, w.repeat(obs.size(0), 1))
-            q_a = q_values.gather(1, actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1, q_values.size(2))).squeeze(1)
+            q_a = q_values.gather(1, actions.long().reshape(-1, 1, 1).expand(q_values.size(0), 1,
+                                                                             q_values.size(2))).squeeze(1)
 
             if self.gpi_pd:
-                max_next_q, _ = self._envelope_target(next_obs, w.repeat(next_obs.size(0), 1), th.stack(self.weight_support))
+                max_next_q, _ = self._envelope_target(next_obs, w.repeat(next_obs.size(0), 1),
+                                                      th.stack(self.weight_support))
             else:
                 next_q_values = self.q_nets[0](next_obs, w.repeat(next_obs.size(0), 1))
                 max_q = th.einsum("r,bar->ba", w, next_q_values)
@@ -688,7 +696,9 @@ class GPIPD(MOPolicy, MOAgent):
             2,
             ac.unsqueeze(2).unsqueeze(3).expand(next_q_target.size(0), next_q_target.size(1), 1, next_q_target.size(3)),
         ).squeeze(2)
-        max_next_q = max_next_q.gather(1, pi.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))).squeeze(1)
+        max_next_q = max_next_q.gather(1,
+                                       pi.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))).squeeze(
+            1)
         return max_next_q, next_q_target
 
     def set_weight_support(self, weight_list: List[np.ndarray]):
@@ -697,15 +707,15 @@ class GPIPD(MOPolicy, MOAgent):
         self.weight_support = [th.tensor(w).float().to(self.device) for w in weights_no_repeats]
 
     def train_iteration(
-        self,
-        total_timesteps: int,
-        weight: np.ndarray,
-        weight_support: List[np.ndarray],
-        change_w_every_episode: bool = True,
-        reset_num_timesteps: bool = True,
-        eval_env: Optional[gym.Env] = None,
-        eval_freq: int = 1000,
-        reset_learning_starts: bool = False,
+            self,
+            total_timesteps: int,
+            weight: np.ndarray,
+            weight_support: List[np.ndarray],
+            change_w_every_episode: bool = True,
+            reset_num_timesteps: bool = True,
+            eval_env: Optional[gym.Env] = None,
+            eval_freq: int = 1000,
+            reset_learning_starts: bool = False,
     ):
         """Train the agent for one iteration.
 
@@ -790,19 +800,19 @@ class GPIPD(MOPolicy, MOAgent):
                 obs = next_obs
 
     def train(
-        self,
-        total_timesteps: int,
-        eval_env,
-        ref_point: np.ndarray,
-        known_pareto_front: Optional[List[np.ndarray]] = None,
-        num_eval_weights_for_front: int = 100,
-        num_eval_episodes_for_front: int = 5,
-        num_eval_weights_for_eval: int = 50,
-        timesteps_per_iter: int = 10000,
-        weight_selection_algo: str = "gpi-ls",
-        eval_freq: int = 1000,
-        eval_mo_freq: int = 10000,
-        checkpoints: bool = True,
+            self,
+            total_timesteps: int,
+            eval_env,
+            ref_point: np.ndarray,
+            known_pareto_front: Optional[List[np.ndarray]] = None,
+            num_eval_weights_for_front: int = 100,
+            num_eval_episodes_for_front: int = 5,
+            num_eval_weights_for_eval: int = 50,
+            timesteps_per_iter: int = 10000,
+            weight_selection_algo: str = "gpi-ls",
+            eval_freq: int = 1000,
+            eval_mo_freq: int = 10000,
+            checkpoints: bool = True,
     ):
         """Train agent.
 
@@ -836,7 +846,8 @@ class GPIPD(MOPolicy, MOAgent):
                 }
             )
         max_iter = total_timesteps // timesteps_per_iter
-        linear_support = LinearSupport(num_objectives=self.reward_dim, epsilon=0.0 if weight_selection_algo == "ols" else None)
+        linear_support = LinearSupport(num_objectives=self.reward_dim,
+                                       epsilon=0.0 if weight_selection_algo == "ols" else None)
 
         weight_history = []
 
@@ -900,6 +911,7 @@ class GPIPD(MOPolicy, MOAgent):
                     global_step=self.global_step,
                     n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
+                    utility_fns=self.utility_fns,
                 )
                 # This is the EU computed in the paper
                 mean_gpi_returns_test_tasks = np.mean(

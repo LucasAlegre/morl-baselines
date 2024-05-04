@@ -1,7 +1,7 @@
 """Utilities related to evaluation."""
 import os
 import random
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Callable
 
 import numpy as np
 import torch as th
@@ -16,16 +16,18 @@ from morl_baselines.common.performance_indicators import (
     igd,
     maximum_utility_loss,
     sparsity,
+    generalised_expected_utility,
+    generalised_maximum_utility_loss
 )
 from morl_baselines.common.weights import equally_spaced_weights
 
 
 def eval_mo(
-    agent,
-    env,
-    w: Optional[np.ndarray] = None,
-    scalarization=np.dot,
-    render: bool = False,
+        agent,
+        env,
+        w: Optional[np.ndarray] = None,
+        scalarization=np.dot,
+        render: bool = False,
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates one episode of the agent in the environment.
 
@@ -68,11 +70,11 @@ def eval_mo(
 
 
 def eval_mo_reward_conditioned(
-    agent,
-    env,
-    scalarization=np.dot,
-    w: Optional[np.ndarray] = None,
-    render: bool = False,
+        agent,
+        env,
+        scalarization=np.dot,
+        w: Optional[np.ndarray] = None,
+        render: bool = False,
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates one episode of the agent in the environment. This makes the assumption that the agent is conditioned on the accrued reward i.e. for ESR agent.
 
@@ -88,7 +90,8 @@ def eval_mo_reward_conditioned(
     """
     obs, _ = env.reset()
     done = False
-    vec_return, disc_vec_return = np.zeros(env.unwrapped.reward_space.shape[0]), np.zeros(env.unwrapped.reward_space.shape[0])
+    vec_return, disc_vec_return = np.zeros(env.unwrapped.reward_space.shape[0]), np.zeros(
+        env.unwrapped.reward_space.shape[0])
     gamma = 1.0
     while not done:
         if render:
@@ -115,7 +118,7 @@ def eval_mo_reward_conditioned(
 
 
 def policy_evaluation_mo(
-    agent, env, w: np.ndarray, scalarization=np.dot, rep: int = 5
+        agent, env, w: np.ndarray, scalarization=np.dot, rep: int = 5
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates the value of a policy by running the policy for multiple episodes. Returns the average returns.
 
@@ -144,12 +147,13 @@ def policy_evaluation_mo(
 
 
 def log_all_multi_policy_metrics(
-    current_front: List[np.ndarray],
-    hv_ref_point: np.ndarray,
-    reward_dim: int,
-    global_step: int,
-    n_sample_weights: int,
-    ref_front: Optional[List[np.ndarray]] = None,
+        current_front: List[np.ndarray],
+        hv_ref_point: np.ndarray,
+        reward_dim: int,
+        global_step: int,
+        n_sample_weights: int,
+        utility_fns: Callable,
+        ref_front: Optional[List[np.ndarray]] = None,
 ):
     """Logs all metrics for multi-policy training.
 
@@ -173,6 +177,7 @@ def log_all_multi_policy_metrics(
     hv = hypervolume(hv_ref_point, filtered_front)
     sp = sparsity(filtered_front)
     eum = expected_utility(filtered_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
+    geum = generalised_expected_utility(filtered_front, utility_fns)
     card = cardinality(filtered_front)
 
     wandb.log(
@@ -180,6 +185,7 @@ def log_all_multi_policy_metrics(
             "eval/hypervolume": hv,
             "eval/sparsity": sp,
             "eval/eum": eum,
+            "eval/geum": geum,
             "eval/cardinality": card,
             "global_step": global_step,
         },
@@ -199,7 +205,12 @@ def log_all_multi_policy_metrics(
             reference_set=ref_front,
             weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32),
         )
-        wandb.log({"eval/igd": generational_distance, "eval/mul": mul})
+        gmul = generalised_maximum_utility_loss(
+            front=filtered_front,
+            reference_set=ref_front,
+            utility_fns=utility_fns
+        )
+        wandb.log({"eval/igd": generational_distance, "eval/mul": mul, "eval/gmul": gmul})
 
 
 def seed_everything(seed: int):
@@ -221,12 +232,12 @@ def seed_everything(seed: int):
 
 
 def log_episode_info(
-    info: dict,
-    scalarization,
-    weights: Optional[np.ndarray],
-    global_timestep: int,
-    id: Optional[int] = None,
-    verbose: bool = True,
+        info: dict,
+        scalarization,
+        weights: Optional[np.ndarray],
+        global_timestep: int,
+        id: Optional[int] = None,
+        verbose: bool = True,
 ):
     """Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).
 
