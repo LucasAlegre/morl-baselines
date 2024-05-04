@@ -1,10 +1,1 @@
 """Multi-policy algorithms."""
-import morl_baselines.multi_policy.capql
-import morl_baselines.multi_policy.envelope
-import morl_baselines.multi_policy.gpi_pd
-import morl_baselines.multi_policy.linear_support
-import morl_baselines.multi_policy.morld
-import morl_baselines.multi_policy.multi_policy_moqlearning
-import morl_baselines.multi_policy.pareto_q_learning
-import morl_baselines.multi_policy.pcn
-import morl_baselines.multi_policy.pgmorl
