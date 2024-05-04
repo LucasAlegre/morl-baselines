@@ -85,37 +85,35 @@ class Envelope(MOPolicy, MOAgent):
     """
 
     def __init__(
-            self,
-            env,
-            min_val: Optional[np.ndarray] = None,
-            max_val: Optional[np.ndarray] = None,
-            learning_rate: float = 3e-4,
-            initial_epsilon: float = 0.01,
-            final_epsilon: float = 0.01,
-            epsilon_decay_steps: int = None,  # None == fixed epsilon
-            tau: float = 1.0,
-            target_net_update_freq: int = 200,  # ignored if tau != 1.0
-            buffer_size: int = int(1e6),
-            net_arch: List = [256, 256, 256, 256],
-            batch_size: int = 256,
-            learning_starts: int = 100,
-            gradient_updates: int = 1,
-            gamma: float = 0.99,
-            max_grad_norm: Optional[float] = 1.0,
-            envelope: bool = True,
-            num_sample_w: int = 4,
-            per: bool = True,
-            per_alpha: float = 0.6,
-            initial_homotopy_lambda: float = 0.0,
-            final_homotopy_lambda: float = 1.0,
-            homotopy_decay_steps: int = None,
-            project_name: str = "MORL-Baselines",
-            experiment_name: str = "Envelope",
-            wandb_entity: Optional[str] = None,
-            log: bool = True,
-            seed: Optional[int] = None,
-            device: Union[th.device, str] = "auto",
-            group: Optional[str] = None,
+        self,
+        env,
+        learning_rate: float = 3e-4,
+        initial_epsilon: float = 0.01,
+        final_epsilon: float = 0.01,
+        epsilon_decay_steps: int = None,  # None == fixed epsilon
+        tau: float = 1.0,
+        target_net_update_freq: int = 200,  # ignored if tau != 1.0
+        buffer_size: int = int(1e6),
+        net_arch: List = [256, 256, 256, 256],
+        batch_size: int = 256,
+        learning_starts: int = 100,
+        gradient_updates: int = 1,
+        gamma: float = 0.99,
+        max_grad_norm: Optional[float] = 1.0,
+        envelope: bool = True,
+        num_sample_w: int = 4,
+        per: bool = True,
+        per_alpha: float = 0.6,
+        initial_homotopy_lambda: float = 0.0,
+        final_homotopy_lambda: float = 1.0,
+        homotopy_decay_steps: int = None,
+        project_name: str = "MORL-Baselines",
+        experiment_name: str = "Envelope",
+        wandb_entity: Optional[str] = None,
+        log: bool = True,
+        seed: Optional[int] = None,
+        device: Union[th.device, str] = "auto",
+        group: Optional[str] = None,
     ):
         """Envelope Q-learning algorithm.
 
@@ -149,7 +147,7 @@ class Envelope(MOPolicy, MOAgent):
             device: The device to use for training.
             group: The wandb group to use for logging.
         """
-        MOAgent.__init__(self, env, min_val=min_val, max_val=max_val, device=device, seed=seed)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
@@ -172,8 +170,7 @@ class Envelope(MOPolicy, MOAgent):
         self.homotopy_decay_steps = homotopy_decay_steps
 
         self.q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
-        self.target_q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(
-            self.device)
+        self.target_q_net = QNet(self.observation_shape, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
         self.target_q_net.load_state_dict(self.q_net.state_dict())
         for param in self.target_q_net.parameters():
             param.requires_grad = False
@@ -447,8 +444,7 @@ class Envelope(MOPolicy, MOAgent):
             ac.unsqueeze(2).unsqueeze(3).expand(next_q_values.size(0), next_q_values.size(1), 1, next_q_values.size(3)),
         ).squeeze(2)
         # Index the Q-values for the max sampled weights
-        max_next_q = max_next_q.gather(1, pref.reshape(-1, 1, 1).expand(max_next_q.size(0), 1,
-                                                                        max_next_q.size(2))).squeeze(1)
+        max_next_q = max_next_q.gather(1, pref.reshape(-1, 1, 1).expand(max_next_q.size(0), 1, max_next_q.size(2))).squeeze(1)
         return max_next_q
 
     @th.no_grad()
@@ -475,20 +471,20 @@ class Envelope(MOPolicy, MOAgent):
         return q_values_target
 
     def train(
-            self,
-            total_timesteps: int,
-            eval_env: Optional[gym.Env] = None,
-            ref_point: Optional[np.ndarray] = None,
-            known_pareto_front: Optional[List[np.ndarray]] = None,
-            weight: Optional[np.ndarray] = None,
-            total_episodes: Optional[int] = None,
-            reset_num_timesteps: bool = True,
-            eval_freq: int = 10000,
-            num_eval_weights_for_front: int = 100,
-            num_eval_episodes_for_front: int = 5,
-            num_eval_weights_for_eval: int = 50,
-            reset_learning_starts: bool = False,
-            verbose: bool = False,
+        self,
+        total_timesteps: int,
+        eval_env: Optional[gym.Env] = None,
+        ref_point: Optional[np.ndarray] = None,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        weight: Optional[np.ndarray] = None,
+        total_episodes: Optional[int] = None,
+        reset_num_timesteps: bool = True,
+        eval_freq: int = 10000,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
+        num_eval_weights_for_eval: int = 50,
+        reset_learning_starts: bool = False,
+        verbose: bool = False,
     ):
         """Train the agent.
 
@@ -566,7 +562,6 @@ class Envelope(MOPolicy, MOAgent):
                     global_step=self.global_step,
                     n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
-                    utility_fns=self.utility_fns,
                 )
 
             if terminated or truncated:

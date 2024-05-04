@@ -22,6 +22,7 @@ from morl_baselines.common.morl_algorithm import MOAgent, MOPolicy
 from morl_baselines.common.networks import layer_init, mlp, polyak_update
 from morl_baselines.common.weights import equally_spaced_weights
 
+
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
 EPSILON = 1e-6
@@ -182,26 +183,24 @@ class CAPQL(MOAgent, MOPolicy):
     """
 
     def __init__(
-            self,
-            env,
-            min_val: Optional[np.ndarray] = None,
-            max_val: Optional[np.ndarray] = None,
-            learning_rate: float = 3e-4,
-            gamma: float = 0.99,
-            tau: float = 0.005,
-            buffer_size: int = 1000000,
-            net_arch: List = [256, 256],
-            batch_size: int = 128,
-            num_q_nets: int = 2,
-            alpha: float = 0.2,
-            learning_starts: int = 1000,
-            gradient_updates: int = 1,
-            project_name: str = "MORL-Baselines",
-            experiment_name: str = "CAPQL",
-            wandb_entity: Optional[str] = None,
-            log: bool = True,
-            seed: Optional[int] = None,
-            device: Union[th.device, str] = "auto",
+        self,
+        env,
+        learning_rate: float = 3e-4,
+        gamma: float = 0.99,
+        tau: float = 0.005,
+        buffer_size: int = 1000000,
+        net_arch: List = [256, 256],
+        batch_size: int = 128,
+        num_q_nets: int = 2,
+        alpha: float = 0.2,
+        learning_starts: int = 1000,
+        gradient_updates: int = 1,
+        project_name: str = "MORL-Baselines",
+        experiment_name: str = "CAPQL",
+        wandb_entity: Optional[str] = None,
+        log: bool = True,
+        seed: Optional[int] = None,
+        device: Union[th.device, str] = "auto",
     ):
         """CAPQL algorithm with continuous actions.
 
@@ -227,7 +226,7 @@ class CAPQL(MOAgent, MOPolicy):
             seed (Optional[int], optional): The seed to use. Defaults to None.
             device (Union[th.device, str], optional): The device to use for training. Defaults to "auto".
         """
-        MOAgent.__init__(self, env, min_val=min_val, max_val=max_val, device=device, seed=seed)
+        MOAgent.__init__(self, env, device=device, seed=seed)
         MOPolicy.__init__(self, device=device)
         self.learning_rate = learning_rate
         self.tau = tau
@@ -363,7 +362,7 @@ class CAPQL(MOAgent, MOPolicy):
 
     @th.no_grad()
     def eval(
-            self, obs: Union[np.ndarray, th.Tensor], w: Union[np.ndarray, th.Tensor], torch_action=False
+        self, obs: Union[np.ndarray, th.Tensor], w: Union[np.ndarray, th.Tensor], torch_action=False
     ) -> Union[np.ndarray, th.Tensor]:
         """Evaluate the policy action for the given observation and weight vector."""
         if isinstance(obs, np.ndarray):
@@ -378,17 +377,17 @@ class CAPQL(MOAgent, MOPolicy):
         return action
 
     def train(
-            self,
-            total_timesteps: int,
-            eval_env: gymnasium.Env,
-            ref_point: np.ndarray,
-            known_pareto_front: Optional[List[np.ndarray]] = None,
-            num_eval_weights_for_front: int = 100,
-            num_eval_episodes_for_front: int = 5,
-            num_eval_weights_for_eval: int = 50,
-            eval_freq: int = 10000,
-            reset_num_timesteps: bool = False,
-            checkpoints: bool = False,
+        self,
+        total_timesteps: int,
+        eval_env: gymnasium.Env,
+        ref_point: np.ndarray,
+        known_pareto_front: Optional[List[np.ndarray]] = None,
+        num_eval_weights_for_front: int = 100,
+        num_eval_episodes_for_front: int = 5,
+        num_eval_weights_for_eval: int = 50,
+        eval_freq: int = 10000,
+        reset_num_timesteps: bool = False,
+        checkpoints: bool = False,
     ):
         """Train the agent.
 
@@ -473,7 +472,6 @@ class CAPQL(MOAgent, MOPolicy):
                     global_step=self.global_step,
                     n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
-                    utility_fns=self.utility_fns,
                 )
 
             # Checkpoint
