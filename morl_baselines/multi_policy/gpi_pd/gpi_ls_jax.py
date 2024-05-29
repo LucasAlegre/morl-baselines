@@ -308,6 +308,8 @@ class GPILS(MOAgent, MOPolicy):
 
     def save(self, save_dir="weights/", filename=None):
         """Save the model parameters."""
+        if not os.path.isabs(save_dir):
+            save_dir = os.path.join(os.getcwd(), save_dir)
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
 
