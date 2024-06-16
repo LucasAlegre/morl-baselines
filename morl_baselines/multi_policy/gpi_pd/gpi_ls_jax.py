@@ -734,6 +734,7 @@ class GPILS(MOAgent, MOPolicy):
                     n_value = policy_evaluation_mo(self, eval_env, wcw, rep=num_eval_episodes_for_front)[3]
                     linear_support.add_solution(n_value, wcw)
 
+            self.set_weight_support(linear_support.get_weight_support())
             if self.log and self.global_step % eval_mo_freq == 0:
                 # Evaluation
                 gpi_returns_test_tasks = [
