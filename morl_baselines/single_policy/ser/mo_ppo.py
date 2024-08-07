@@ -413,7 +413,7 @@ class MOPPO(MOPolicy):
             obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(next_terminated).to(self.device)
 
             # Episode info logging
-            if "episode" in info.keys():
+            if self.log and "episode" in info.keys():
                 indices = np.where(next_terminated | next_truncated)[0]
                 for idx in indices:
                     # Reconstructs the dict by extracting the relevant information for each vectorized env
