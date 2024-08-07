@@ -632,7 +632,9 @@ class PGMORL(MOAgent):
                 }
             )
         self.num_eval_weights_for_eval = num_eval_weights_for_eval
-        max_iterations = total_timesteps // self.steps_per_iteration // self.num_envs
+        # 1 iteration is a full batch for each agents
+        # -> (steps_per_iteration * num_envs * pop_size)  timesteps per iteration
+        max_iterations = total_timesteps // self.steps_per_iteration // self.num_envs // self.pop_size
         iteration = 0
         # Init
         current_evaluations = [np.zeros(self.reward_dim) for _ in range(len(self.agents))]
