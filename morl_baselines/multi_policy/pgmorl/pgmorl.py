@@ -420,7 +420,7 @@ class PGMORL(MOAgent):
                 envs = [make_env(env_id, self.seed + i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
             else:
                 envs = [make_env(env_id, i, i, experiment_name, self.gamma) for i in range(self.num_envs)]
-            self.env = mo_gym.MOSyncVectorEnv(envs)
+            self.env = mo_gym.wrappers.vector.MOSyncVectorEnv(envs)
         else:
             raise ValueError("Environments should be vectorized for PPO. You should provide an environment id instead.")
 
@@ -507,6 +507,7 @@ class PGMORL(MOAgent):
     def __train_all_agents(self, iteration: int, max_iterations: int):
         for i, agent in enumerate(self.agents):
             agent.train(self.start_time, iteration, max_iterations)
+            self.global_step += self.steps_per_iteration * self.num_envs
 
     def __eval_all_agents(
         self,
@@ -646,7 +647,7 @@ class PGMORL(MOAgent):
 
         # Warmup
         for i in range(1, self.warmup_iterations + 1):
-            print(f"Warmup iteration #{iteration}")
+            print(f"Warmup iteration #{iteration}, global step: {self.global_step}")
             if self.log:
                 wandb.log({"charts/warmup_iterations": i, "global_step": self.global_step})
             self.__train_all_agents(iteration=iteration, max_iterations=max_iterations)
