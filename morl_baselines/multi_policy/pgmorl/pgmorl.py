@@ -506,6 +506,7 @@ class PGMORL(MOAgent):
 
     def __train_all_agents(self, iteration: int, max_iterations: int):
         for i, agent in enumerate(self.agents):
+            agent.global_step = self.global_step
             agent.train(self.start_time, iteration, max_iterations)
             self.global_step += self.steps_per_iteration * self.num_envs
 
