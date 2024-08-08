@@ -1,7 +1,7 @@
 import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
-from mo_gymnasium.utils import MORecordEpisodeStatistics
+from mo_gymnasium.wrappers import MORecordEpisodeStatistics
 
 from morl_baselines.common.evaluation import eval_mo_reward_conditioned
 from morl_baselines.single_policy.esr.eupg import EUPG

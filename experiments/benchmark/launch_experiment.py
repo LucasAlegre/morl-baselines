@@ -15,9 +15,8 @@ import mo_gymnasium as mo_gym
 import numpy as np
 import requests
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
-from gymnasium.wrappers import FlattenObservation
-from gymnasium.wrappers.record_video import RecordVideo
-from mo_gymnasium.utils import MORecordEpisodeStatistics
+from gymnasium.wrappers import FlattenObservation, RecordVideo
+from mo_gymnasium.wrappers import MORecordEpisodeStatistics
 
 from morl_baselines.common.evaluation import seed_everything
 from morl_baselines.common.experiments import (
@@ -90,13 +89,15 @@ def autotag() -> str:
     git_commit = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"]).decode("ascii").strip()
     try:
         # try finding the pull request number on github
-        prs = requests.get(f"https://api.github.com/search/issues?q=repo:LucasAlegre/morl-baselines+is:pr+{git_commit}")
+        prs = requests.get(
+            f"https://api.github.com/search/issues?q=repo:LucasAlegre/morl-baselines+is:pr+{git_commit}"  # noqa
+        )
         if prs.status_code == 200:
             prs = prs.json()
             if len(prs["items"]) > 0:
                 pr = prs["items"][0]
                 pr_number = pr["number"]
-                wandb_tag += f",pr-{pr_number}"
+                wandb_tag += f",pr-{pr_number}"  # noqa
         print(f"identified github pull request: {pr_number}")
     except Exception as e:
         print(e)
@@ -165,7 +166,7 @@ def main():
                     TimeLimit,
                 )
                 from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
-                from mo_gymnasium.utils import MOMaxAndSkipObservation
+                from mo_gymnasium.wrappers import MOMaxAndSkipObservation
 
                 env = JoypadSpace(env, SIMPLE_MOVEMENT)
                 env = MOMaxAndSkipObservation(env, skip=4)
