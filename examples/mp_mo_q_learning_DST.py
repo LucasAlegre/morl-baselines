@@ -1,6 +1,6 @@
 import mo_gymnasium as mo_gym
 import numpy as np
-from mo_gymnasium import MORecordEpisodeStatistics
+from mo_gymnasium.wrappers import MORecordEpisodeStatistics
 
 from morl_baselines.common.scalarization import tchebicheff
 from morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning import (

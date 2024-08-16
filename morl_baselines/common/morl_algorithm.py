@@ -11,7 +11,7 @@ import torch as th
 import torch.nn
 import wandb
 from gymnasium import spaces
-from mo_gymnasium.utils import MOSyncVectorEnv
+from mo_gymnasium.wrappers.vector import MOSyncVectorEnv
 
 from morl_baselines.common.evaluation import (
     eval_mo_reward_conditioned,
