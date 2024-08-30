@@ -157,11 +157,9 @@ class GPILS(MOAgent, MOPolicy):
         learning_starts: int = 100,
         gradient_updates: int = 20,
         gamma: float = 0.99,
-        max_grad_norm: Optional[float] = None,
         use_gpi: bool = True,
         gpi_type: str = "gpi",
-        ugpi_temp: float = 1.0,
-        lcb_pessimism: float = 0.0,
+        pessimism: float = 0.0,
         per: bool = False,
         alpha_per: float = 0.6,
         min_priority: float = 0.01,
@@ -191,9 +189,9 @@ class GPILS(MOAgent, MOPolicy):
             learning_starts: The number of steps before learning starts.
             gradient_updates: The number of gradient updates per step.
             gamma: The discount factor.
-            max_grad_norm: The maximum gradient norm.
             use_gpi: Whether to use GPI.
-            dyna: Whether to use Dyna.
+            gpi_type: "gpi" or "ugpi" for uncertainty-aware GPI.
+            pessimism: Pessimism level when using ugpi.
             per: Whether to use PER.
             alpha_per: The alpha parameter for PER.
             min_priority: The minimum priority for PER.
@@ -216,11 +214,9 @@ class GPILS(MOAgent, MOPolicy):
         self.tau = tau
         self.target_net_update_freq = target_net_update_freq
         self.gamma = gamma
-        self.max_grad_norm = max_grad_norm
         self.use_gpi = use_gpi
         self.gpi_type = gpi_type
-        self.ugpi_temp = ugpi_temp
-        self.lcb_pessimism = lcb_pessimism
+        self.pessimism = pessimism
         self.buffer_size = buffer_size
         self.net_arch = net_arch
         self.learning_starts = learning_starts
@@ -289,13 +285,15 @@ class GPILS(MOAgent, MOPolicy):
             "learning_rate": self.learning_rate,
             "initial_epsilon": self.initial_epsilon,
             "epsilon_decay_steps:": self.epsilon_decay_steps,
+            "final_epsilon": self.final_epsilon,
             "batch_size": self.batch_size,
+            "use_gpi": self.use_gpi,
+            "gpi_type": self.gpi_type,
             "per": self.per,
             "alpha_per": self.alpha,
             "min_priority": self.min_priority,
             "tau": self.tau,
             "num_nets": self.num_nets,
-            "clip_grand_norm": self.max_grad_norm,
             "target_net_update_freq": self.target_net_update_freq,
             "gamma": self.gamma,
             "net_arch": self.net_arch,
@@ -325,9 +323,13 @@ class GPILS(MOAgent, MOPolicy):
     def load(self, path, step=None):
         """Load the model parameters."""
         target = {"q_net_state": self.q_state, "M": self.weight_support}
-        restored = checkpoints.restore_checkpoint(ckpt_dir=path, target=None, step=step)
+        
+        ckptr = orbax.checkpoint.Checkpointer(orbax.checkpoint.PyTreeCheckpointHandler())
+        restored = ckptr.restore(path, item=None)
+
         target["M"] = restored["M"]  # for some reason I need to do this
-        restored = checkpoints.restore_checkpoint(ckpt_dir=path, target=target, step=step)
+        restored = ckptr.restore(path, item=target, restore_args=flax.training.orbax_utils.restore_args_from_target(target, mesh=None))
+
         self.q_state = restored["q_net_state"]
         self.weight_support = [w for w in restored["M"].values()]
         # self.M = [w for w in restored["M"]]
@@ -470,7 +472,6 @@ class GPILS(MOAgent, MOPolicy):
         """Uncertainty-Aware GPI (uGPI)."""
         M = jnp.stack(M)
 
-        # key, subkey = jax.random.split(key)
         obs_m = obs.reshape(1, *obs.shape).repeat(M.shape[0], axis=0)
         psi_values = q_net.apply(q_state.params, obs_m, M, deterministic=True)
         q_values = (psi_values * w.reshape(1, 1, 1, w.shape[0])).sum(axis=3)
@@ -485,7 +486,7 @@ class GPILS(MOAgent, MOPolicy):
             tinv = 2.821438
         # LB = v.mean() - stddev(v) / math.sqrt(n) * tinv(1.0 - delta, n - 1)
         # sqrt(10) = 3.162278
-        if pessimism == 1.0 or pessimism == 2.0:
+        if pessimism == 1.0:
             q_values = q_values.mean(axis=0) - pessimism * q_values.std(axis=0)
         else:
             q_values = q_values.mean(axis=0) - q_values.std(axis=0) / jnp.sqrt(n) * tinv
@@ -526,11 +527,7 @@ class GPILS(MOAgent, MOPolicy):
         if self.use_gpi:
             if self.gpi_type == "ugpi":
                 action, self.key = GPILS.ugpi_action(
-                    self.q_net, self.q_state, obs, w, self.weight_support, self.lcb_pessimism, self.key
-                )
-            elif self.gpi_type == "lcbgpi":
-                action, self.key = GPILS.lcbgpi_action(
-                    self.q_net, self.q_state, obs, w, self.weight_support, self.lcb_pessimism, self.key
+                    self.q_net, self.q_state, obs, w, self.weight_support, self.pessimism, self.key
                 )
             elif self.gpi_type == "gpi":
                 action, self.key = GPILS.gpi_action(self.q_net, self.q_state, obs, w, self.weight_support, self.key)
