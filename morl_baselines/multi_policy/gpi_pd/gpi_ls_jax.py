@@ -15,7 +15,7 @@ import optax
 # flax.config.update('flax_use_orbax_checkpointing', True)
 import orbax
 import wandb
-from flax.training import checkpoints, orbax_utils
+from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
 from morl_baselines.common.buffer import ReplayBuffer
@@ -95,6 +95,8 @@ class QNetwork(nn.Module):
 
 
 class VectorQNetwork(nn.Module):
+    """Vectorized QNetwork."""
+
     action_dim: int
     rew_dim: int
     use_layer_norm: bool = True
@@ -129,6 +131,7 @@ class VectorQNetwork(nn.Module):
 
 class TrainState(TrainState):
     """Train state for the Q network."""
+
     target_params: flax.core.FrozenDict
 
 
@@ -170,7 +173,6 @@ class GPILS(MOAgent, MOPolicy):
         wandb_entity: Optional[str] = None,
         log: bool = True,
         seed: Optional[int] = None,
-        device=None,
     ):
         """Initialize the GPI-LS algorithm.
 
@@ -202,10 +204,9 @@ class GPILS(MOAgent, MOPolicy):
             wandb_entity: The name of the wandb entity.
             log: Whether to log.
             seed: The seed for random number generators.
-            device: The device to use.
         """
-        MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device=device)
+        MOAgent.__init__(self, env, device=None, seed=seed)
+        MOPolicy.__init__(self, device=None)
         self.learning_rate = learning_rate
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -323,19 +324,20 @@ class GPILS(MOAgent, MOPolicy):
     def load(self, path, step=None):
         """Load the model parameters."""
         target = {"q_net_state": self.q_state, "M": self.weight_support}
-        
+
         ckptr = orbax.checkpoint.Checkpointer(orbax.checkpoint.PyTreeCheckpointHandler())
         restored = ckptr.restore(path, item=None)
 
         target["M"] = restored["M"]  # for some reason I need to do this
-        restored = ckptr.restore(path, item=target, restore_args=flax.training.orbax_utils.restore_args_from_target(target, mesh=None))
+        restored = ckptr.restore(
+            path, item=target, restore_args=flax.training.orbax_utils.restore_args_from_target(target, mesh=None)
+        )
 
         self.q_state = restored["q_net_state"]
         self.weight_support = [w for w in restored["M"].values()]
-        # self.M = [w for w in restored["M"]]
 
     def _sample_batch_experiences(self):
-        return self.replay_buffer.sample(self.batch_size, to_tensor=False, device=self.device)
+        return self.replay_buffer.sample(self.batch_size)
 
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net", "gamma", "min_priority"])
