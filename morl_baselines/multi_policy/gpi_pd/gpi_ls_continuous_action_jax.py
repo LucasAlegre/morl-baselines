@@ -559,9 +559,16 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
     def act(self, obs, w) -> int:
         """Act with exploration noise."""
-        action = GPILSContinuousAction.max_action(self.actor_state, obs, w)
-        noise = np.random.normal(0, 0.2, size=action.shape).clip(-0.5, 0.5)
-        action = np.clip(action + noise, -1.0, 1.0)
+        self.key, noise_key = jax.random.split(self.key)
+        action = self.actor_state.apply_fn(
+            {"params": self.actor_state.params, "batch_stats": self.actor_state.batch_stats},
+            obs,
+            w,
+            train=False,
+            add_noise=True,
+            key=noise_key,
+        )
+        action = jax.device_get(action)
         return action
 
     @staticmethod
