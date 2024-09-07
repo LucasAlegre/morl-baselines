@@ -83,7 +83,7 @@ class PQL(MOAgent):
             raise Exception("PQL only supports discretizable observation spaces.")
 
         self.num_states = np.prod(self.env_shape)
-        self.num_objectives = self.env.reward_space.shape[0]
+        self.num_objectives = self.env.unwrapped.reward_space.shape[0]
         self.counts = np.zeros((self.num_states, self.num_actions))
         self.non_dominated = [
             [{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_actions)] for _ in range(self.num_states)
