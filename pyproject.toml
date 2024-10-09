@@ -40,12 +40,12 @@ dynamic = ["version"]
 [project.optional-dependencies]
 # Update dependencies in `all` if any are added or removed
 # OLS requires pycddlib and libgmp to be installed, which does not work on MacOS for now.
-ols = ["pycddlib"]
-gpi = ["pycddlib"]
+ols = ["pycddlib == 2.1.6"]
+gpi = ["pycddlib == 2.1.6"]
 
 all = [
     # OLS & GPI
-    "pycddlib",
+    "pycddlib == 2.1.6",
 ]
 testing = ["pytest ==7.1.3"]
 
