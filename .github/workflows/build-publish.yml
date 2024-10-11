@@ -44,7 +44,7 @@ jobs:
     - name: Build sdist and wheels
       run: python -m build
     - name: Store wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         path: dist
 
