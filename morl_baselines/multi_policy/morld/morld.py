@@ -2,6 +2,7 @@
 
 See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
 """
+
 import math
 import time
 from typing import Callable, List, Optional, Tuple, Union

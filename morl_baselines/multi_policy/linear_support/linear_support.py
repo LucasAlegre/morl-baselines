@@ -1,4 +1,5 @@
 """Linear Support implementation."""
+
 import random
 from copy import deepcopy
 from typing import List, Optional

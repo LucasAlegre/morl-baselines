@@ -1,4 +1,5 @@
 """Pareto utilities."""
+
 from copy import deepcopy
 from typing import List, Union
 

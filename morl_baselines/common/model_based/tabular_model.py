@@ -1,4 +1,5 @@
 """Tabular dynamics model S_{t+1}, R_t ~ m(.,.|s,a) ."""
+
 import random
 
 import numpy as np

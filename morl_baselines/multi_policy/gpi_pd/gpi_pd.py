@@ -1,4 +1,5 @@
 """GPI-PD algorithm."""
+
 import os
 import random
 from itertools import chain

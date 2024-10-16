@@ -1,4 +1,5 @@
 """Probabilistic ensemble of neural networks."""
+
 import os
 
 import numpy as np
