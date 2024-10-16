@@ -1,6 +1,6 @@
 import mo_gymnasium as mo_gym
 import numpy as np
-from mo_gymnasium.utils import MORecordEpisodeStatistics
+from mo_gymnasium.wrappers import MORecordEpisodeStatistics
 
 from morl_baselines.multi_policy.pcn.pcn import PCN
 

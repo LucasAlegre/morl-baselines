@@ -2,6 +2,7 @@
 
 Code adapted from https://github.com/sfujim/LAP-PAL
 """
+
 import numpy as np
 import torch as th
 

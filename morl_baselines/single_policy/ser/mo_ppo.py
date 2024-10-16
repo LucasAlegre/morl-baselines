@@ -1,4 +1,5 @@
 """Multi-Objective PPO Algorithm."""
+
 import time
 from copy import deepcopy
 from typing import List, Optional, Union
@@ -9,7 +10,7 @@ import mo_gymnasium as mo_gym
 import numpy as np
 import torch as th
 import wandb
-from mo_gymnasium import MORecordEpisodeStatistics
+from mo_gymnasium.wrappers import MORecordEpisodeStatistics
 from torch import nn, optim
 from torch.distributions import Normal
 
@@ -122,7 +123,7 @@ def make_env(env_id, seed, idx, run_name, gamma):
             env = mo_gym.make(env_id, render_mode="rgb_array")
         else:
             env = mo_gym.make(env_id)
-        reward_dim = env.reward_space.shape[0]
+        reward_dim = env.unwrapped.reward_space.shape[0]
         """ if idx == 0:
             env = gym.wrappers.RecordVideo(
                 env,
@@ -131,10 +132,10 @@ def make_env(env_id, seed, idx, run_name, gamma):
             ) """
         env = gym.wrappers.ClipAction(env)
         env = gym.wrappers.NormalizeObservation(env)
-        env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
+        env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10), env.observation_space)
         for o in range(reward_dim):
-            env = mo_gym.utils.MONormalizeReward(env, idx=o, gamma=gamma)
-            env = mo_gym.utils.MOClipReward(env, idx=o, min_r=-10, max_r=10)
+            env = mo_gym.wrappers.MONormalizeReward(env, idx=o, gamma=gamma)
+            env = mo_gym.wrappers.MOClipReward(env, idx=o, min_r=-10, max_r=10)
         env = MORecordEpisodeStatistics(env, gamma=gamma)
         env.reset(seed=seed)
         env.action_space.seed(seed)
@@ -404,7 +405,7 @@ class MOPPO(MOPolicy):
                 value = value.view(self.num_envs, self.networks.reward_dim)
 
             # Perform action on the environment
-            next_obs, reward, next_terminated, _, info = self.envs.step(action.cpu().numpy())
+            next_obs, reward, next_terminated, next_truncated, info = self.envs.step(action.cpu().numpy())
             reward = th.tensor(reward).to(self.device).view(self.num_envs, self.networks.reward_dim)
             # storing to batch
             self.batch.add(obs, action, logprob, reward, done, value)
@@ -413,16 +414,19 @@ class MOPPO(MOPolicy):
             obs, done = th.Tensor(next_obs).to(self.device), th.Tensor(next_terminated).to(self.device)
 
             # Episode info logging
-            if "episode" in info.keys():
-                for item in info["episode"]:
+            if self.log and "episode" in info.keys():
+                indices = np.where(next_terminated | next_truncated)[0]
+                for idx in indices:
+                    # Reconstructs the dict by extracting the relevant information for each vectorized env
+                    info_log = {k: v[idx] for k, v in info["episode"].items()}
+
                     log_episode_info(
-                        item,
+                        info_log,
                         scalarization=np.dot,
                         weights=self.weights,
                         global_timestep=self.global_step,
                         id=self.id,
                     )
-                    break
 
         return obs, done
 
@@ -603,6 +607,7 @@ class MOPPO(MOPolicy):
         # Logging
         print("SPS:", int(self.global_step / (time.time() - start_time)))
         if self.log:
+            print(f"Worker {self.id} - Global step: {self.global_step}")
             wandb.log(
                 {"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step},
             )

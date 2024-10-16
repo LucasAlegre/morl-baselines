@@ -2,6 +2,7 @@
 
 See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
 """
+
 import math
 import time
 from typing import Callable, List, Optional, Tuple, Union
@@ -10,7 +11,7 @@ from typing_extensions import override
 import gymnasium as gym
 import numpy as np
 import torch as th
-from mo_gymnasium import MONormalizeReward
+from mo_gymnasium.wrappers import MONormalizeReward
 from torch import optim
 
 from morl_baselines.common.evaluation import log_all_multi_policy_metrics

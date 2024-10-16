@@ -1,4 +1,5 @@
 """Diverse Experience Replay Buffer. Code extracted from https://github.com/axelabels/DynMORL."""
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -154,7 +155,7 @@ class SumTree:
         Keyword Arguments:
             tree_id {object} -- Tree to be updated (default: {None})
         """
-        if type(p) == dict:
+        if isinstance(p, dict):
             for k in p:
                 self.update(idx, p[k], k)
             return
@@ -476,7 +477,10 @@ class DiverseMemory:
         Returns:
             The data
         """
-        all_data = list(np.arange(self.capacity) + self.capacity - 1), list(self.tree.data)
+        all_data = (
+            list(np.arange(self.capacity) + self.capacity - 1),
+            list(self.tree.data),
+        )
         indices = []
         data = []
         for i, d in zip(all_data[0], all_data[1]):

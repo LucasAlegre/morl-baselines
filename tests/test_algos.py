@@ -1,4 +1,5 @@
 """Mostly tests to make sure the algorithms are able to run."""
+
 import time
 
 import mo_gymnasium as mo_gym

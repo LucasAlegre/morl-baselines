@@ -1,4 +1,5 @@
 """EUPG is an ESR algorithm based on Policy Gradient (REINFORCE like)."""
+
 import time
 from copy import deepcopy
 from typing import Callable, List, Optional, Union

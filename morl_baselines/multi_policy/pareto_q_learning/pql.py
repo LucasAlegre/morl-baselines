@@ -1,4 +1,5 @@
 """Pareto Q-Learning."""
+
 import numbers
 from typing import Callable, List, Optional
 
@@ -60,19 +61,19 @@ class PQL(MOAgent):
         # Algorithm setup
         self.ref_point = ref_point
 
-        if type(self.env.action_space) == gym.spaces.Discrete:
+        if isinstance(self.env.action_space, gym.spaces.Discrete):
             self.num_actions = self.env.action_space.n
-        elif type(self.env.action_space) == gym.spaces.MultiDiscrete:
+        elif isinstance(self.env.action_space, gym.spaces.MultiDiscrete):
             self.num_actions = np.prod(self.env.action_space.nvec)
         else:
             raise Exception("PQL only supports (multi)discrete action spaces.")
 
-        if type(self.env.observation_space) == gym.spaces.Discrete:
+        if isinstance(self.env.observation_space, gym.spaces.Discrete):
             self.env_shape = (self.env.observation_space.n,)
-        elif type(self.env.observation_space) == gym.spaces.MultiDiscrete:
+        elif isinstance(self.env.observation_space, gym.spaces.MultiDiscrete):
             self.env_shape = self.env.observation_space.nvec
         elif (
-            type(self.env.observation_space) == gym.spaces.Box
+            isinstance(self.env.observation_space, gym.spaces.Box)
             and self.env.observation_space.is_bounded(manner="both")
             and issubclass(self.env.observation_space.dtype.type, numbers.Integral)
         ):
@@ -83,7 +84,7 @@ class PQL(MOAgent):
             raise Exception("PQL only supports discretizable observation spaces.")
 
         self.num_states = np.prod(self.env_shape)
-        self.num_objectives = self.env.reward_space.shape[0]
+        self.num_objectives = self.env.unwrapped.reward_space.shape[0]
         self.counts = np.zeros((self.num_states, self.num_actions))
         self.non_dominated = [
             [{tuple(np.zeros(self.num_objectives))} for _ in range(self.num_actions)] for _ in range(self.num_states)
@@ -96,7 +97,11 @@ class PQL(MOAgent):
         self.log = log
 
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
+            self.setup_wandb(
+                project_name=self.project_name,
+                experiment_name=self.experiment_name,
+                entity=wandb_entity,
+            )
 
     def get_config(self) -> dict:
         """Get the configuration dictionary.
