@@ -23,7 +23,7 @@ jobs:
     - uses: actions/setup-python@v5
 
     - name: Install dependencies
-      run: pipx install setuptools build
+      run: pipx install build
     - name: Build sdist and wheels
       run: pyproject-build
     - name: Store wheels
