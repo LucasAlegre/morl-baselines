@@ -12,7 +12,7 @@ For single-policy algorithms, the metric used will be the scalarized return of t
 
 ### Multi-policy algorithms
 For multi-policy algorithms, we propose to rely on various metrics to assess the quality of the **discounted** Pareto Fronts (PF) or Convex Coverage Set (CCS). In general, we want to have a metric that is able to assess the convergence of the PF, a metric that is able to assess the diversity of the PF, and a hybrid metric assessing both. The metrics are implemented in `common/performance_indicators`. We propose to use the following metrics:
-* (Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1]. Keyword: `eval/sparsity`.
+* **[Do not use]** (Diversity) Sparsity: average distance between each consecutive point in the PF. From the PGMORL paper [1]. Keyword: `eval/sparsity`.
 * (Diversity) Cardinality: number of points in the PF. Keyword: `eval/cardinality`.
 * (Convergence) IGD: a SOTA metric from Multi-Objective Optimization (MOO) literature. It requires a reference PF that we can compute a posteriori. That is, we do a merge of all the PFs found by the method and compute the IGD with respect to this reference PF. Keyword: `eval/igd`.
 * (Hybrid) Hypervolume: a SOTA metric from MOO and MORL literature. Keyword: `eval/hypervolume`.

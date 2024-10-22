@@ -42,6 +42,9 @@ def igd(known_front: List[np.ndarray], current_estimate: List[np.ndarray]) -> fl
 def sparsity(front: List[np.ndarray]) -> float:
     """Sparsity metric from PGMORL.
 
+    (!) This metric only considers the points from the PF identified by the algorithm, not the full objective space.
+    Therefore, it is misleading (e.g. learning only one point is considered good) and we recommend not using it when comparing algorithms.
+
     Basically, the sparsity is the average distance between each point in the front.
 
     Args:
