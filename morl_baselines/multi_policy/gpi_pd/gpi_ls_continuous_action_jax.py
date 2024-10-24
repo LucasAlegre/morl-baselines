@@ -159,7 +159,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         net_arch: List = [256, 256],
         batch_size: int = 128,
         num_q_nets: int = 2,
-        delay_policy_update: int = 2,
+        dropout_rate: Optional[float] = 0.01,
         learning_starts: int = 100,
         gradient_updates: int = 20,
         use_gpi: bool = True,
@@ -177,7 +177,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
     ):
         """GPI-LS algorithm with continuous actions.
 
-        It extends the CrossQ algorithm to multi-objective RL.
+        It extends the CrossQ algorithm to multi-objective RL using GPI-LS.
         It learns the policy and Q-networks conditioned on the weight vector.
 
         Args:
@@ -190,11 +190,11 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             dynamics_net_arch (List, optional): The network architecture for the dynamics model.
             batch_size (int, optional): The batch size for training. Defaults to 256.
             num_q_nets (int, optional): The number of Q-networks to use. Defaults to 2.
-            delay_policy_update (int, optional): The number of gradient steps to take before updating the policy. Defaults to 2.
             learning_starts (int, optional): The number of steps to take before starting to train. Defaults to 100.
             gradient_updates (int, optional): The number of gradient steps to take per update. Defaults to 1.
             use_gpi (bool, optional): Whether to use GPI for selecting actions. Defaults to True.
             policy_noise (float, optional): The noise to add to the policy. Defaults to 0.2.
+            dropout_rate (float, optional): The dropout rate. Defaults to 0.01.
             noise_clip (float, optional): The noise clipping value. Defaults to 0.5.
             per (bool, optional): Whether to use prioritized experience replay. Defaults to False.
             min_priority (float, optional): The minimum priority to use for prioritized experience replay. Defaults to 0.1.
@@ -215,7 +215,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         self.noise_clip = noise_clip
         self.buffer_size = buffer_size
         self.num_q_nets = num_q_nets
-        self.delay_policy_update = delay_policy_update
+        self.dropout_rate = dropout_rate
         self.net_arch = net_arch
         self.learning_starts = learning_starts
         self.batch_size = batch_size
@@ -239,6 +239,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
         obs = env.observation_space.sample()
         action = env.action_space.sample()
+        w = np.zeros(self.reward_dim, dtype=np.float32)
         action_high = env.action_space.high
         action_low = env.action_space.low
         action_scale = (action_high - action_low) / 2
@@ -252,7 +253,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             hidden_dim=net_arch[0],
             batch_norm_momentum=self.batch_norm_momentum,
         )
-        actor_init_variables = self.actor.init({"params": actor_key, "batch_stats": bn_key}, obs, env.w, train=False)
+        actor_init_variables = self.actor.init({"params": actor_key, "batch_stats": bn_key}, obs, w, train=False)
         self.actor_state = ActorTrainState.create(
             apply_fn=self.actor.apply,
             params=actor_init_variables["params"],
@@ -262,18 +263,18 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
         self.q_net = VectorQNetwork(
             self.action_dim,
-            self.phi_dim,
+            rew_dim=self.reward_dim,
             batch_norm_momentum=batch_norm_momentum,
             dropout_rate=self.dropout_rate,
-            n_critics=self.num_nets,
+            n_critics=self.num_q_nets,
             num_hidden_layers=len(self.net_arch),
             hidden_dim=self.net_arch[0] * 2,  # Wider critic as in CrossQ
         )
         q_init_variables = self.q_net.init(
-            {"params": q_key, "batch_stats": bn_key, "dropout": drop_key}, obs, action, env.w, deterministic=False, train=False
+            {"params": q_key, "batch_stats": bn_key, "dropout": drop_key}, obs, action, w, deterministic=False, train=False
         )
         target_q_init_variables = self.q_net.init(
-            {"params": q_key, "batch_stats": bn_key, "dropout": drop_key}, obs, action, env.w, deterministic=False, train=False
+            {"params": q_key, "batch_stats": bn_key, "dropout": drop_key}, obs, action, w, deterministic=False, train=False
         )
         self.q_state = RLTrainState.create(
             apply_fn=self.q_net.apply,
@@ -305,11 +306,9 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             "per": self.per,
             "alpha_per": self.alpha,
             "min_priority": self.min_priority,
-            "num_nets": self.num_nets,
-            "clip_grand_norm": self.max_grad_norm,
+            "num_q_nets": self.num_q_nets,
             "gamma": self.gamma,
             "net_arch": self.net_arch,
-            "model_arch": self.dynamics_net_arch,
             "gradient_updates": self.gradient_updates,
             "buffer_size": self.buffer_size,
             "learning_starts": self.learning_starts,
@@ -335,17 +334,10 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
     def load(self, path):
         """Load agent's parameters from the given path."""
         target = {"q_net_state": self.q_state, "actor_state": self.actor_state, "M": self.weight_support}
-        if self.dyna:
-            target.update(self.dynamics.get_params())
-
         ckptr = orbax.checkpoint.Checkpointer(orbax.checkpoint.PyTreeCheckpointHandler())
         restored = ckptr.restore(path, item=None)
 
         target["M"] = restored["M"]  # for some reason I need to do this
-        if self.dyna:
-            target["elites"] = restored["elites"]
-            target["inputs_mu"] = restored["inputs_mu"]
-            target["inputs_sigma"] = restored["inputs_sigma"]
 
         restored = ckptr.restore(
             path, item=target, restore_args=flax.training.orbax_utils.restore_args_from_target(target, mesh=None)
@@ -360,8 +352,8 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         return self.replay_buffer.sample(self.batch_size)
 
     @staticmethod
-    @partial(jax.jit, static_argnames=["gamma"])
-    def update_critic(q_state, actor_state, w, obs, actions, rewards, next_obs, dones, gamma, key):
+    @partial(jax.jit, static_argnames=["gamma", "kappa"])
+    def update_critic(q_state, actor_state, w, obs, actions, rewards, next_obs, dones, kappa, gamma, key):
         """Updates the agent's critic."""
         key, noise_key, inds_key, drop_key = jax.random.split(key, 4)
 
@@ -393,8 +385,9 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             min_ind = next_q_values.argmin(axis=0)
             next_mo_qvalues = jnp.take_along_axis(next_mo_qvalues, min_ind[None, ..., None], axis=0).squeeze(0)
             target = rewards + (1 - dones) * gamma * next_mo_qvalues
-            tds = current_mo_qvalues - target
-            loss = ((jax.lax.stop_gradient(target) - current_mo_qvalues) ** 2).mean()
+            tds = current_mo_qvalues - jax.lax.stop_gradient(target)
+            loss = jnp.abs(tds)
+            loss = jnp.where(loss < kappa, 0.5 * loss**2, loss * kappa).mean()
             return loss, (state_updates, tds)
 
         (loss_value, (state_updates, td_error)), grads = jax.value_and_grad(mse_loss, has_aux=True)(
@@ -460,7 +453,17 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
                 w = weight.repeat(s_obs.shape[0], 1)
 
             self.q_state, loss, td_error, self.key = GPILSContinuousAction.update_critic(
-                self.q_state, self.actor_state, w, s_obs, s_actions, s_rewards, s_next_obs, s_dones, self.gamma, self.key
+                self.q_state,
+                self.actor_state,
+                w,
+                s_obs,
+                s_actions,
+                s_rewards,
+                s_next_obs,
+                s_dones,
+                self.min_priority,
+                self.gamma,
+                self.key,
             )
             self._n_updates += 1
 
@@ -530,6 +533,10 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         action = actions_per_policy[max_a]
         action = jax.device_get(action)
         return action
+
+    def set_weight_support(self, M: List[np.ndarray]):
+        """Set the weight support set."""
+        self.weight_support = M.copy()
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> np.ndarray:
         """Evaluate policy for the given observation and weight vector."""
