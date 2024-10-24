@@ -8,10 +8,10 @@ on:
 
 jobs:
   linux-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.12']
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -20,12 +20,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install pytest
-        pip install moviepy
-        pip install "mujoco==2.3.3"
+        pip install uv
+        uv pip install --system pytest
+        uv pip install --system moviepy
         sudo apt-get install libgmp-dev
-        pip install imageio
-        pip install -e .[all]
+        uv pip install --system mo-gymnasium[all]
+        uv pip install --system -e .[all]
     - name: Full Python tests
       run: |
         pytest tests/test_algos.py
