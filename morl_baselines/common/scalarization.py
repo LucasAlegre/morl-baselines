@@ -1,4 +1,5 @@
 """Scalarization functions relying on numpy."""
+
 import numpy as np
 from pymoo.decomposition.tchebicheff import Tchebicheff
 

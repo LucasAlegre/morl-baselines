@@ -1,4 +1,5 @@
 """EUPG is an ESR algorithm based on Policy Gradient (REINFORCE like)."""
+
 import time
 from copy import deepcopy
 from typing import Callable, List, Optional, Union
@@ -290,9 +291,12 @@ class EUPG(MOPolicy, MOAgent):
         for _ in range(1, total_timesteps + 1):
             self.global_step += 1
 
+            if type(obs) is int:
+                obs = [obs]
+
             with th.no_grad():
                 # For training, takes action according to the policy
-                action = self.__choose_action(th.Tensor([obs]).to(self.device), accrued_reward_tensor)
+                action = self.__choose_action(th.Tensor(obs).to(self.device), accrued_reward_tensor)
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update

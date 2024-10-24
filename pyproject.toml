@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "mo-gymnasium >=1.1.0",
-    "gymnasium>=1.0.0a2",
+    "gymnasium>=1.0.0",
     "numpy >=1.21.0,<2.0.0",
     "torch >=1.12.0",
     "pygame >=2.1.0",
@@ -40,12 +40,12 @@ dynamic = ["version"]
 [project.optional-dependencies]
 # Update dependencies in `all` if any are added or removed
 # OLS requires pycddlib and libgmp to be installed, which does not work on MacOS for now.
-ols = ["pycddlib == 2.1.6"]
-gpi = ["pycddlib == 2.1.6"]
+ols = ["pycddlib==2.1.6"]
+gpi = ["pycddlib==2.1.6"]
 
 all = [
     # OLS & GPI
-    "pycddlib == 2.1.6",
+    "pycddlib==2.1.6",
 ]
 testing = ["pytest ==7.1.3"]
 
@@ -66,7 +66,6 @@ morl_baselines = ["*.json", "assets/*"]
 
 # Linting, testing, ... ########################################################
 [tool.black]
-safe = true
 line-length = 127
 target-version = ['py38', 'py39', 'py310']
 include = '\.pyi?$'

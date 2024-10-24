@@ -1,4 +1,5 @@
 """Utility functions for the model."""
+
 from typing import Tuple
 
 import matplotlib.pyplot as plt
@@ -34,7 +35,7 @@ def termination_fn_dst(obs, act, next_obs):
 
 
 def termination_fn_mountaincar(obs, act, next_obs):
-    """Termination function of mountin car."""
+    """Termination function of mountain car."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     position = next_obs[:, 0]
     velocity = next_obs[:, 1]
@@ -147,16 +148,29 @@ class ModelEnv:
             var_obs = var_obs[0]
             var_rewards = var_rewards[0]
 
-        info = {"uncertainty": uncertainties, "var_obs": var_obs, "var_rewards": var_rewards}
+        info = {
+            "uncertainty": uncertainties,
+            "var_obs": var_obs,
+            "var_rewards": var_rewards,
+        }
 
         # info = {'mean': return_means, 'std': return_stds, 'log_prob': log_prob, 'dev': dev}
         return next_obs, rewards, terminals, info
 
 
 def visualize_eval(
-    agent, env, model=None, w=None, horizon=10, init_obs=None, compound=True, deterministic=False, show=False, filename=None
+    agent,
+    env,
+    model=None,
+    w=None,
+    horizon=10,
+    init_obs=None,
+    compound=True,
+    deterministic=False,
+    show=False,
+    filename=None,
 ):
-    """Generates a plot of the evolution of the state, reward and model predicitions ove time.
+    """Generates a plot of the evolution of the state, reward and model predictions over time.
 
     Args:
         agent: agent to be evaluated
@@ -213,10 +227,16 @@ def visualize_eval(
             acts = F.one_hot(acts, num_classes=env.action_space.n).squeeze(1)
         for step in range(len(real_obs)):
             if compound or step == 0:
-                obs, r, done, info = model_env.step(th.tensor(obs).to(agent.device), acts[step], deterministic=deterministic)
+                obs, r, done, info = model_env.step(
+                    th.tensor(obs).to(agent.device),
+                    acts[step],
+                    deterministic=deterministic,
+                )
             else:
                 obs, r, done, info = model_env.step(
-                    th.tensor(real_obs[step - 1]).to(agent.device), acts[step], deterministic=deterministic
+                    th.tensor(real_obs[step - 1]).to(agent.device),
+                    acts[step],
+                    deterministic=deterministic,
                 )
             model_obs.append(obs.copy())
             model_obs_stds.append(np.sqrt(info["var_obs"].copy()))
@@ -240,11 +260,26 @@ def visualize_eval(
             axs[i].set_ylabel(f"Reward {i - obs_dim}")
             axs[i].grid(alpha=0.25)
             if w is not None:
-                axs[i].plot(x, [real_vec_rewards[step][i - obs_dim] for step in x], label="Environment", color="black")
+                axs[i].plot(
+                    x,
+                    [real_vec_rewards[step][i - obs_dim] for step in x],
+                    label="Environment",
+                    color="black",
+                )
             else:
-                axs[i].plot(x, [real_rewards[step] for step in x], label="Environment", color="black")
+                axs[i].plot(
+                    x,
+                    [real_rewards[step] for step in x],
+                    label="Environment",
+                    color="black",
+                )
             if model is not None:
-                axs[i].plot(x, [model_rewards[step][i - obs_dim] for step in x], label="Model", color="blue")
+                axs[i].plot(
+                    x,
+                    [model_rewards[step][i - obs_dim] for step in x],
+                    label="Model",
+                    color="blue",
+                )
                 axs[i].fill_between(
                     x,
                     [model_rewards[step][i - obs_dim] + model_rewards_stds[step][i - obs_dim] for step in x],

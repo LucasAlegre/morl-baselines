@@ -1,4 +1,5 @@
 """Scalarized Q-learning for single policy multi-objective reinforcement learning."""
+
 import time
 from typing import Optional
 from typing_extensions import override

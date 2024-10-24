@@ -1,4 +1,5 @@
 """CAPQL algorithm."""
+
 import os
 import random
 from itertools import chain
@@ -388,6 +389,7 @@ class CAPQL(MOAgent, MOPolicy):
         eval_freq: int = 10000,
         reset_num_timesteps: bool = False,
         checkpoints: bool = False,
+        save_freq: int = 10000,
     ):
         """Train the agent.
 
@@ -402,6 +404,7 @@ class CAPQL(MOAgent, MOPolicy):
             eval_freq (int): Number of timesteps between evaluations during an iteration.
             reset_num_timesteps (bool): Whether to reset the number of timesteps.
             checkpoints (bool): Whether to save checkpoints.
+            save_freq (int): Number of timesteps between checkpoints.
         """
         if self.log:
             self.register_additional_config(
@@ -475,7 +478,7 @@ class CAPQL(MOAgent, MOPolicy):
                 )
 
             # Checkpoint
-            if checkpoints:
-                self.save(filename="CAPQL", save_replay_buffer=False)
+            if checkpoints and self.global_step % save_freq == 0:
+                self.save(filename=f"CAPQL step={self.global_step}", save_replay_buffer=False)
 
         self.close_wandb()
