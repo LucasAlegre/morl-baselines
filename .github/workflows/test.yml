@@ -20,12 +20,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install pytest
-        pip install moviepy
+        pip install uv
+        uv pip install --system pytest
+        uv pip install --system moviepy
         sudo apt-get install libgmp-dev
-        pip install imageio
-        pip install mo-gymnasium[all]
-        pip install -e .[all]
+        uv pip install --system mo-gymnasium[all]
+        uv pip install --system -e .[all]
     - name: Full Python tests
       run: |
         pytest tests/test_algos.py
