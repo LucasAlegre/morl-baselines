@@ -24,6 +24,7 @@ jobs:
         pip install moviepy
         sudo apt-get install libgmp-dev
         pip install imageio
+        pip install mo-gymnasium[all]
         pip install -e .[all]
     - name: Full Python tests
       run: |
