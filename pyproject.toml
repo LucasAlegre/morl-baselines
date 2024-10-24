@@ -42,10 +42,15 @@ dynamic = ["version"]
 # OLS requires pycddlib and libgmp to be installed, which does not work on MacOS for now.
 ols = ["pycddlib==2.1.6"]
 gpi = ["pycddlib==2.1.6"]
+jax = ["flax", "optax", "orbax-checkpoint"]
 
 all = [
     # OLS & GPI
     "pycddlib==2.1.6",
+    # Jax
+    "flax",
+    "optax",
+    "orbax-checkpoint",
 ]
 testing = ["pytest ==7.1.3"]
 

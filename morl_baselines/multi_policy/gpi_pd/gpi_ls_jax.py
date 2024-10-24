@@ -1,4 +1,5 @@
 """GPI-LS algorithm in Jax."""
+
 import os
 import random
 from functools import partial
@@ -11,8 +12,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-
-# flax.config.update('flax_use_orbax_checkpointing', True)
 import orbax
 import wandb
 from flax.training import orbax_utils
@@ -136,7 +135,7 @@ class TrainState(TrainState):
 
 
 class GPILS(MOAgent, MOPolicy):
-    """GPI-LS Algorithm.
+    """GPI-LS Algorithm in Jax.
 
     Sample-Efficient Multi-Objective Learning via Generalized Policy Improvement Prioritization
     Lucas N. Alegre, Ana L. C. Bazzan, Diederik M. Roijers, Ann Nowé, Bruno C. da Silva

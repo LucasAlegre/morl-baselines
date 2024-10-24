@@ -1,4 +1,5 @@
 """GPI-LS algorithm with continuous actions in Jax."""
+
 import os
 import random
 from functools import partial
@@ -32,9 +33,6 @@ from morl_baselines.common.weights import equally_spaced_weights
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
-flax.config.update("flax_use_orbax_checkpointing", True)
-
-
 class ActorTrainState(TrainState):
     """Train state for the actor."""
 
@@ -66,7 +64,7 @@ class Policy(nn.Module):
         h = BatchRenorm(use_running_average=not train, momentum=self.batch_norm_momentum)(h)
         for _ in range(self.num_hidden_layers):
             h = nn.Dense(self.hidden_dim)(h)
-            h = nn.relu(h)
+            h = nn.leaky_relu(h)
             h = BatchRenorm(use_running_average=not train, momentum=self.batch_norm_momentum)(h)
 
         action = nn.Dense(self.action_dim)(h)
@@ -100,7 +98,7 @@ class QNetwork(nn.Module):
             h = nn.Dense(self.hidden_dim)(h)
             if self.dropout_rate is not None and self.dropout_rate > 0:
                 h = nn.Dropout(rate=self.dropout_rate)(h, deterministic=deterministic)
-            h = nn.relu(h)
+            h = nn.leaky_relu(h)
             h = BatchRenorm(use_running_average=not train, momentum=self.batch_norm_momentum)(h)
         h = nn.Dense(self.rew_dim)(h)
 
@@ -141,7 +139,7 @@ class VectorQNetwork(nn.Module):
 
 
 class GPILSContinuousAction(MOAgent, MOPolicy):
-    """GPI-LS algorithm with continuous actions.
+    """GPI-LS algorithm with continuous actions in Jax.
 
     This version is based on the CrossQ algorithm instead of TD3, and written on Jax for efficiency.
 
@@ -226,6 +224,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         self.per = per
         self.min_priority = min_priority
         self.alpha = alpha
+        self.include_w = False
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
                 self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size
@@ -498,22 +497,15 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             )
 
     @staticmethod
-    @partial(jax.jit, static_argnames=["lcb_pessimism"])
-    def new_gpi_action(actor_state, q_state, obs, w, M, lcb_pessimism, key):
-        """GPI with random sampling to approximate maximum over actions."""
-        key, subkey = jax.random.split(key)
+    @jax.jit
+    def gpi_action(actor_state, q_state, obs, w, M):
+        """GPI with continuous actions."""
         M = jnp.vstack(M)
+
         obs_m = jnp.repeat(obs.reshape(1, -1), M.shape[0], axis=0)
         actions_per_policy = actor_state.apply_fn(
             {"params": actor_state.params, "batch_stats": actor_state.batch_stats}, obs_m, M, train=False
         )
-
-        random_actions = actions_per_policy.repeat(1000, axis=0)
-        noise = jax.random.normal(subkey, random_actions.shape) * 0.2
-        noise = jnp.clip(noise, -0.5, 0.5)
-        random_actions = jnp.clip(random_actions + noise, -1.0, 1.0)
-
-        actions = jnp.concatenate([actions_per_policy, random_actions], axis=0)
 
         def maxqpi(obs, action, w):
             obs = jnp.repeat(obs.reshape(1, -1), M.shape[0], axis=0)
@@ -527,17 +519,17 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
                 train=False,
             )
             q_values = (mo_q_values * w).sum(axis=2)  # (n_critics, |M|)
-            q_values = q_values.mean(axis=0) - lcb_pessimism * q_values.std(axis=0)  # |M|
+            q_values = q_values.mean(axis=0)  # |M|
             max_q = q_values.max()
             return max_q
 
         vmaxqpi = jax.vmap(maxqpi, in_axes=(None, 0, None))
 
-        q_values = vmaxqpi(obs, actions, w)
+        q_values = vmaxqpi(obs, actions_per_policy, w)
         max_a = q_values.argmax()
-        action = actions[max_a]
+        action = actions_per_policy[max_a]
         action = jax.device_get(action)
-        return action, key
+        return action
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> np.ndarray:
         """Evaluate policy for the given observation and weight vector."""
@@ -545,8 +537,12 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             self.weight_support.append(w)
 
         if self.use_gpi:
-            action, self.key = GPILSContinuousAction.new_gpi_action(
-                self.actor_state, self.q_state, obs, w, self.weight_support, self.lcb_pessimism, self.key
+            action = GPILSContinuousAction.gpi_action(
+                self.actor_state,
+                self.q_state,
+                obs,
+                w,
+                self.weight_support,
             )
         else:
             action = GPILSContinuousAction.max_action(self.actor_state, obs, w)
@@ -756,7 +752,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
             # Checkpoint
             if checkpoints:
-                self.save(filename=f"GPI-PD {weight_selection_algo} iter={iter}")
+                self.save(filename=f"GPI-LS Jax iter={iter}")
 
         self.close_wandb()
 

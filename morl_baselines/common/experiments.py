@@ -4,8 +4,10 @@ import argparse
 
 from morl_baselines.multi_policy.capql.capql import CAPQL
 from morl_baselines.multi_policy.envelope.envelope import Envelope
+from morl_baselines.multi_policy.gpi_pd.gpi_ls_continuous_action_jax import (
+    GPILSContinuousAction as GPILSContinuousActionJax,
+)
 from morl_baselines.multi_policy.gpi_pd.gpi_ls_jax import GPILS as GPILSJax
-from morl_baselines.multi_policy.gpi_pd.gpi_ls_continuous_action_jax import GPILSContinuousAction as GPILSContinuousActionJax
 from morl_baselines.multi_policy.gpi_pd.gpi_pd import GPILS, GPIPD
 from morl_baselines.multi_policy.gpi_pd.gpi_pd_continuous_action import (
     GPILSContinuousAction,
