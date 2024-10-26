@@ -54,6 +54,8 @@ class Policy(nn.Module):
     batch_norm_momentum: float
     action_scale: jnp.array
     action_offset: jnp.array
+    policy_noise: float
+    noise_clip: float
     num_hidden_layers: int = 2
     hidden_dim: int = 256
 
@@ -71,8 +73,8 @@ class Policy(nn.Module):
         action = jnp.tanh(action)
 
         if add_noise:
-            noise = jax.random.normal(key, action.shape, dtype=jnp.float32) * 0.2
-            noise = jnp.clip(noise, -0.5, 0.5)
+            noise = jax.random.normal(key, action.shape, dtype=jnp.float32) * self.policy_noise
+            noise = jnp.clip(noise, -self.noise_clip, self.noise_clip)
             action = jnp.clip(action + noise, -1.0, 1.0)
 
         return action * self.action_scale + self.action_offset
@@ -161,7 +163,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         num_q_nets: int = 2,
         dropout_rate: Optional[float] = 0.01,
         learning_starts: int = 100,
-        gradient_updates: int = 20,
+        gradient_updates: int = 10,
         use_gpi: bool = False,  # In the continuous action case, GPI is only used to selected weights.
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
@@ -249,6 +251,8 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             self.action_dim,
             action_scale=action_scale,
             action_offset=action_offset,
+            policy_noise=policy_noise,
+            noise_clip=noise_clip,
             num_hidden_layers=len(net_arch),
             hidden_dim=net_arch[0],
             batch_norm_momentum=self.batch_norm_momentum,
@@ -286,7 +290,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         )
         self.q_net.apply = jax.jit(self.q_net.apply, static_argnames=("batch_norm_momentum", "dropout_rate", "deterministic"))
         self.actor.apply = jax.jit(
-            self.actor.apply, static_argnames=("batch_norm_momentum", "action_scale", "action_offset", "add_noise")
+            self.actor.apply, static_argnames=("batch_norm_momentum", "action_scale", "action_offset", "add_noise", "policy_noise", "noise_clip")
         )
 
         self.weight_support = []
@@ -302,12 +306,15 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         return {
             "env_id": self.env.unwrapped.spec.id,
             "learning_rate": self.learning_rate,
+            "use_gpi": self.use_gpi,
             "batch_size": self.batch_size,
             "per": self.per,
             "alpha_per": self.alpha,
             "min_priority": self.min_priority,
             "num_q_nets": self.num_q_nets,
             "gamma": self.gamma,
+            "policy_noise": self.policy_noise,
+            "noise_clip": self.noise_clip,
             "net_arch": self.net_arch,
             "gradient_updates": self.gradient_updates,
             "buffer_size": self.buffer_size,
