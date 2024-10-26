@@ -290,7 +290,15 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         )
         self.q_net.apply = jax.jit(self.q_net.apply, static_argnames=("batch_norm_momentum", "dropout_rate", "deterministic"))
         self.actor.apply = jax.jit(
-            self.actor.apply, static_argnames=("batch_norm_momentum", "action_scale", "action_offset", "add_noise", "policy_noise", "noise_clip")
+            self.actor.apply,
+            static_argnames=(
+                "batch_norm_momentum",
+                "action_scale",
+                "action_offset",
+                "add_noise",
+                "policy_noise",
+                "noise_clip",
+            ),
         )
 
         self.weight_support = []

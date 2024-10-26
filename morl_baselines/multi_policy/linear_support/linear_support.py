@@ -94,7 +94,7 @@ class LinearSupport:
             if len(self.queue) > 0:
                 # Sort in descending order of priority
                 self.queue.sort(key=lambda t: t[0], reverse=True)
-                # If all priorities are 0, shuffle the queue to avoid repearting weights every iteration
+                # If all priorities are 0, shuffle the queue to avoid repeating weights every iteration
                 if self.queue[0][0] == 0.0:
                     random.shuffle(self.queue)
 
@@ -157,7 +157,7 @@ class LinearSupport:
             List of indices of value vectors removed from the CCS for being dominated.
         """
         if self.verbose:
-            print(f"Adding value: {value} to CCS.")
+            print(f"Adding value={value} for weight={w} to CCS.")
 
         self.iteration += 1
         self.visited_weights.append(w)
@@ -224,27 +224,6 @@ class LinearSupport:
         if len(self.ccs) == 0:
             return None
         return np.max([np.dot(v, w) for v in self.ccs])
-
-    def remove_obsolete_weights(self, new_value: np.ndarray) -> List[np.ndarray]:
-        """Remove from the queue the weight vectors for which the new value vector is better than previous values.
-
-        Args:
-            new_value: New value vector
-
-        Returns:
-            List of weight vectors removed from the queue.
-        """
-        if len(self.ccs) == 0:
-            return []
-        W_del = []
-        inds_remove = []
-        for i, (priority, cw) in enumerate(self.queue):
-            if np.dot(cw, new_value) > self.max_scalarized_value(cw):
-                W_del.append(cw)
-                inds_remove.append(i)
-        for i in reversed(inds_remove):
-            self.queue.pop(i)
-        return W_del
 
     def remove_obsolete_values(self, value: np.ndarray) -> List[int]:
         """Removes the values vectors which are no longer optimal for any weight vector after adding the new value vector.
