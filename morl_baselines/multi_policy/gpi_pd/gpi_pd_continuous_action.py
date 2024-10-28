@@ -96,7 +96,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         delay_policy_update: int = 2,
         learning_starts: int = 100,
         gradient_updates: int = 20,
-        use_gpi: bool = True,
+        use_gpi: bool = False,  # In the continuous action case, GPI is only used to selected weights.
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
         per: bool = True,
