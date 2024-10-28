@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "MORL-Baselines"
-copyright = "2023, Florian Felten & Lucas Alegre"
+copyright = "2024, Florian Felten & Lucas Alegre"
 author = "Florian Felten & Lucas Alegre"
-release = "1.0.0"
+release = "1.1.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
