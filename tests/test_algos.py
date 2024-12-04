@@ -196,8 +196,8 @@ def test_gpi_pd():
 
 
 def test_gpi_pd_continuous_action():
-    env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
-    eval_env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+    env = mo_gym.make("mo-hopper-v5", cost_objective=False, max_episode_steps=500)
+    eval_env = mo_gym.make("mo-hopper-v5", cost_objective=False, max_episode_steps=500)
 
     agent = GPIPDContinuousAction(
         env,
@@ -278,8 +278,8 @@ def test_pcn():
 
 
 def test_capql():
-    env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
-    eval_env = mo_gym.make("mo-hopper-v4", cost_objective=False, max_episode_steps=500)
+    env = mo_gym.make("mo-hopper-v5", cost_objective=False, max_episode_steps=500)
+    eval_env = mo_gym.make("mo-hopper-v5", cost_objective=False, max_episode_steps=500)
 
     agent = CAPQL(
         env,
