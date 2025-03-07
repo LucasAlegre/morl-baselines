@@ -9,6 +9,7 @@ import time
 from copy import deepcopy
 from typing import List, Optional, Tuple, Union
 from typing_extensions import override
+from itertools import product
 
 import gymnasium as gym
 import mo_gymnasium as mo_gym
@@ -202,15 +203,25 @@ class PerformancePredictor:
         return delta_predictions, delta_predictions + policy_eval
 
 
-def generate_weights(delta_weight: float) -> np.ndarray:
+def generate_weights(delta_weight: float, dimensions: int = 2) -> np.ndarray:
     """Generates weights uniformly distributed over the objective dimensions. These weight vectors are separated by delta_weight distance.
 
     Args:
         delta_weight: distance between weight vectors
+        dimensions: number of objectives
     Returns:
         all the candidate weights
     """
-    return np.linspace((0.0, 1.0), (1.0, 0.0), int(1 / delta_weight) + 1, dtype=np.float32)
+    # Generate a list of possible weight values based on delta_weight
+    possible_weights = np.arange(0.0, 1.0 + delta_weight, delta_weight, dtype=np.float32)
+    
+    # Generate all possible combinations of these weights for the given number of dimensions
+    weight_combinations = np.array(list(product(possible_weights, repeat=dimensions)), dtype=np.float32)
+
+    # Filter out combinations that do not sum to 1
+    valid_weight_vectors = weight_combinations[np.isclose(weight_combinations.sum(axis=1), 1.0)]
+
+    return valid_weight_vectors
 
 
 class PerformanceBuffer2d:
@@ -515,7 +526,7 @@ class PGMORL(MOAgent):
             for _ in range(self.pop_size)
         ]
 
-        weights = generate_weights(self.delta_weight)
+        weights = generate_weights(self.delta_weight, self.reward_dim)
         print(f"Warmup phase - sampled weights: {weights}")
 
         self.agents = [
@@ -623,7 +634,7 @@ class PGMORL(MOAgent):
 
     def __task_weight_selection(self, ref_point: np.ndarray):
         """Chooses agents and weights to train at the next iteration based on the current population and prediction model."""
-        candidate_weights = generate_weights(self.delta_weight / 2.0)  # Generates more weights than agents
+        candidate_weights = generate_weights(self.delta_weight / 2.0, self.reward_dim)  # Generates more weights than agents
         self.np_random.shuffle(candidate_weights)  # Randomize
 
         current_front = deepcopy(self.archive.evaluations)
