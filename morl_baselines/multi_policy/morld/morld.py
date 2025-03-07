@@ -2,7 +2,7 @@
 
 See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
 """
-
+import os
 import math
 import time
 from typing import Callable, List, Optional, Tuple, Union
@@ -23,10 +23,12 @@ from morl_baselines.common.utils import nearest_neighbors
 from morl_baselines.common.weights import equally_spaced_weights, random_weights
 from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
+from morl_baselines.single_policy.ser.mosac_discrete_action import MOSACDiscrete
 
 
 POLICIES = {
     "MOSAC": MOSAC,
+    "MOSACDiscrete": MOSACDiscrete,
     "EUPG": EUPG,
 }
 
@@ -414,6 +416,26 @@ class MORLD(MOAgent):
             for p in self.population:
                 if len(p.wrapped.get_buffer()) > 0 and p != current:
                     p.wrapped.update()
+
+    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
+        """Save the agent's weights and replay buffer."""
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+
+        saved_params = {}
+
+        for i, policy in enumerate(self.population):
+            saved_params[f"policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
+
+        th.save(saved_params, save_dir + "/" + filename + ".tar")
+
+    def load(self, path, load_replay_buffer=True):
+        """Load the agent weights from a file."""
+        params = th.load(path, map_location=self.device)
+
+        for i, policy in enumerate(self.population):
+            policy.wrapped.load(params[f"policy_{i}"], load_replay_buffer=load_replay_buffer)
+            policy.weights = policy.wrapped.weights
 
     def train(
         self,

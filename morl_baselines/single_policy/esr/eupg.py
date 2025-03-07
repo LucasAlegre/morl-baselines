@@ -1,5 +1,6 @@
 """EUPG is an ESR algorithm based on Policy Gradient (REINFORCE like)."""
 
+import os
 import time
 from copy import deepcopy
 from typing import Callable, List, Optional, Union
@@ -268,6 +269,42 @@ class EUPG(MOPolicy, MOAgent):
             flip_rewards[i] = cumulative_rewards
         forward_rewards = flip_rewards.flip(dims=[0])
         return forward_rewards
+    
+    def get_save_dict(self, save_replay_buffer=True):
+        """Retrieve a dictionary containing all information needed to save the policy."""
+        save_dict = {
+            'policy_net_state_dict': self.net.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'policy_weights': self.weights
+        }
+
+        if save_replay_buffer:
+            save_dict['replay_buffer'] = self.get_buffer()
+
+        return save_dict
+
+    def save(self, save_dir="weights/", filename=None, save_replay_buffer=False):
+        """Save the agent's weights and replay buffer."""
+        os.makedirs(save_dir, exist_ok=True)
+        policy_filename = filename or f"policy_{self.id}.pth"
+        policy_path = os.path.join(save_dir, policy_filename)
+
+        save_dict = self.get_save_dict(save_replay_buffer)
+        th.save(save_dict, policy_path)
+    
+    def load(self, save_dict: Optional[dict] = None, path: Optional[str] = None, load_replay_buffer: bool = True):
+        """Load the agent's weights and replay buffer.
+        """
+        if save_dict is None:
+            assert path is not None, "Either save_dict or path must be provided."
+            save_dict = th.load(path)
+        
+        self.net.load_state_dict(save_dict['policy_net_state_dict'])
+        self.optimizer.load_state_dict(save_dict['optimizer_state_dict'])
+        self.weights = save_dict['policy_weights']
+        
+        if load_replay_buffer and 'replay_buffer' in save_dict:
+            self.buffer = save_dict['replay_buffer']
 
     def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None, eval_freq: int = 1000, start_time=None):
         """Train the agent.
