@@ -446,6 +446,8 @@ class MORLD(MOAgent):
         num_eval_episodes_for_front: int = 5,
         num_eval_weights_for_eval: int = 50,
         reset_num_timesteps: bool = False,
+        checkpoints: bool = True,
+        save_freq: int = 10000,
     ):
         """Trains the algorithm.
 
@@ -457,6 +459,8 @@ class MORLD(MOAgent):
             num_eval_episodes_for_front: number of episodes for each policy evaluation
             num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             reset_num_timesteps: whether to reset the number of timesteps or not
+            checkpoints (bool): Whether to save checkpoints.
+            save_freq (int): Number of timesteps between checkpoints.
         """
         if self.log:
             self.register_additional_config(
@@ -501,6 +505,10 @@ class MORLD(MOAgent):
             # Adaptation
             self.__adapt_weights(evals)
             self.__adapt_ref_point()
+
+            # Checkpoint
+            if checkpoints and self.global_step % save_freq == 0:
+                self.save(filename=f"{self.experiment_name} step={self.global_step}", save_replay_buffer=False)
 
         print("done!")
         self.env.close()
