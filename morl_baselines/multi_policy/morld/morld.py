@@ -2,7 +2,7 @@
 
 See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
 """
-
+import os
 import math
 import time
 from typing import Callable, List, Optional, Tuple, Union
@@ -23,10 +23,12 @@ from morl_baselines.common.utils import nearest_neighbors
 from morl_baselines.common.weights import equally_spaced_weights, random_weights
 from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
+from morl_baselines.single_policy.ser.mosac_discrete_action import MOSACDiscrete
 
 
 POLICIES = {
     "MOSAC": MOSAC,
+    "MOSACDiscrete": MOSACDiscrete,
     "EUPG": EUPG,
 }
 
@@ -415,6 +417,26 @@ class MORLD(MOAgent):
                 if len(p.wrapped.get_buffer()) > 0 and p != current:
                     p.wrapped.update()
 
+    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
+        """Save the agent's weights and replay buffer."""
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+
+        saved_params = {}
+
+        for i, policy in enumerate(self.population):
+            saved_params[f"policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
+
+        th.save(saved_params, save_dir + "/" + filename + ".tar")
+
+    def load(self, path, load_replay_buffer=True):
+        """Load the agent weights from a file."""
+        params = th.load(path, map_location=self.device)
+
+        for i, policy in enumerate(self.population):
+            policy.wrapped.load(params[f"policy_{i}"], load_replay_buffer=load_replay_buffer)
+            policy.weights = policy.wrapped.weights
+
     def train(
         self,
         total_timesteps: int,
@@ -424,6 +446,8 @@ class MORLD(MOAgent):
         num_eval_episodes_for_front: int = 5,
         num_eval_weights_for_eval: int = 50,
         reset_num_timesteps: bool = False,
+        checkpoints: bool = True,
+        save_freq: int = 10000,
     ):
         """Trains the algorithm.
 
@@ -435,6 +459,8 @@ class MORLD(MOAgent):
             num_eval_episodes_for_front: number of episodes for each policy evaluation
             num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             reset_num_timesteps: whether to reset the number of timesteps or not
+            checkpoints (bool): Whether to save checkpoints.
+            save_freq (int): Number of timesteps between checkpoints.
         """
         if self.log:
             self.register_additional_config(
@@ -479,6 +505,10 @@ class MORLD(MOAgent):
             # Adaptation
             self.__adapt_weights(evals)
             self.__adapt_ref_point()
+
+            # Checkpoint
+            if checkpoints and self.global_step % save_freq == 0:
+                self.save(filename=f"{self.experiment_name} step={self.global_step}", save_replay_buffer=False)
 
         print("done!")
         self.env.close()
