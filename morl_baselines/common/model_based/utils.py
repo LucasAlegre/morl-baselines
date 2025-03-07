@@ -72,6 +72,33 @@ def termination_fn_hopper(obs, act, next_obs):
     done = done[:, np.newaxis]
     return done
 
+def termination_fn_lunarlander(obs, act, next_obs, rew):
+    """Termination function of lunarlander. Use reward prediction to determine termination."""
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
+
+    # Condition 1: out of screen
+    has_exited_screen = abs(next_obs[:, 0]) >= 1.0
+
+    # Condition 2: all legs have landed (supposed to be 1.0 but we allow for some margin of error) and reward is non-zero
+    has_crashed_or_landed = (rew[:, 0] != 0) & (next_obs[:, 6] >= 0.95) & (next_obs[:, 7] >= 0.95)
+    
+    not_done = ~(has_exited_screen | has_crashed_or_landed)
+    done = ~not_done
+    done = done[:, np.newaxis]
+    return done
+
+def termination_fn_humanoid(obs, act, next_obs, rew):
+    """Termination function of hopper."""
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
+    min_z, max_z = 1.0, 2.0 # if u change healthy_z_range in the humanoid env, change this too
+
+    # index needs to be +2 if you unset the exclude_current_positions_from_observation 
+    # parameter in the humanoid env
+    not_done = (min_z < next_obs[:, 0]) & (next_obs[:, 0] < max_z)
+    done = ~not_done
+    done = done[:, np.newaxis]
+    return done
+
 
 class ModelEnv:
     """Wrapper for the model to be used as an environment."""
@@ -90,8 +117,10 @@ class ModelEnv:
             self.termination_func = termination_fn_hopper
         elif "halfcheetah" in env_id:
             self.termination_func = termination_fn_false
+        elif "humanoid" in env_id:
+            self.termination_func = termination_fn_humanoid
         elif "lunar-lander" in env_id:
-            self.termination_func = termination_fn_false
+            self.termination_func = termination_fn_lunarlander
         elif "mo-reacher" in env_id:
             self.termination_func = termination_fn_false
         elif "mountaincar" in env_id:
