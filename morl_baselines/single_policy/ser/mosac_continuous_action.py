@@ -21,7 +21,7 @@ import wandb
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.evaluation import log_episode_info
 from morl_baselines.common.morl_algorithm import MOPolicy
-from morl_baselines.common.networks import mlp, polyak_update
+from morl_baselines.common.networks import mlp, polyak_update, layer_init
 
 
 # ALGO LOGIC: initialize agent here:
@@ -49,6 +49,7 @@ class MOSoftQNetwork(nn.Module):
             net_arch=self.net_arch,
             activation_fn=nn.ReLU,
         )
+        self.apply(layer_init)
 
     def forward(self, x, a):
         """Forward pass of the soft Q-network."""
@@ -82,18 +83,17 @@ class MOSACActor(nn.Module):
 
         # S -> ... -> |A| (mean)
         #          -> |A| (std)
-        self.fc1 = nn.Linear(np.array(self.obs_shape).prod(), 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc_mean = nn.Linear(256, np.prod(self.action_shape))
-        self.fc_logstd = nn.Linear(256, np.prod(self.action_shape))
+        self.latent_pi = mlp(np.array(self.obs_shape).prod(), -1, self.net_arch)
+        self.fc_mean = nn.Linear(net_arch[-1], np.prod(self.action_shape))
+        self.fc_logstd = nn.Linear(net_arch[-1], np.prod(self.action_shape))
+        self.apply(layer_init)
         # action rescaling
         self.register_buffer("action_scale", th.tensor((action_upper_bound - action_lower_bound) / 2.0, dtype=th.float32))
         self.register_buffer("action_bias", th.tensor((action_upper_bound + action_lower_bound) / 2.0, dtype=th.float32))
 
     def forward(self, x):
         """Forward pass of the actor network."""
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = self.latent_pi(x)
         mean = self.fc_mean(x)
         log_std = self.fc_logstd(x)
         log_std = th.tanh(log_std)
