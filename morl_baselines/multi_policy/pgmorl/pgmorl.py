@@ -213,7 +213,7 @@ def generate_weights(delta_weight: float) -> np.ndarray:
     return np.linspace((0.0, 1.0), (1.0, 0.0), int(1 / delta_weight) + 1, dtype=np.float32)
 
 
-class PerformanceBuffer:
+class PerformanceBuffer2d:
     """Stores the population. Divides the objective space in to n bins of size max_size.
 
     (!) restricted to 2D objective space (!)
@@ -277,6 +277,69 @@ class PerformanceBuffer:
                     break
 
 
+class PerformanceBuffer3d:
+    """Stores the population. Divides the objective space in to n bins of size max_size.
+    """
+
+    def __init__(self, num_bins: int, max_size: int, origin: np.ndarray):
+        """Initializes the buffer.
+
+        Args:
+            num_bins: number of bins
+            max_size: maximum size of each bin
+            origin: origin of the objective space (to have only positive values)
+        """
+        self.max_size = max_size
+        self.origin = -origin
+        self.pbuffer_vec = generate_weights(1.0 / (num_bins - 1), 3)
+        for i in range(len(self.pbuffer_vec)):
+            self.pbuffer_vec[i] = self.pbuffer_vec[i] / np.linalg.norm(self.pbuffer_vec[i])
+        self.num_bins = len(self.pbuffer_vec)
+        self.bins = [[] for _ in range(self.num_bins)]
+        self.bins_evals = [[] for _ in range(self.num_bins)]
+
+    @property
+    def evaluations(self) -> List[np.ndarray]:
+        """Returns the evaluations of the individuals in the buffer."""
+        # flatten
+        return [e for l in self.bins_evals for e in l]
+
+    @property
+    def individuals(self) -> list:
+        """Returns the individuals in the buffer."""
+        return [i for l in self.bins for i in l]
+
+    def add(self, candidate, evaluation: np.ndarray):
+        """Adds a candidate to the buffer.
+
+        Args:
+            candidate: candidate to add
+            evaluation: evaluation of the candidate
+        """
+
+        def center_eval(eval):
+            # Objectives must be positive
+            return np.clip(eval + self.origin, 0.0, float("inf"))
+
+        centered_eval = center_eval(evaluation)
+        dist = np.linalg.norm(centered_eval)
+        max_dot, buffer_id = -np.inf, -1
+        for i in range(self.num_bins):
+            dot = np.dot(self.pbuffer_vec[i], centered_eval)
+            if dot > max_dot:
+                max_dot, buffer_id = dot, i
+
+        if len(self.bins[buffer_id]) < self.max_size:
+            self.bins[buffer_id].append(deepcopy(candidate))
+            self.bins_evals[buffer_id].append(evaluation)
+        else:
+            for i in range(len(self.bins[buffer_id])):
+                stored_eval_centered = center_eval(self.bins_evals[buffer_id][i])
+                if np.linalg.norm(stored_eval_centered) < dist:
+                    self.bins[buffer_id][i] = deepcopy(candidate)
+                    self.bins_evals[buffer_id][i] = evaluation
+                    break
+
 class PGMORL(MOAgent):
     """Prediction Guided Multi-Objective Reinforcement Learning.
 
@@ -304,6 +367,7 @@ class PGMORL(MOAgent):
         min_weight: float = 0.0,
         max_weight: float = 1.0,
         delta_weight: float = 0.2,
+        sparsity_coef: float = -1.0,
         env=None,
         gamma: float = 0.995,
         project_name: str = "MORL-baselines",
@@ -344,6 +408,7 @@ class PGMORL(MOAgent):
             min_weight: minimum weight
             max_weight: maximum weight
             delta_weight: delta weight for weight generation
+            sparsity_coef: sparsity coefficient (alpha in the paper)
             env: environment
             gamma: discount factor
             project_name: name of the project. Usually MORL-baselines.
@@ -387,14 +452,24 @@ class PGMORL(MOAgent):
         self.min_weight = min_weight
         self.max_weight = max_weight
         self.delta_weight = delta_weight
+        self.sparsity_coef = sparsity_coef
         self.num_performance_buffer = num_performance_buffer
         self.performance_buffer_size = performance_buffer_size
         self.archive = ParetoArchive()
-        self.population = PerformanceBuffer(
-            num_bins=self.num_performance_buffer,
-            max_size=self.performance_buffer_size,
-            origin=origin,
-        )
+        if self.reward_dim == 2:
+            self.population = PerformanceBuffer2d(
+                num_bins=self.num_performance_buffer,
+                max_size=self.performance_buffer_size,
+                origin=origin,
+            )
+        elif self.reward_dim == 3:
+            self.population = PerformanceBuffer3d(
+                num_bins=self.num_performance_buffer,
+                max_size=self.performance_buffer_size,
+                origin=origin,
+            )
+        else:
+            raise ValueError("Only 2D and 3D objectives are supported.")
         self.predictor = PerformancePredictor()
 
         # PPO Parameters
@@ -486,6 +561,7 @@ class PGMORL(MOAgent):
             "min_weight": self.min_weight,
             "max_weight": self.max_weight,
             "delta_weight": self.delta_weight,
+            "sparsity_coef": self.sparsity_coef,
             "gamma": self.gamma,
             "seed": self.seed,
             "net_arch": self.net_arch,
@@ -581,10 +657,18 @@ class PGMORL(MOAgent):
                     ),
                 )
                 # optimization criterion is a hypervolume - sparsity
-                mixture_metrics = [
-                    hypervolume(ref_point, current_front + [predicted_eval]) - sparsity(current_front + [predicted_eval])
-                    for predicted_eval in predicted_evals
-                ]
+                hypervolumes = [hypervolume(ref_point, current_front + [predicted_eval]) for predicted_eval in predicted_evals]
+                sparsity_values = [sparsity(current_front + [predicted_eval]) for predicted_eval in predicted_evals]
+                mixture_metrics = [hv + self.sparsity_coef * sparsity_val for hv, sparsity_val in zip(hypervolumes, sparsity_values)]
+                
+                wandb.log(
+                    {
+                        "metrics/hypervolume_improvement": np.mean(hypervolumes),
+                        "metrics/sparsity_improvement": np.mean(sparsity_values),
+                        "metrics/mixture_improvement": np.mean(mixture_metrics),
+                        "global_step": self.global_step
+                    },
+                )
                 # Best among all the weights for the current candidate
                 current_candidate_weight = np.argmax(np.array(mixture_metrics))
                 current_candidate_improv = np.max(np.array(mixture_metrics))
