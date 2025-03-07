@@ -10,19 +10,19 @@ import torch.nn.functional as F
 from gymnasium.spaces import Discrete
 
 
-def termination_fn_false(obs, act, next_obs):
+def termination_fn_false(obs, act, next_obs, rew):
     """Returns a vector of False values of the same length as the batch size."""
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     done = np.array([False]).repeat(len(obs))
     done = done[:, np.newaxis]
     return done
 
 
-def termination_fn_dst(obs, act, next_obs):
+def termination_fn_dst(obs, act, next_obs, rew):
     """Termination function of DST."""
     from mo_gymnasium.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     done = np.array([False]).repeat(len(obs))
     next_obs_int = (next_obs * 10).astype(int)
     for i in range(len(done)):
@@ -34,9 +34,9 @@ def termination_fn_dst(obs, act, next_obs):
     return done
 
 
-def termination_fn_mountaincar(obs, act, next_obs):
-    """Termination function of mountain car."""
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+def termination_fn_mountaincar(obs, act, next_obs, rew):
+    """Termination function of mountin car."""
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     position = next_obs[:, 0]
     velocity = next_obs[:, 1]
     done = (position >= 0.45) * (velocity >= 0.0)
@@ -44,9 +44,9 @@ def termination_fn_mountaincar(obs, act, next_obs):
     return done
 
 
-def termination_fn_minecart(obs, act, next_obs):
+def termination_fn_minecart(obs, act, next_obs, rew):
     """Termination function of minecart."""
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     old_pos = obs[:, 0:2]
     pos = next_obs[:, 0:2]
     # had_ore = (obs[:,-2] > 0) + (obs[:,-1] > 0)
@@ -164,7 +164,7 @@ class ModelEnv:
         samples[:, self.rew_dim :] += obs
 
         rewards, next_obs = samples[:, : self.rew_dim], samples[:, self.rew_dim :]
-        terminals = self.termination_func(obs, act, next_obs)
+        terminals = self.termination_func(obs, act, next_obs, rewards)
         var_rewards, var_obs = vars[:, : self.rew_dim], vars[:, self.rew_dim :]
 
         if return_single:
