@@ -375,11 +375,11 @@ class PCN(MOAgent, MOPolicy):
         distances = np.linalg.norm(np.array(returns) - np.array(e_returns), axis=-1)
         return e_returns, np.array(returns), distances
 
-    def save(self, filename: str = "PCN_model", savedir: str = "weights"):
+    def save(self, filename: str = "PCN_model", save_dir: str = "weights"):
         """Save PCN."""
-        if not os.path.isdir(savedir):
-            os.makedirs(savedir)
-        th.save(self.model, f"{savedir}/{filename}.pt")
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        th.save(self.model, f"{save_dir}/{filename}.pt")
 
     def train(
         self,
