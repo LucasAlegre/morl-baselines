@@ -76,7 +76,7 @@ def termination_fn_hopper(obs, act, next_obs):
 class ModelEnv:
     """Wrapper for the model to be used as an environment."""
 
-    def __init__(self, model, env_id=None, rew_dim=1):
+    def __init__(self, model, env_id=None, rew_dim=1, termination_fn=None):
         """Initialize the environment.
 
         Args:
@@ -86,24 +86,29 @@ class ModelEnv:
         """
         self.model = model
         self.rew_dim = rew_dim
-        if "hopper" in env_id:
-            self.termination_func = termination_fn_hopper
-        elif "halfcheetah" in env_id:
-            self.termination_func = termination_fn_false
-        elif "lunar-lander" in env_id:
-            self.termination_func = termination_fn_false
-        elif "mo-reacher" in env_id:
-            self.termination_func = termination_fn_false
-        elif "mountaincar" in env_id:
-            self.termination_func = termination_fn_mountaincar
-        elif "minecart" in env_id:
-            self.termination_func = termination_fn_minecart
-        elif env_id == "mo-highway-fast-v0" or env_id == "mo-highway-v0":
-            self.termination_func = termination_fn_false
-        elif env_id == "deep-sea-treasure-v0":
-            self.termination_func = termination_fn_dst
+
+        if termination_fn is not None:
+            self.termination_func = termination_fn
+
         else:
-            raise NotImplementedError
+            if "hopper" in env_id:
+                self.termination_func = termination_fn_hopper
+            elif "halfcheetah" in env_id:
+                self.termination_func = termination_fn_false
+            elif "lunar-lander" in env_id:
+                self.termination_func = termination_fn_false
+            elif "mo-reacher" in env_id:
+                self.termination_func = termination_fn_false
+            elif "mountaincar" in env_id:
+                self.termination_func = termination_fn_mountaincar
+            elif "minecart" in env_id:
+                self.termination_func = termination_fn_minecart
+            elif env_id == "mo-highway-fast-v0" or env_id == "mo-highway-v0":
+                self.termination_func = termination_fn_false
+            elif env_id == "deep-sea-treasure-v0":
+                self.termination_func = termination_fn_dst
+            else:
+                raise NotImplementedError
 
     def step(
         self, obs: th.Tensor, act: th.Tensor, deterministic: bool = False

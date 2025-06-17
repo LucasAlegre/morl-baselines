@@ -112,6 +112,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         dynamics_buffer_size: int = 200000,
         dynamics_min_uncertainty: float = 2.0,
         dynamics_real_ratio: float = 0.1,
+        termination_fn: Optional[callable] = None,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD Continuous Action",
         wandb_entity: Optional[str] = None,
@@ -178,6 +179,8 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         self.per = per
         self.min_priority = min_priority
         self.alpha = alpha
+        self.termination_fn = termination_fn
+
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
                 self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size
@@ -344,7 +347,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         batch_size = min(self.dynamics_rollout_batch_size, 10000)
         for _ in range(num_times):
             obs = self.replay_buffer.sample_obs(batch_size, to_tensor=False)
-            model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=self.reward_dim)
+            model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=self.reward_dim, termination_fn=self.termination_fn)
             for plan_step in range(self.dynamics_rollout_len):
                 obs = th.tensor(obs).to(self.device)
                 w = weight.repeat(obs.shape[0], 1)

@@ -121,6 +121,7 @@ class GPIPD(MOPolicy, MOAgent):
         dynamics_net_arch: List = [256, 256, 256],
         dynamics_ensemble_size: int = 5,
         dynamics_num_elites: int = 2,
+        termination_fn: Optional[Callable] = None,
         real_ratio: float = 0.5,
         project_name: str = "MORL-Baselines",
         experiment_name: str = "GPI-PD",
@@ -166,6 +167,7 @@ class GPIPD(MOPolicy, MOAgent):
             dynamics_net_arch: The network architecture for the dynamics model.
             dynamics_ensemble_size: The ensemble size for the dynamics model.
             dynamics_num_elites: The number of elites for the dynamics model.
+            termination_fn: A function to determine if an episode is terminated. (see. morl_baselines/common/model_based/utils.py)
             real_ratio: The ratio of real transitions to sample.
             project_name: The name of the project.
             experiment_name: The name of the experiment.
@@ -194,6 +196,7 @@ class GPIPD(MOPolicy, MOAgent):
         self.num_nets = num_nets
         self.drop_rate = drop_rate
         self.layer_norm = layer_norm
+        self.termination_fn = termination_fn
 
         # Q-Networks
         self.q_nets = [
@@ -229,11 +232,11 @@ class GPIPD(MOPolicy, MOAgent):
         self.gpi_pd = gpi_pd
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         else:
             self.replay_buffer = ReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         self.min_priority = min_priority
         self.alpha = alpha_per
@@ -254,7 +257,7 @@ class GPIPD(MOPolicy, MOAgent):
                 device=self.device,
             )
             self.dynamics_buffer = ReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
             )
         self.dynamics_train_freq = dynamics_train_freq
         self.dynamics_buffer_size = dynamics_buffer_size
@@ -375,7 +378,7 @@ class GPIPD(MOPolicy, MOAgent):
         num_added_imagined_transitions = 0
         for iteration in range(num_times):
             obs = self.replay_buffer.sample_obs(batch_size, to_tensor=False)
-            model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=len(w))
+            model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=len(w), termination_fn= self.termination_fn)
 
             for h in range(self.dynamics_rollout_len):
                 obs = th.tensor(obs).to(self.device)
