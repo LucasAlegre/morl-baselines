@@ -229,11 +229,11 @@ class GPIPD(MOPolicy, MOAgent):
         self.gpi_pd = gpi_pd
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         else:
             self.replay_buffer = ReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size, action_dtype=np.uint8
             )
         self.min_priority = min_priority
         self.alpha = alpha_per
@@ -254,7 +254,7 @@ class GPIPD(MOPolicy, MOAgent):
                 device=self.device,
             )
             self.dynamics_buffer = ReplayBuffer(
-                self.observation_shape, 1, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
+                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
             )
         self.dynamics_train_freq = dynamics_train_freq
         self.dynamics_buffer_size = dynamics_buffer_size
