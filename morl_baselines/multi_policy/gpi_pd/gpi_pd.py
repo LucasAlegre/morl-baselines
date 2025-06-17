@@ -254,7 +254,11 @@ class GPIPD(MOPolicy, MOAgent):
                 device=self.device,
             )
             self.dynamics_buffer = ReplayBuffer(
-                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size, action_dtype=np.uint8
+                self.observation_shape,
+                self.action_dim,
+                rew_dim=self.reward_dim,
+                max_size=dynamics_buffer_size,
+                action_dtype=np.uint8,
             )
         self.dynamics_train_freq = dynamics_train_freq
         self.dynamics_buffer_size = dynamics_buffer_size
