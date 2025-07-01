@@ -22,7 +22,7 @@ import wandb
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.evaluation import log_episode_info
 from morl_baselines.common.morl_algorithm import MOPolicy
-from morl_baselines.common.networks import mlp, polyak_update, layer_init
+from morl_baselines.common.networks import layer_init, mlp, polyak_update
 
 
 # ALGO LOGIC: initialize agent here:
@@ -342,23 +342,23 @@ class MOSAC(MOPolicy):
     def get_save_dict(self, save_replay_buffer: bool = False) -> dict:
         """Returns a dictionary of all components needed for saving the MOSAC instance."""
         save_dict = {
-            'actor_state_dict': self.actor.state_dict(),
-            'qf1_state_dict': self.qf1.state_dict(),
-            'qf2_state_dict': self.qf2.state_dict(),
-            'qf1_target_state_dict': self.qf1_target.state_dict(),
-            'qf2_target_state_dict': self.qf2_target.state_dict(),
-            'actor_optimizer_state_dict': self.actor_optimizer.state_dict(),
-            'q_optimizer_state_dict': self.q_optimizer.state_dict(),
-            'weights': self.weights,
-            'alpha': self.alpha,
+            "actor_state_dict": self.actor.state_dict(),
+            "qf1_state_dict": self.qf1.state_dict(),
+            "qf2_state_dict": self.qf2.state_dict(),
+            "qf1_target_state_dict": self.qf1_target.state_dict(),
+            "qf2_target_state_dict": self.qf2_target.state_dict(),
+            "actor_optimizer_state_dict": self.actor_optimizer.state_dict(),
+            "q_optimizer_state_dict": self.q_optimizer.state_dict(),
+            "weights": self.weights,
+            "alpha": self.alpha,
         }
 
         if save_replay_buffer:
-            save_dict['buffer'] = self.buffer
+            save_dict["buffer"] = self.buffer
 
-        if self.autotune: # previously used autotune
-            save_dict['log_alpha'] = self.log_alpha
-            save_dict['a_optimizer_state_dict'] = self.a_optimizer.state_dict()
+        if self.autotune:  # previously used autotune
+            save_dict["log_alpha"] = self.log_alpha
+            save_dict["a_optimizer_state_dict"] = self.a_optimizer.state_dict()
 
         return save_dict
 
@@ -370,29 +370,28 @@ class MOSAC(MOPolicy):
         th.save(save_dict, save_path)
 
     def load(self, save_dict: Optional[dict] = None, path: Optional[str] = None, load_replay_buffer: bool = True):
-        """Load the model and the replay buffer if specified.
-        """
+        """Load the model and the replay buffer if specified."""
         if save_dict is None:
             assert path is not None, "Either save_dict or path should be provided."
             save_dict = th.load(path, map_location=self.device)
 
-        self.actor.load_state_dict(save_dict['actor_state_dict'])
-        self.qf1.load_state_dict(save_dict['qf1_state_dict'])
-        self.qf2.load_state_dict(save_dict['qf2_state_dict'])
-        self.qf1_target.load_state_dict(save_dict['qf1_target_state_dict'])
-        self.qf2_target.load_state_dict(save_dict['qf2_target_state_dict'])
-        self.actor_optimizer.load_state_dict(save_dict['actor_optimizer_state_dict'])
-        self.q_optimizer.load_state_dict(save_dict['q_optimizer_state_dict'])
+        self.actor.load_state_dict(save_dict["actor_state_dict"])
+        self.qf1.load_state_dict(save_dict["qf1_state_dict"])
+        self.qf2.load_state_dict(save_dict["qf2_state_dict"])
+        self.qf1_target.load_state_dict(save_dict["qf1_target_state_dict"])
+        self.qf2_target.load_state_dict(save_dict["qf2_target_state_dict"])
+        self.actor_optimizer.load_state_dict(save_dict["actor_optimizer_state_dict"])
+        self.q_optimizer.load_state_dict(save_dict["q_optimizer_state_dict"])
 
-        if 'log_alpha' in save_dict:
-            self.log_alpha = save_dict['log_alpha']
-            self.a_optimizer.load_state_dict(save_dict['a_optimizer_state_dict'])
+        if "log_alpha" in save_dict:
+            self.log_alpha = save_dict["log_alpha"]
+            self.a_optimizer.load_state_dict(save_dict["a_optimizer_state_dict"])
 
         if load_replay_buffer:
-            self.buffer = save_dict['buffer']
+            self.buffer = save_dict["buffer"]
 
-        self.weights = save_dict['weights']
-        self.alpha = save_dict['alpha']
+        self.weights = save_dict["weights"]
+        self.alpha = save_dict["alpha"]
 
     @override
     def eval(self, obs: np.ndarray, w: Optional[np.ndarray] = None) -> Union[int, np.ndarray]:

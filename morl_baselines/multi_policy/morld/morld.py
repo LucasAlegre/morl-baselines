@@ -2,8 +2,9 @@
 
 See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
 """
-import os
+
 import math
+import os
 import time
 from typing import Callable, List, Optional, Tuple, Union
 from typing_extensions import override

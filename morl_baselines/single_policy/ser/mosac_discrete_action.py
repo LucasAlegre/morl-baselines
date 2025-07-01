@@ -16,16 +16,15 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions.categorical import Categorical
 import torch.optim as optim
 import wandb
+from torch.distributions.categorical import Categorical
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.evaluation import log_episode_info
 from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.networks import (
     NatureCNN,
-    get_grad_norm,
     layer_init,
     mlp,
     polyak_update,
@@ -37,7 +36,7 @@ class MODiscreteSoftQNetwork(nn.Module):
     """Soft Q-network: S, A -> ... -> |R| (multi-objective)."""
 
     def __init__(self, obs_shape, action_dim, reward_dim, net_arch):
-        """"Initialize the Q network.
+        """Initialize the Q network.
 
         Args:
             obs_shape: shape of the observation
@@ -199,7 +198,7 @@ class MOSACDiscrete(MOPolicy):
         self.learning_rate = policy_lr
         self.q_lr = q_lr
         self.update_frequency = update_frequency
-        self.target_net_freq = target_net_freq 
+        self.target_net_freq = target_net_freq
         assert self.target_net_freq % self.update_frequency == 0, "target_net_freq should be divisible by update_frequency"
         self.target_entropy_scale = target_entropy_scale
 
@@ -212,22 +211,38 @@ class MOSACDiscrete(MOPolicy):
         ).to(self.device)
 
         self.qf1 = MODiscreteSoftQNetwork(
-            obs_shape=self.obs_shape, action_dim=self.action_dim, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_dim=self.action_dim,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf2 = MODiscreteSoftQNetwork(
-            obs_shape=self.obs_shape, action_dim=self.action_dim, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_dim=self.action_dim,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf1_target = MODiscreteSoftQNetwork(
-            obs_shape=self.obs_shape, action_dim=self.action_dim, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_dim=self.action_dim,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf2_target = MODiscreteSoftQNetwork(
-            obs_shape=self.obs_shape, action_dim=self.action_dim, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_dim=self.action_dim,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf1_target.requires_grad_(False)
         self.qf2_target.requires_grad_(False)
         self.qf1_target.load_state_dict(self.qf1.state_dict())
         self.qf2_target.load_state_dict(self.qf2.state_dict())
-        self.q_optimizer = optim.Adam(list(self.qf1.parameters()) + list(self.qf2.parameters()), lr=self.q_lr, eps=1e-4)
+        self.q_optimizer = optim.Adam(
+            list(self.qf1.parameters()) + list(self.qf2.parameters()),
+            lr=self.q_lr,
+            eps=1e-4,
+        )
         self.actor_optimizer = optim.Adam(list(self.actor.parameters()), lr=self.policy_lr, eps=1e-4)
 
         # Automatic entropy tuning
@@ -245,7 +260,7 @@ class MOSACDiscrete(MOPolicy):
         self.env.observation_space.dtype = np.float32
         self.buffer = ReplayBuffer(
             obs_shape=self.obs_shape,
-            action_dim=1, # ouput singular index for action
+            action_dim=1,  # output singular index for action
             rew_dim=self.reward_dim,
             max_size=self.buffer_size,
         )
@@ -312,7 +327,11 @@ class MOSACDiscrete(MOPolicy):
 
         copied.global_step = self.global_step
         copied.actor_optimizer = optim.Adam(copied.actor.parameters(), lr=self.policy_lr, eps=1e-4)
-        copied.q_optimizer = optim.Adam(list(copied.qf1.parameters()) + list(copied.qf2.parameters()), lr=self.q_lr, eps=1e-4)
+        copied.q_optimizer = optim.Adam(
+            list(copied.qf1.parameters()) + list(copied.qf2.parameters()),
+            lr=self.q_lr,
+            eps=1e-4,
+        )
         if self.autotune:
             copied.a_optimizer = optim.Adam([copied.log_alpha], lr=self.q_lr, eps=1e-4)
         copied.alpha_tensor = th.scalar_tensor(copied.alpha).to(self.device)
@@ -339,23 +358,23 @@ class MOSACDiscrete(MOPolicy):
     def get_save_dict(self, save_replay_buffer: bool = False) -> dict:
         """Returns a dictionary of all components needed for saving the MOSAC instance."""
         save_dict = {
-            'actor_state_dict': self.actor.state_dict(),
-            'qf1_state_dict': self.qf1.state_dict(),
-            'qf2_state_dict': self.qf2.state_dict(),
-            'qf1_target_state_dict': self.qf1_target.state_dict(),
-            'qf2_target_state_dict': self.qf2_target.state_dict(),
-            'actor_optimizer_state_dict': self.actor_optimizer.state_dict(),
-            'q_optimizer_state_dict': self.q_optimizer.state_dict(),
-            'weights': self.weights,
-            'alpha': self.alpha,
+            "actor_state_dict": self.actor.state_dict(),
+            "qf1_state_dict": self.qf1.state_dict(),
+            "qf2_state_dict": self.qf2.state_dict(),
+            "qf1_target_state_dict": self.qf1_target.state_dict(),
+            "qf2_target_state_dict": self.qf2_target.state_dict(),
+            "actor_optimizer_state_dict": self.actor_optimizer.state_dict(),
+            "q_optimizer_state_dict": self.q_optimizer.state_dict(),
+            "weights": self.weights,
+            "alpha": self.alpha,
         }
 
         if save_replay_buffer:
-            save_dict['buffer'] = self.buffer
+            save_dict["buffer"] = self.buffer
 
         if self.autotune:
-            save_dict['log_alpha'] = self.log_alpha
-            save_dict['a_optimizer_state_dict'] = self.a_optimizer.state_dict()
+            save_dict["log_alpha"] = self.log_alpha
+            save_dict["a_optimizer_state_dict"] = self.a_optimizer.state_dict()
             save_dict["target_entropy_scale"] = self.target_entropy_scale
 
         return save_dict
@@ -367,36 +386,40 @@ class MOSACDiscrete(MOPolicy):
         save_dict = self.get_save_dict(save_replay_buffer)
         th.save(save_dict, save_path)
 
-    def load(self, save_dict: Optional[dict] = None, path: Optional[str] = None, load_replay_buffer: bool = True):
-        """Load the model and the replay buffer if specified.
-        """
+    def load(
+        self,
+        save_dict: Optional[dict] = None,
+        path: Optional[str] = None,
+        load_replay_buffer: bool = True,
+    ):
+        """Load the model and the replay buffer if specified."""
         if save_dict is None:
             assert path is not None, "Either save_dict or path should be provided."
             save_dict = th.load(path, map_location=self.device)
 
-        self.actor.load_state_dict(save_dict['actor_state_dict'])
-        self.qf1.load_state_dict(save_dict['qf1_state_dict'])
-        self.qf2.load_state_dict(save_dict['qf2_state_dict'])
-        self.qf1_target.load_state_dict(save_dict['qf1_target_state_dict'])
-        self.qf2_target.load_state_dict(save_dict['qf2_target_state_dict'])
-        self.actor_optimizer.load_state_dict(save_dict['actor_optimizer_state_dict'])
-        self.q_optimizer.load_state_dict(save_dict['q_optimizer_state_dict'])
+        self.actor.load_state_dict(save_dict["actor_state_dict"])
+        self.qf1.load_state_dict(save_dict["qf1_state_dict"])
+        self.qf2.load_state_dict(save_dict["qf2_state_dict"])
+        self.qf1_target.load_state_dict(save_dict["qf1_target_state_dict"])
+        self.qf2_target.load_state_dict(save_dict["qf2_target_state_dict"])
+        self.actor_optimizer.load_state_dict(save_dict["actor_optimizer_state_dict"])
+        self.q_optimizer.load_state_dict(save_dict["q_optimizer_state_dict"])
 
-        if 'log_alpha' in save_dict: # previously used autotune
-            self.log_alpha = save_dict['log_alpha']
-            self.a_optimizer.load_state_dict(save_dict['a_optimizer_state_dict'])
+        if "log_alpha" in save_dict:  # previously used autotune
+            self.log_alpha = save_dict["log_alpha"]
+            self.a_optimizer.load_state_dict(save_dict["a_optimizer_state_dict"])
             self.target_entropy_scale = save_dict["target_entropy_scale"]
 
         if load_replay_buffer:
-            self.buffer = save_dict['buffer']
+            self.buffer = save_dict["buffer"]
 
-        self.weights = save_dict['weights']
-        self.alpha = save_dict['alpha']
+        self.weights = save_dict["weights"]
+        self.alpha = save_dict["alpha"]
 
     @override
     def eval(
-        self, 
-        obs: np.ndarray, 
+        self,
+        obs: np.ndarray,
         w: Optional[np.ndarray] = None,
         **kwargs,
     ) -> Union[int, np.ndarray]:
@@ -426,7 +449,7 @@ class MOSACDiscrete(MOPolicy):
         with th.no_grad():
             _, next_state_log_pi, next_state_action_probs = self.actor.get_action(actor_next_obs)
             # (!) Q values are scalarized before being compared (min of ensemble networks)
-            qf1_next_target = self.scalarization(self.qf1_target(mb_next_obs), self.weights_tensor) # (B, A, R) -> (B, A)
+            qf1_next_target = self.scalarization(self.qf1_target(mb_next_obs), self.weights_tensor)  # (B, A, R) -> (B, A)
             qf2_next_target = self.scalarization(self.qf2_target(mb_next_obs), self.weights_tensor)
             # we can use the action probabilities instead of MC sampling to estimate the expectation
             min_qf_next_target = next_state_action_probs * (
@@ -437,7 +460,7 @@ class MOSACDiscrete(MOPolicy):
             scalarized_rewards = self.scalarization(mb_rewards, self.weights_tensor)
             next_q_value = scalarized_rewards.flatten() + (1 - mb_dones.flatten()) * self.gamma * (min_qf_next_target)
 
-        qf1_values = self.scalarization(self.qf1(mb_obs), self.weights_tensor) # (B, A, R) -> (B, A)
+        qf1_values = self.scalarization(self.qf1(mb_obs), self.weights_tensor)  # (B, A, R) -> (B, A)
         qf2_values = self.scalarization(self.qf2(mb_obs), self.weights_tensor)
         qf1_a_values = qf1_values.gather(1, mb_act.long()).view(-1)
         qf2_a_values = qf2_values.gather(1, mb_act.long()).view(-1)
@@ -462,7 +485,7 @@ class MOSACDiscrete(MOPolicy):
         self.actor_optimizer.step()
 
         if self.autotune:
-            # re-use action probabilities for temperature loss
+            # reuse action probabilities for temperature loss
             alpha_loss = (action_probs.detach() * (-self.log_alpha.exp() * (log_pi + self.target_entropy).detach())).mean()
 
             self.a_optimizer.zero_grad(set_to_none=True)
@@ -473,8 +496,16 @@ class MOSACDiscrete(MOPolicy):
 
         # update the target networks
         if self.global_step % self.target_net_freq == 0:
-            polyak_update(params=self.qf1.parameters(), target_params=self.qf1_target.parameters(), tau=self.tau)
-            polyak_update(params=self.qf2.parameters(), target_params=self.qf2_target.parameters(), tau=self.tau)
+            polyak_update(
+                params=self.qf1.parameters(),
+                target_params=self.qf1_target.parameters(),
+                tau=self.tau,
+            )
+            polyak_update(
+                params=self.qf2.parameters(),
+                target_params=self.qf2_target.parameters(),
+                tau=self.tau,
+            )
             self.qf1_target.requires_grad_(False)
             self.qf2_target.requires_grad_(False)
 
@@ -495,11 +526,11 @@ class MOSACDiscrete(MOPolicy):
             wandb.log(to_log)
 
     def train(
-        self, 
-        total_timesteps: int, 
-        eval_env: Optional[gym.Env] = None, 
-        start_time = None,
-        verbose: bool = False 
+        self,
+        total_timesteps: int,
+        eval_env: Optional[gym.Env] = None,
+        start_time=None,
+        verbose: bool = False,
     ):
         """Train the agent.
 
@@ -531,14 +562,27 @@ class MOSACDiscrete(MOPolicy):
             real_next_obs = next_obs
             if "final_observation" in infos:
                 real_next_obs = infos["final_observation"]
-            self.buffer.add(obs=obs, next_obs=real_next_obs, action=actions, reward=rewards, done=terminated)
+            self.buffer.add(
+                obs=obs,
+                next_obs=real_next_obs,
+                action=actions,
+                reward=rewards,
+                done=terminated,
+            )
 
             # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
             obs = next_obs
             if terminated or truncated:
                 obs, _ = self.env.reset()
                 if self.log and "episode" in infos.keys():
-                    log_episode_info(infos["episode"], np.dot, self.weights, self.global_step, self.id, verbose=verbose)
+                    log_episode_info(
+                        infos["episode"],
+                        np.dot,
+                        self.weights,
+                        self.global_step,
+                        self.id,
+                        verbose=verbose,
+                    )
 
             # ALGO LOGIC: training.
             if self.global_step > self.learning_starts:
@@ -547,7 +591,10 @@ class MOSACDiscrete(MOPolicy):
                 if self.log and self.global_step % 100 == 0:
                     print("SPS:", int(self.global_step / (time.time() - start_time)))
                     wandb.log(
-                        {"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step}
+                        {
+                            "charts/SPS": int(self.global_step / (time.time() - start_time)),
+                            "global_step": self.global_step,
+                        }
                     )
 
             self.global_step += 1
