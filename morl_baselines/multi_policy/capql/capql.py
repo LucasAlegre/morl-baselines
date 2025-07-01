@@ -455,7 +455,7 @@ class CAPQL(MOAgent, MOPolicy):
                 self.update()
 
             if terminated or truncated:
-                obs, info = self.env.reset()
+                obs, _ = self.env.reset()
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():

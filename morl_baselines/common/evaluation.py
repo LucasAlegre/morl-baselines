@@ -16,7 +16,6 @@ from morl_baselines.common.performance_indicators import (
     hypervolume,
     igd,
     maximum_utility_loss,
-    sparsity,
 )
 from morl_baselines.common.weights import equally_spaced_weights
 
@@ -156,7 +155,6 @@ def log_all_multi_policy_metrics(
 
     Logged metrics:
     - hypervolume
-    - sparsity
     - expected utility metric (EUM)
     If a reference front is provided, also logs:
     - Inverted generational distance (IGD)
@@ -172,14 +170,12 @@ def log_all_multi_policy_metrics(
     """
     filtered_front = list(filter_pareto_dominated(current_front))
     hv = hypervolume(hv_ref_point, filtered_front)
-    sp = sparsity(filtered_front)
     eum = expected_utility(filtered_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
     card = cardinality(filtered_front)
 
     wandb.log(
         {
             "eval/hypervolume": hv,
-            "eval/sparsity": sp,
             "eval/eum": eum,
             "eval/cardinality": card,
             "global_step": global_step,
