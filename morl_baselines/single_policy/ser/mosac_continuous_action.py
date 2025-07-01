@@ -5,7 +5,6 @@ The implementation of this file is largely based on CleanRL's SAC implementation
 https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88/cleanrl/sac_continuous_action.py
 """
 
-import os
 import time
 from copy import deepcopy
 from typing import Optional, Tuple, Union
@@ -89,8 +88,14 @@ class MOSACActor(nn.Module):
         self.fc_logstd = nn.Linear(net_arch[-1], np.prod(self.action_shape))
         self.apply(layer_init)
         # action rescaling
-        self.register_buffer("action_scale", th.tensor((action_upper_bound - action_lower_bound) / 2.0, dtype=th.float32))
-        self.register_buffer("action_bias", th.tensor((action_upper_bound + action_lower_bound) / 2.0, dtype=th.float32))
+        self.register_buffer(
+            "action_scale",
+            th.tensor((action_upper_bound - action_lower_bound) / 2.0, dtype=th.float32),
+        )
+        self.register_buffer(
+            "action_bias",
+            th.tensor((action_upper_bound + action_lower_bound) / 2.0, dtype=th.float32),
+        )
 
     def forward(self, x):
         """Forward pass of the actor network."""
@@ -201,7 +206,6 @@ class MOSAC(MOPolicy):
         self.learning_starts = learning_starts
         self.net_arch = net_arch
         self.policy_lr = policy_lr
-        self.learning_rate = policy_lr
         self.q_lr = q_lr
         self.policy_freq = policy_freq
         self.target_net_freq = target_net_freq
@@ -217,16 +221,28 @@ class MOSAC(MOPolicy):
         ).to(self.device)
 
         self.qf1 = MOSoftQNetwork(
-            obs_shape=self.obs_shape, action_shape=self.action_shape, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_shape=self.action_shape,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf2 = MOSoftQNetwork(
-            obs_shape=self.obs_shape, action_shape=self.action_shape, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_shape=self.action_shape,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf1_target = MOSoftQNetwork(
-            obs_shape=self.obs_shape, action_shape=self.action_shape, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_shape=self.action_shape,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf2_target = MOSoftQNetwork(
-            obs_shape=self.obs_shape, action_shape=self.action_shape, reward_dim=self.reward_dim, net_arch=self.net_arch
+            obs_shape=self.obs_shape,
+            action_shape=self.action_shape,
+            reward_dim=self.reward_dim,
+            net_arch=self.net_arch,
         ).to(self.device)
         self.qf1_target.requires_grad_(False)
         self.qf2_target.requires_grad_(False)
@@ -339,6 +355,7 @@ class MOSAC(MOPolicy):
         self.weights = weights
         self.weights_tensor = th.from_numpy(self.weights).float().to(self.device)
 
+    @override
     def get_save_dict(self, save_replay_buffer: bool = False) -> dict:
         """Returns a dictionary of all components needed for saving the MOSAC instance."""
         save_dict = {
@@ -362,14 +379,13 @@ class MOSAC(MOPolicy):
 
         return save_dict
 
-    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
-        """Save the agent's weights and replay buffer."""
-        os.makedirs(save_dir, exist_ok=True)
-        save_path = os.path.join(save_dir, filename)
-        save_dict = self.get_save_dict(save_replay_buffer)
-        th.save(save_dict, save_path)
-
-    def load(self, save_dict: Optional[dict] = None, path: Optional[str] = None, load_replay_buffer: bool = True):
+    @override
+    def load(
+        self,
+        save_dict: Optional[dict] = None,
+        path: Optional[str] = None,
+        load_replay_buffer: bool = True,
+    ):
         """Load the model and the replay buffer if specified."""
         if save_dict is None:
             assert path is not None, "Either save_dict or path should be provided."
@@ -461,8 +477,16 @@ class MOSAC(MOPolicy):
 
         # update the target networks
         if self.global_step % self.target_net_freq == 0:
-            polyak_update(params=self.qf1.parameters(), target_params=self.qf1_target.parameters(), tau=self.tau)
-            polyak_update(params=self.qf2.parameters(), target_params=self.qf2_target.parameters(), tau=self.tau)
+            polyak_update(
+                params=self.qf1.parameters(),
+                target_params=self.qf1_target.parameters(),
+                tau=self.tau,
+            )
+            polyak_update(
+                params=self.qf2.parameters(),
+                target_params=self.qf2_target.parameters(),
+                tau=self.tau,
+            )
             self.qf1_target.requires_grad_(False)
             self.qf2_target.requires_grad_(False)
 
@@ -512,14 +536,26 @@ class MOSAC(MOPolicy):
             real_next_obs = next_obs
             if "final_observation" in infos:
                 real_next_obs = infos["final_observation"]
-            self.buffer.add(obs=obs, next_obs=real_next_obs, action=actions, reward=rewards, done=terminated)
+            self.buffer.add(
+                obs=obs,
+                next_obs=real_next_obs,
+                action=actions,
+                reward=rewards,
+                done=terminated,
+            )
 
             # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
             obs = next_obs
             if terminated or truncated:
                 obs, _ = self.env.reset()
                 if self.log and "episode" in infos.keys():
-                    log_episode_info(infos["episode"], np.dot, self.weights, self.global_step, self.id)
+                    log_episode_info(
+                        infos["episode"],
+                        np.dot,
+                        self.weights,
+                        self.global_step,
+                        self.id,
+                    )
 
             # ALGO LOGIC: training.
             if self.global_step > self.learning_starts:
@@ -527,7 +563,10 @@ class MOSAC(MOPolicy):
                 if self.log and self.global_step % 100 == 0:
                     print("SPS:", int(self.global_step / (time.time() - start_time)))
                     wandb.log(
-                        {"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step}
+                        {
+                            "charts/SPS": int(self.global_step / (time.time() - start_time)),
+                            "global_step": self.global_step,
+                        }
                     )
 
             self.global_step += 1

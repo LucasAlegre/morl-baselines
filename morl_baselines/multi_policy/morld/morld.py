@@ -1,6 +1,6 @@
 """MORL/D Multi-Objective Reinforcement Learning based on Decomposition.
 
-See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
+See Felten, Talbi & Danoy (2024): https://jair.org/index.php/jair/article/view/15702.
 """
 
 import math
@@ -154,7 +154,10 @@ class MORLD(MOAgent):
         self.dist_metric = dist_metric
         self.neighborhoods = [
             nearest_neighbors(
-                n=self.neighborhood_size, current_weight=w, all_weights=self.weights, dist_metric=self.dist_metric
+                n=self.neighborhood_size,
+                current_weight=w,
+                all_weights=self.weights,
+                dist_metric=self.dist_metric,
             )
             for w in self.weights
         ]
@@ -204,7 +207,11 @@ class MORLD(MOAgent):
         ]
         self.archive = ParetoArchive()
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
+            self.setup_wandb(
+                project_name=self.project_name,
+                experiment_name=self.experiment_name,
+                entity=wandb_entity,
+            )
 
         if self.shared_buffer:
             self.__share_buffers()
@@ -275,7 +282,10 @@ class MORLD(MOAgent):
             acc = np.zeros(self.reward_dim)
             for _ in range(num_eval_episodes_for_front):
                 _, _, _, discounted_reward = policy.wrapped.policy_eval(
-                    eval_env, weights=policy.weights, scalarization=self.scalarization, log=self.log
+                    eval_env,
+                    weights=policy.weights,
+                    scalarization=self.scalarization,
+                    log=self.log,
                 )
                 acc += discounted_reward
 
@@ -283,7 +293,10 @@ class MORLD(MOAgent):
             acc = np.zeros(self.reward_dim)
             for _ in range(num_eval_episodes_for_front):
                 _, _, _, discounted_reward = policy.wrapped.policy_eval_esr(
-                    eval_env, weights=policy.weights, scalarization=self.scalarization, log=self.log
+                    eval_env,
+                    weights=policy.weights,
+                    scalarization=self.scalarization,
+                    log=self.log,
                 )
                 acc += discounted_reward
         else:
@@ -348,7 +361,8 @@ class MORLD(MOAgent):
                     )
                     # Set optimizer to point to the right parameters
                     neighbor_policy.wrapped.optimizer = optim.Adam(
-                        neighbor_net.parameters(), lr=neighbor_policy.wrapped.learning_rate
+                        neighbor_net.parameters(),
+                        lr=neighbor_policy.wrapped.learning_rate,
                     )
 
     def __adapt_weights(self, evals: List[np.ndarray]):
@@ -380,7 +394,7 @@ class MORLD(MOAgent):
         if self.weight_adaptation_method == "PSA":
             print("Adapting weights using PSA's method")
             # P. Czyzżak and A. Jaszkiewicz,
-            # “Pareto simulated annealing—a metaheuristic technique for multiple-objective combinatorial optimization,”
+            # "Pareto simulated annealing—a metaheuristic technique for multiple-objective combinatorial optimization,"
             # Journal of Multi-Criteria Decision Analysis, vol. 7, no. 1, pp. 34–47, 1998,
             # doi: 10.1002/(SICI)1099-1360(199801)7:1<34::AID-MCDA161>3.0.CO;2-6.
             for i, p in enumerate(self.population):
@@ -418,15 +432,19 @@ class MORLD(MOAgent):
                 if len(p.wrapped.get_buffer()) > 0 and p != current:
                     p.wrapped.update()
 
-    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
-        """Save the agent's weights and replay buffer."""
+    def save(self, save_dir="weights/", filename=None, save_replay_buffer=False):
+        """Save the agent's weights and replay buffer for all policies in the archive, using their evaluation as part of the key name."""
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
 
         saved_params = {}
 
-        for i, policy in enumerate(self.population):
-            saved_params[f"policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
+        for i, (policy, eval_) in enumerate(zip(self.archive.individuals, self.archive.evaluations)):
+            # Sanitize evaluation string for filename safety
+            eval_str = np.array2string(eval_, precision=3, separator="_", suppress_small=True)
+
+            key = f"archive_policy_{i}_eval_{eval_str}"
+            saved_params[key] = policy.wrapped.get_save_dict(save_replay_buffer)
 
         th.save(saved_params, save_dir + "/" + filename + ".tar")
 
@@ -482,7 +500,11 @@ class MORLD(MOAgent):
         obs, _ = self.env.reset()
         print("Starting training...")
         self.__eval_all_policies(
-            eval_env, num_eval_episodes_for_front, num_eval_weights_for_eval, ref_point, known_pareto_front
+            eval_env,
+            num_eval_episodes_for_front,
+            num_eval_weights_for_eval,
+            ref_point,
+            known_pareto_front,
         )
 
         while self.global_step < total_timesteps:
@@ -498,7 +520,11 @@ class MORLD(MOAgent):
 
             # Update archive
             evals = self.__eval_all_policies(
-                eval_env, num_eval_episodes_for_front, num_eval_weights_for_eval, ref_point, known_pareto_front
+                eval_env,
+                num_eval_episodes_for_front,
+                num_eval_weights_for_eval,
+                ref_point,
+                known_pareto_front,
             )
 
             # cooperation
@@ -509,7 +535,10 @@ class MORLD(MOAgent):
 
             # Checkpoint
             if checkpoints and self.global_step % save_freq == 0:
-                self.save(filename=f"{self.experiment_name} step={self.global_step}", save_replay_buffer=False)
+                self.save(
+                    filename=f"{self.experiment_name} step={self.global_step}",
+                    save_replay_buffer=False,
+                )
 
         print("done!")
         self.env.close()

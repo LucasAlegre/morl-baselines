@@ -1,11 +1,12 @@
 """Multi-objective Soft Actor-Critic (SAC) algorithm for discrete action spaces.
 
+Implemented for the paper: https://arxiv.org/abs/2503.00799.
+
 It implements a multi-objective critic with weighted sum scalarization.
 The implementation of this file is largely based on CleanRL's SAC implementation
 https://github.com/vwxyzjn/cleanrl/blob/28fd178ca182bd83c75ed0d49d52e235ca6cdc88/cleanrl/sac_atari.py
 """
 
-import os
 import time
 from copy import deepcopy
 from typing import Optional, Tuple, Union
@@ -33,7 +34,7 @@ from morl_baselines.common.networks import (
 
 # ALGO LOGIC: initialize agent here:
 class MODiscreteSoftQNetwork(nn.Module):
-    """Soft Q-network: S, A -> ... -> |R| (multi-objective)."""
+    """Soft Q-network: S -> ... -> |A| * |R| (multi-objective)."""
 
     def __init__(self, obs_shape, action_dim, reward_dim, net_arch):
         """Initialize the Q network.
@@ -49,11 +50,19 @@ class MODiscreteSoftQNetwork(nn.Module):
         self.action_dim = action_dim
         self.reward_dim = reward_dim
         if len(obs_shape) == 1:
-            self.feature_extractor = mlp(obs_shape[0], -1, net_arch[:1])
+            self.feature_extractor = mlp(
+                input_dim=obs_shape[0],
+                output_dim=-1,
+                net_arch=net_arch[:1],
+            )
         elif len(obs_shape) > 1:  # Image observation
             self.feature_extractor = NatureCNN(self.obs_shape, features_dim=net_arch[0])
-        # S, A -> ... -> |A| * |R|
-        self.net = mlp(net_arch[0], action_dim * reward_dim, net_arch[1:])
+        #  ... -> |A| * |R|
+        self.net = mlp(
+            input_dim=net_arch[0],
+            output_dim=action_dim * reward_dim,
+            net_arch=net_arch[1:],
+        )
         self.apply(layer_init)
 
     def forward(self, obs):
@@ -195,7 +204,6 @@ class MOSACDiscrete(MOPolicy):
         self.learning_starts = learning_starts
         self.net_arch = net_arch
         self.policy_lr = policy_lr
-        self.learning_rate = policy_lr
         self.q_lr = q_lr
         self.update_frequency = update_frequency
         self.target_net_freq = target_net_freq
@@ -355,6 +363,7 @@ class MOSACDiscrete(MOPolicy):
         self.weights = weights
         self.weights_tensor = th.from_numpy(self.weights).float().to(self.device)
 
+    @override
     def get_save_dict(self, save_replay_buffer: bool = False) -> dict:
         """Returns a dictionary of all components needed for saving the MOSAC instance."""
         save_dict = {
@@ -379,13 +388,7 @@ class MOSACDiscrete(MOPolicy):
 
         return save_dict
 
-    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
-        """Save the agent's weights and replay buffer."""
-        os.makedirs(save_dir, exist_ok=True)
-        save_path = os.path.join(save_dir, filename)
-        save_dict = self.get_save_dict(save_replay_buffer)
-        th.save(save_dict, save_path)
-
+    @override
     def load(
         self,
         save_dict: Optional[dict] = None,
