@@ -269,7 +269,46 @@ class EUPG(MOPolicy, MOAgent):
         forward_rewards = flip_rewards.flip(dims=[0])
         return forward_rewards
 
-    def train(self, total_timesteps: int, eval_env: Optional[gym.Env] = None, eval_freq: int = 1000, start_time=None):
+    @override
+    def get_save_dict(self, save_replay_buffer=True):
+        """Retrieve a dictionary containing all information needed to save the policy."""
+        save_dict = {
+            "policy_net_state_dict": self.net.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "policy_weights": self.weights,
+        }
+
+        if save_replay_buffer:
+            save_dict["replay_buffer"] = self.get_buffer()
+
+        return save_dict
+
+    @override
+    def load(
+        self,
+        save_dict: Optional[dict] = None,
+        path: Optional[str] = None,
+        load_replay_buffer: bool = True,
+    ):
+        """Load the agent's weights and replay buffer."""
+        if save_dict is None:
+            assert path is not None, "Either save_dict or path must be provided."
+            save_dict = th.load(path)
+
+        self.net.load_state_dict(save_dict["policy_net_state_dict"])
+        self.optimizer.load_state_dict(save_dict["optimizer_state_dict"])
+        self.weights = save_dict["policy_weights"]
+
+        if load_replay_buffer and "replay_buffer" in save_dict:
+            self.buffer = save_dict["replay_buffer"]
+
+    def train(
+        self,
+        total_timesteps: int,
+        eval_env: Optional[gym.Env] = None,
+        eval_freq: int = 1000,
+        start_time=None,
+    ):
         """Train the agent.
 
         Args:
@@ -300,11 +339,23 @@ class EUPG(MOPolicy, MOAgent):
             next_obs, vec_reward, terminated, truncated, info = self.env.step(action)
 
             # Memory update
-            self.buffer.add(obs, accrued_reward_tensor.cpu().numpy(), action, vec_reward, next_obs, terminated)
+            self.buffer.add(
+                obs,
+                accrued_reward_tensor.cpu().numpy(),
+                action,
+                vec_reward,
+                next_obs,
+                terminated,
+            )
             accrued_reward_tensor += th.from_numpy(vec_reward).to(self.device)
 
             if eval_env is not None and self.log and self.global_step % eval_freq == 0:
-                self.policy_eval_esr(eval_env, scalarization=self.scalarization, weights=self.weights, log=self.log)
+                self.policy_eval_esr(
+                    eval_env,
+                    scalarization=self.scalarization,
+                    weights=self.weights,
+                    log=self.log,
+                )
 
             if terminated or truncated:
                 # NN is updated at the end of each episode
@@ -328,7 +379,12 @@ class EUPG(MOPolicy, MOAgent):
 
             if self.log and self.global_step % 1000 == 0:
                 print("SPS:", int(self.global_step / (time.time() - start_time)))
-                wandb.log({"charts/SPS": int(self.global_step / (time.time() - start_time)), "global_step": self.global_step})
+                wandb.log(
+                    {
+                        "charts/SPS": int(self.global_step / (time.time() - start_time)),
+                        "global_step": self.global_step,
+                    }
+                )
 
     @override
     def get_config(self) -> dict:

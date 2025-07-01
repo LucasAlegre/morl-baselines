@@ -76,7 +76,10 @@ class MOPolicy(ABC):
         )
         for i in range(vec_return.shape[0]):
             wandb.log(
-                {f"eval{idstr}/vec_{i}": vec_return[i], f"eval{idstr}/discounted_vec_{i}": discounted_vec_return[i]},
+                {
+                    f"eval{idstr}/vec_{i}": vec_return[i],
+                    f"eval{idstr}/discounted_vec_{i}": discounted_vec_return[i],
+                },
             )
 
     def policy_eval(
@@ -114,7 +117,12 @@ class MOPolicy(ABC):
                 discounted_vec_return,
             )
 
-        return scalarized_return, scalarized_discounted_return, vec_return, discounted_vec_return
+        return (
+            scalarized_return,
+            scalarized_discounted_return,
+            vec_return,
+            discounted_vec_return,
+        )
 
     def policy_eval_esr(
         self,
@@ -149,7 +157,12 @@ class MOPolicy(ABC):
                 discounted_vec_reward,
             )
 
-        return scalarized_reward, scalarized_discounted_reward, vec_reward, discounted_vec_reward
+        return (
+            scalarized_reward,
+            scalarized_discounted_reward,
+            vec_reward,
+            discounted_vec_reward,
+        )
 
     def get_policy_net(self) -> torch.nn.Module:
         """Returns the weights of the policy net."""
@@ -165,6 +178,34 @@ class MOPolicy(ABC):
         Args:
             buffer: new buffer (potentially shared)
         """
+        pass
+
+    def get_save_dict(self, save_replay_buffer: bool = False) -> dict:
+        """Returns a dictionary of the policy's weights and replay buffer.
+
+        Args:
+            save_replay_buffer: whether to save the replay buffer
+
+        Returns:
+            dict: dictionary of the policy's weights and replay buffer
+        """
+        pass
+
+    def save(
+        self,
+        save_dir: str = "weights/",
+        filename: Optional[str] = None,
+        save_replay_buffer: bool = False,
+    ):
+        """Save the agent's weights and replay buffer."""
+        os.makedirs(save_dir, exist_ok=True)
+        filename = filename or f"policy_{self.id}.pth"
+        save_path = os.path.join(save_dir, filename)
+        save_dict = self.get_save_dict(save_replay_buffer)
+        th.save(save_dict, save_path)
+
+    def load(self, path, load_replay_buffer=True):
+        """Load the agent's weights and replay buffer."""
         pass
 
     def set_weights(self, weights: np.ndarray):
@@ -183,7 +224,12 @@ class MOPolicy(ABC):
 class MOAgent(ABC):
     """An MORL Agent, can contain one or multiple MOPolicies. Contains helpers to extract features from the environment, setup logging etc."""
 
-    def __init__(self, env: Optional[gym.Env], device: Union[th.device, str] = "auto", seed: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        env: Optional[gym.Env],
+        device: Union[th.device, str] = "auto",
+        seed: Optional[int] = None,
+    ) -> None:
         """Initializes the agent.
 
         Args:
@@ -244,7 +290,11 @@ class MOAgent(ABC):
             wandb.config[key] = value
 
     def setup_wandb(
-        self, project_name: str, experiment_name: str, entity: Optional[str] = None, group: Optional[str] = None
+        self,
+        project_name: str,
+        experiment_name: str,
+        entity: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> None:
         """Initializes the wandb writer.
 
