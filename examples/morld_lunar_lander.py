@@ -10,7 +10,16 @@ def main():
     env = mo_gym.make("mo-lunar-lander-v3")
     eval_env = mo_gym.make("mo-lunar-lander-v3")
 
-    # These match the CLI example
+    # CLI equivalent:
+    # python experiments/benchmark/launch_experiment.py \
+    # --algo morld \
+    # --env-id mo-lunar-lander-v3 \
+    # --seed 0 \
+    # --num-timesteps 200000 \
+    # --gamma 0.99 \
+    # --ref-point -101 -1001 -101 -101 \
+    # --auto-tag True \
+    # --init-hyperparams "policy_name:'MOSACDiscrete'" "shared_buffer:True" "exchange_every:5000" "pop_size:6" "weight_adaptation_method:'PSA'" "policy_args:{'target_net_freq':200, 'batch_size':128, 'buffer_size':1000000, 'net_arch':[256, 256, 256, 256], 'update_frequency': 1, 'target_entropy_scale':0.3}"
     algo = MORLD(
         env=env,
         exchange_every=5000,
