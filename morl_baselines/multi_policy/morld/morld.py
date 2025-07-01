@@ -433,28 +433,61 @@ class MORLD(MOAgent):
                     p.wrapped.update()
 
     def save(self, save_dir="weights/", filename=None, save_replay_buffer=False):
-        """Save the agent's weights and replay buffer for all policies in the archive, using their evaluation as part of the key name."""
+        """Save the agent's weights and replay buffer for all policies in both the population and the archive."""
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
+        if filename is None:
+            filename = "morld_save"
 
         saved_params = {}
 
+        # Save population
+        for i, policy in enumerate(self.population):
+            saved_params[f"population_policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
+
+        # Save archive
         for i, (policy, eval_) in enumerate(zip(self.archive.individuals, self.archive.evaluations)):
-            # Sanitize evaluation string for filename safety
-            eval_str = np.array2string(eval_, precision=3, separator="_", suppress_small=True)
+            saved_params[f"archive_policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
+            saved_params[f"archive_policy_{i}_eval"] = eval_
 
-            key = f"archive_policy_{i}_eval_{eval_str}"
-            saved_params[key] = policy.wrapped.get_save_dict(save_replay_buffer)
-
-        th.save(saved_params, save_dir + "/" + filename + ".tar")
+        th.save(saved_params, os.path.join(save_dir, filename + ".tar"))
 
     def load(self, path, load_replay_buffer=True):
-        """Load the agent weights from a file."""
+        """Load the agent weights from a file. Loads both population and archive."""
         params = th.load(path, map_location=self.device)
 
+        # Load population
         for i, policy in enumerate(self.population):
-            policy.wrapped.load(params[f"policy_{i}"], load_replay_buffer=load_replay_buffer)
-            policy.weights = policy.wrapped.weights
+            key = f"population_policy_{i}"
+            if key in params:
+                policy.wrapped.load(params[key], load_replay_buffer=load_replay_buffer)
+                policy.weights = policy.wrapped.weights
+            else:
+                print(f"Warning: {key} not found in save file.")
+
+        # Load archive
+        self.archive.individuals = []
+        self.archive.evaluations = []
+        i = 0
+        while True:
+            policy_key = f"archive_policy_{i}"
+            eval_key = f"archive_policy_{i}_eval"
+            if policy_key in params and eval_key in params:
+                if len(self.population) > 0:
+                    import copy
+
+                    template = self.population[0]
+                    archive_policy = copy.deepcopy(template)
+                    archive_policy.wrapped.load(params[policy_key], load_replay_buffer=load_replay_buffer)
+                    archive_policy.weights = archive_policy.wrapped.weights
+                    self.archive.individuals.append(archive_policy)
+                    self.archive.evaluations.append(params[eval_key])
+                else:
+                    print("Warning: No population to use as template for archive policy loading.")
+                    break
+                i += 1
+            else:
+                break
 
     def train(
         self,
