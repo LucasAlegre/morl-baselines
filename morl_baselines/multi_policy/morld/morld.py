@@ -432,7 +432,7 @@ class MORLD(MOAgent):
                 if len(p.wrapped.get_buffer()) > 0 and p != current:
                     p.wrapped.update()
 
-    def save(self, save_dir="weights/", filename=None, save_replay_buffer=False):
+    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
         """Save the agent's weights and replay buffer for all policies in both the population and the archive."""
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
@@ -442,12 +442,14 @@ class MORLD(MOAgent):
         saved_params = {}
 
         # Save population
+        print("Saving population...")
         for i, policy in enumerate(self.population):
             saved_params[f"population_policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
 
         # Save archive
+        print("Saving archive...")
         for i, (policy, eval_) in enumerate(zip(self.archive.individuals, self.archive.evaluations)):
-            saved_params[f"archive_policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
+            saved_params[f"archive_policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer=False)
             saved_params[f"archive_policy_{i}_eval"] = eval_
 
         th.save(saved_params, os.path.join(save_dir, filename + ".tar"))
@@ -478,7 +480,7 @@ class MORLD(MOAgent):
 
                     template = self.population[0]
                     archive_policy = copy.deepcopy(template)
-                    archive_policy.wrapped.load(params[policy_key], load_replay_buffer=load_replay_buffer)
+                    archive_policy.wrapped.load(params[policy_key], load_replay_buffer=False)
                     archive_policy.weights = archive_policy.wrapped.weights
                     self.archive.individuals.append(archive_policy)
                     self.archive.evaluations.append(params[eval_key])
@@ -567,7 +569,10 @@ class MORLD(MOAgent):
             self.__adapt_ref_point()
 
             # Checkpoint
+            print("Global step:", self.global_step)
+            print("Save freq:", save_freq)
             if checkpoints and self.global_step % save_freq == 0:
+                print(f"Saving checkpoint at step {self.global_step}")
                 self.save(
                     filename=f"{self.experiment_name} step={self.global_step}",
                     save_replay_buffer=False,
