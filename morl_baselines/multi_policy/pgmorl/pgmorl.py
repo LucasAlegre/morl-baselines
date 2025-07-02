@@ -673,14 +673,15 @@ class PGMORL(MOAgent):
                     hv + self.sparsity_coef * sparsity_val for hv, sparsity_val in zip(hypervolumes, sparsity_values)
                 ]
 
-                wandb.log(
-                    {
-                        "metrics/hypervolume_improvement": np.mean(hypervolumes),
-                        "metrics/sparsity_improvement": np.mean(sparsity_values),
-                        "metrics/mixture_improvement": np.mean(mixture_metrics),
-                        "global_step": self.global_step,
-                    },
-                )
+                if self.log:
+                    wandb.log(
+                        {
+                            "metrics/hypervolume_improvement": np.mean(hypervolumes),
+                            "metrics/sparsity_improvement": np.mean(sparsity_values),
+                            "metrics/mixture_improvement": np.mean(mixture_metrics),
+                            "global_step": self.global_step,
+                        },
+                    )
                 # Best among all the weights for the current candidate
                 current_candidate_weight = np.argmax(np.array(mixture_metrics))
                 current_candidate_improv = np.max(np.array(mixture_metrics))
