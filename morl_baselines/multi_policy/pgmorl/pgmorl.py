@@ -1,7 +1,6 @@
 """PGMORL algorithm implementation.
 
 Some code in this file has been adapted from the original code provided by the authors of the paper https://github.com/mit-gfx/PGMORL.
-(!) Limited to 2 objectives for now.
 (!) The post-processing phase has not been implemented yet.
 """
 
@@ -769,7 +768,10 @@ class PGMORL(MOAgent):
             print(f"Evolutionary generation #{evolutionary_generation}")
             if self.log:
                 wandb.log(
-                    {"charts/evolutionary_generation": evolutionary_generation, "global_step": self.global_step},
+                    {
+                        "charts/evolutionary_generation": evolutionary_generation,
+                        "global_step": self.global_step,
+                    },
                 )
 
             for _ in range(self.evolutionary_iterations):
