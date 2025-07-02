@@ -1,9 +1,10 @@
 """MORL/D Multi-Objective Reinforcement Learning based on Decomposition.
 
-See Felten, Talbi & Danoy (2024): https://arxiv.org/abs/2311.12495.
+See Felten, Talbi & Danoy (2024): https://jair.org/index.php/jair/article/view/15702.
 """
 
 import math
+import os
 import time
 from typing import Callable, List, Optional, Tuple, Union
 from typing_extensions import override
@@ -23,10 +24,12 @@ from morl_baselines.common.utils import nearest_neighbors
 from morl_baselines.common.weights import equally_spaced_weights, random_weights
 from morl_baselines.single_policy.esr.eupg import EUPG
 from morl_baselines.single_policy.ser.mosac_continuous_action import MOSAC
+from morl_baselines.single_policy.ser.mosac_discrete_action import MOSACDiscrete
 
 
 POLICIES = {
     "MOSAC": MOSAC,
+    "MOSACDiscrete": MOSACDiscrete,
     "EUPG": EUPG,
 }
 
@@ -151,7 +154,10 @@ class MORLD(MOAgent):
         self.dist_metric = dist_metric
         self.neighborhoods = [
             nearest_neighbors(
-                n=self.neighborhood_size, current_weight=w, all_weights=self.weights, dist_metric=self.dist_metric
+                n=self.neighborhood_size,
+                current_weight=w,
+                all_weights=self.weights,
+                dist_metric=self.dist_metric,
             )
             for w in self.weights
         ]
@@ -201,7 +207,11 @@ class MORLD(MOAgent):
         ]
         self.archive = ParetoArchive()
         if self.log:
-            self.setup_wandb(project_name=self.project_name, experiment_name=self.experiment_name, entity=wandb_entity)
+            self.setup_wandb(
+                project_name=self.project_name,
+                experiment_name=self.experiment_name,
+                entity=wandb_entity,
+            )
 
         if self.shared_buffer:
             self.__share_buffers()
@@ -272,7 +282,10 @@ class MORLD(MOAgent):
             acc = np.zeros(self.reward_dim)
             for _ in range(num_eval_episodes_for_front):
                 _, _, _, discounted_reward = policy.wrapped.policy_eval(
-                    eval_env, weights=policy.weights, scalarization=self.scalarization, log=self.log
+                    eval_env,
+                    weights=policy.weights,
+                    scalarization=self.scalarization,
+                    log=self.log,
                 )
                 acc += discounted_reward
 
@@ -280,7 +293,10 @@ class MORLD(MOAgent):
             acc = np.zeros(self.reward_dim)
             for _ in range(num_eval_episodes_for_front):
                 _, _, _, discounted_reward = policy.wrapped.policy_eval_esr(
-                    eval_env, weights=policy.weights, scalarization=self.scalarization, log=self.log
+                    eval_env,
+                    weights=policy.weights,
+                    scalarization=self.scalarization,
+                    log=self.log,
                 )
                 acc += discounted_reward
         else:
@@ -345,7 +361,8 @@ class MORLD(MOAgent):
                     )
                     # Set optimizer to point to the right parameters
                     neighbor_policy.wrapped.optimizer = optim.Adam(
-                        neighbor_net.parameters(), lr=neighbor_policy.wrapped.learning_rate
+                        neighbor_net.parameters(),
+                        lr=neighbor_policy.wrapped.learning_rate,
                     )
 
     def __adapt_weights(self, evals: List[np.ndarray]):
@@ -377,7 +394,7 @@ class MORLD(MOAgent):
         if self.weight_adaptation_method == "PSA":
             print("Adapting weights using PSA's method")
             # P. Czyzżak and A. Jaszkiewicz,
-            # “Pareto simulated annealing—a metaheuristic technique for multiple-objective combinatorial optimization,”
+            # "Pareto simulated annealing—a metaheuristic technique for multiple-objective combinatorial optimization,"
             # Journal of Multi-Criteria Decision Analysis, vol. 7, no. 1, pp. 34–47, 1998,
             # doi: 10.1002/(SICI)1099-1360(199801)7:1<34::AID-MCDA161>3.0.CO;2-6.
             for i, p in enumerate(self.population):
@@ -415,6 +432,65 @@ class MORLD(MOAgent):
                 if len(p.wrapped.get_buffer()) > 0 and p != current:
                     p.wrapped.update()
 
+    def save(self, save_dir="weights/", filename=None, save_replay_buffer=True):
+        """Save the agent's weights and replay buffer for all policies in both the population and the archive."""
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        if filename is None:
+            filename = "morld_save"
+
+        saved_params = {}
+
+        # Save population
+        print("Saving population...")
+        for i, policy in enumerate(self.population):
+            saved_params[f"population_policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer)
+
+        # Save archive
+        print("Saving archive...")
+        for i, (policy, eval_) in enumerate(zip(self.archive.individuals, self.archive.evaluations)):
+            saved_params[f"archive_policy_{i}"] = policy.wrapped.get_save_dict(save_replay_buffer=False)
+            saved_params[f"archive_policy_{i}_eval"] = eval_
+
+        th.save(saved_params, os.path.join(save_dir, filename + ".tar"))
+
+    def load(self, path, load_replay_buffer=True):
+        """Load the agent weights from a file. Loads both population and archive."""
+        params = th.load(path, map_location=self.device)
+
+        # Load population
+        for i, policy in enumerate(self.population):
+            key = f"population_policy_{i}"
+            if key in params:
+                policy.wrapped.load(params[key], load_replay_buffer=load_replay_buffer)
+                policy.weights = policy.wrapped.weights
+            else:
+                print(f"Warning: {key} not found in save file.")
+
+        # Load archive
+        self.archive.individuals = []
+        self.archive.evaluations = []
+        i = 0
+        while True:
+            policy_key = f"archive_policy_{i}"
+            eval_key = f"archive_policy_{i}_eval"
+            if policy_key in params and eval_key in params:
+                if len(self.population) > 0:
+                    import copy
+
+                    template = self.population[0]
+                    archive_policy = copy.deepcopy(template)
+                    archive_policy.wrapped.load(params[policy_key], load_replay_buffer=False)
+                    archive_policy.weights = archive_policy.wrapped.weights
+                    self.archive.individuals.append(archive_policy)
+                    self.archive.evaluations.append(params[eval_key])
+                else:
+                    print("Warning: No population to use as template for archive policy loading.")
+                    break
+                i += 1
+            else:
+                break
+
     def train(
         self,
         total_timesteps: int,
@@ -424,6 +500,8 @@ class MORLD(MOAgent):
         num_eval_episodes_for_front: int = 5,
         num_eval_weights_for_eval: int = 50,
         reset_num_timesteps: bool = False,
+        checkpoints: bool = True,
+        save_freq: int = 10000,
     ):
         """Trains the algorithm.
 
@@ -435,6 +513,8 @@ class MORLD(MOAgent):
             num_eval_episodes_for_front: number of episodes for each policy evaluation
             num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             reset_num_timesteps: whether to reset the number of timesteps or not
+            checkpoints (bool): Whether to save checkpoints.
+            save_freq (int): Number of timesteps between checkpoints.
         """
         if self.log:
             self.register_additional_config(
@@ -455,7 +535,11 @@ class MORLD(MOAgent):
         obs, _ = self.env.reset()
         print("Starting training...")
         self.__eval_all_policies(
-            eval_env, num_eval_episodes_for_front, num_eval_weights_for_eval, ref_point, known_pareto_front
+            eval_env,
+            num_eval_episodes_for_front,
+            num_eval_weights_for_eval,
+            ref_point,
+            known_pareto_front,
         )
 
         while self.global_step < total_timesteps:
@@ -471,7 +555,11 @@ class MORLD(MOAgent):
 
             # Update archive
             evals = self.__eval_all_policies(
-                eval_env, num_eval_episodes_for_front, num_eval_weights_for_eval, ref_point, known_pareto_front
+                eval_env,
+                num_eval_episodes_for_front,
+                num_eval_weights_for_eval,
+                ref_point,
+                known_pareto_front,
             )
 
             # cooperation
@@ -479,6 +567,16 @@ class MORLD(MOAgent):
             # Adaptation
             self.__adapt_weights(evals)
             self.__adapt_ref_point()
+
+            # Checkpoint
+            print("Global step:", self.global_step)
+            print("Save freq:", save_freq)
+            if checkpoints and self.global_step % save_freq == 0:
+                print(f"Saving checkpoint at step {self.global_step}")
+                self.save(
+                    filename=f"{self.experiment_name} step={self.global_step}",
+                    save_replay_buffer=False,
+                )
 
         print("done!")
         self.env.close()
