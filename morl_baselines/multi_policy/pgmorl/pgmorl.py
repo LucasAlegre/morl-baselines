@@ -7,9 +7,9 @@ Some code in this file has been adapted from the original code provided by the a
 
 import time
 from copy import deepcopy
+from itertools import product
 from typing import List, Optional, Tuple, Union
 from typing_extensions import override
-from itertools import product
 
 import gymnasium as gym
 import mo_gymnasium as mo_gym
@@ -214,7 +214,7 @@ def generate_weights(delta_weight: float, dimensions: int = 2) -> np.ndarray:
     """
     # Generate a list of possible weight values based on delta_weight
     possible_weights = np.arange(0.0, 1.0 + delta_weight, delta_weight, dtype=np.float32)
-    
+
     # Generate all possible combinations of these weights for the given number of dimensions
     weight_combinations = np.array(list(product(possible_weights, repeat=dimensions)), dtype=np.float32)
 
@@ -289,8 +289,7 @@ class PerformanceBuffer2d:
 
 
 class PerformanceBuffer3d:
-    """Stores the population. Divides the objective space in to n bins of size max_size.
-    """
+    """Stores the population. Divides the objective space in to n bins of size max_size."""
 
     def __init__(self, num_bins: int, max_size: int, origin: np.ndarray):
         """Initializes the buffer.
@@ -350,6 +349,7 @@ class PerformanceBuffer3d:
                     self.bins[buffer_id][i] = deepcopy(candidate)
                     self.bins_evals[buffer_id][i] = evaluation
                     break
+
 
 class PGMORL(MOAgent):
     """Prediction Guided Multi-Objective Reinforcement Learning.
@@ -670,14 +670,16 @@ class PGMORL(MOAgent):
                 # optimization criterion is a hypervolume - sparsity
                 hypervolumes = [hypervolume(ref_point, current_front + [predicted_eval]) for predicted_eval in predicted_evals]
                 sparsity_values = [sparsity(current_front + [predicted_eval]) for predicted_eval in predicted_evals]
-                mixture_metrics = [hv + self.sparsity_coef * sparsity_val for hv, sparsity_val in zip(hypervolumes, sparsity_values)]
-                
+                mixture_metrics = [
+                    hv + self.sparsity_coef * sparsity_val for hv, sparsity_val in zip(hypervolumes, sparsity_values)
+                ]
+
                 wandb.log(
                     {
                         "metrics/hypervolume_improvement": np.mean(hypervolumes),
                         "metrics/sparsity_improvement": np.mean(sparsity_values),
                         "metrics/mixture_improvement": np.mean(mixture_metrics),
-                        "global_step": self.global_step
+                        "global_step": self.global_step,
                     },
                 )
                 # Best among all the weights for the current candidate
