@@ -216,17 +216,17 @@ class PCN(MOAgent, MOPolicy):
 
         obs, actions, desired_return, desired_horizon = zip(*batch)
         prediction = self.model(
-            th.tensor(obs).to(self.device),
-            th.tensor(desired_return).to(self.device),
-            th.tensor(desired_horizon).unsqueeze(1).to(self.device),
+            th.tensor(np.array(obs)).to(self.device),
+            th.tensor(np.array(desired_return)).to(self.device),
+            th.tensor(np.array(desired_horizon)).unsqueeze(1).to(self.device),
         )
 
         self.opt.zero_grad()
         if self.continuous_action:
-            l = F.mse_loss(th.tensor(actions).float().to(self.device), prediction)
+            l = F.mse_loss(th.tensor(np.array(actions)).float().to(self.device), prediction)
         else:
             # one-hot of action for CE loss
-            actions = F.one_hot(th.tensor(actions).long().to(self.device), len(prediction[0]))
+            actions = F.one_hot(th.tensor(np.array(actions)).long().to(self.device), len(prediction[0]))
             # cross-entropy loss
             l = th.sum(-actions * prediction, -1)
             l = l.mean()
