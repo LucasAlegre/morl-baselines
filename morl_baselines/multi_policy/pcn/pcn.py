@@ -301,9 +301,9 @@ class PCN(MOAgent, MOPolicy):
 
     def _act(self, obs: np.ndarray, desired_return, desired_horizon, eval_mode=False) -> int:
         prediction = self.model(
-            th.tensor([obs]).float().to(self.device),
-            th.tensor([desired_return]).float().to(self.device),
-            th.tensor([desired_horizon]).unsqueeze(1).float().to(self.device),
+            th.tensor(np.array([obs])).float().to(self.device),
+            th.tensor(np.array([desired_return])).float().to(self.device),
+            th.tensor(np.array([desired_horizon])).unsqueeze(1).float().to(self.device),
         )
 
         if self.continuous_action:
