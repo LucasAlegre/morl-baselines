@@ -35,7 +35,7 @@ def termination_fn_dst(obs, act, next_obs, rew):
 
 
 def termination_fn_mountaincar(obs, act, next_obs, rew):
-    """Termination function of mountin car."""
+    """Termination function of mountain car."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     position = next_obs[:, 0]
     velocity = next_obs[:, 1]
@@ -57,7 +57,7 @@ def termination_fn_minecart(obs, act, next_obs, rew):
     return done
 
 
-def termination_fn_hopper(obs, act, next_obs):
+def termination_fn_hopper(obs, act, next_obs, rew):
     """Termination function of hopper."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     height = next_obs[:, 0]
@@ -72,6 +72,7 @@ def termination_fn_hopper(obs, act, next_obs):
     done = done[:, np.newaxis]
     return done
 
+
 def termination_fn_lunarlander(obs, act, next_obs, rew):
     """Termination function of lunarlander. Use reward prediction to determine termination."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
@@ -81,18 +82,19 @@ def termination_fn_lunarlander(obs, act, next_obs, rew):
 
     # Condition 2: all legs have landed (supposed to be 1.0 but we allow for some margin of error) and reward is non-zero
     has_crashed_or_landed = (rew[:, 0] != 0) & (next_obs[:, 6] >= 0.95) & (next_obs[:, 7] >= 0.95)
-    
+
     not_done = ~(has_exited_screen | has_crashed_or_landed)
     done = ~not_done
     done = done[:, np.newaxis]
     return done
 
+
 def termination_fn_humanoid(obs, act, next_obs, rew):
     """Termination function of hopper."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
-    min_z, max_z = 1.0, 2.0 # if u change healthy_z_range in the humanoid env, change this too
+    min_z, max_z = 1.0, 2.0  # if u change healthy_z_range in the humanoid env, change this too
 
-    # index needs to be +2 if you unset the exclude_current_positions_from_observation 
+    # index needs to be +2 if you unset the exclude_current_positions_from_observation
     # parameter in the humanoid env
     not_done = (min_z < next_obs[:, 0]) & (next_obs[:, 0] < max_z)
     done = ~not_done
