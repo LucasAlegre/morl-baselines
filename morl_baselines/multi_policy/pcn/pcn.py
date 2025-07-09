@@ -381,6 +381,12 @@ class PCN(MOAgent, MOPolicy):
             os.makedirs(save_dir)
         th.save(self.model, f"{save_dir}/{filename}.pt")
 
+    def load(self, path: str):
+        """Load PCN."""
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"Model file {path} does not exist.")
+        self.model = th.load(path, map_location=self.device, weights_only=False)
+
     def train(
         self,
         total_timesteps: int,
