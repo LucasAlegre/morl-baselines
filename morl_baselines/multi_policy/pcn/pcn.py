@@ -139,7 +139,7 @@ class PCN(MOAgent, MOPolicy):
         Args:
             env (Optional[gym.Env]): Gym environment.
             scaling_factor (np.ndarray): Scaling factor for the desired return and horizon used in the model.
-            learning_rate (float, optional): Learning rate. Defaults to 1e-2.
+            learning_rate (float, optional): Learning rate. Defaults to 1e-3.
             gamma (float, optional): Discount factor. Defaults to 1.0.
             batch_size (int, optional): Batch size. Defaults to 32.
             hidden_dim (int, optional): Hidden dimension. Defaults to 64.
