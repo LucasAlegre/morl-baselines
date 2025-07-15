@@ -293,7 +293,7 @@ class EUPG(MOPolicy, MOAgent):
         """Load the agent's weights and replay buffer."""
         if save_dict is None:
             assert path is not None, "Either save_dict or path must be provided."
-            save_dict = th.load(path)
+            save_dict = th.load(path, weights_only=False)
 
         self.net.load_state_dict(save_dict["policy_net_state_dict"])
         self.optimizer.load_state_dict(save_dict["optimizer_state_dict"])

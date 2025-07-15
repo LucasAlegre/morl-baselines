@@ -296,7 +296,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def load(self, path, load_replay_buffer=True):
         """Load the agent weights from a file."""
-        params = th.load(path, map_location=self.device)
+        params = th.load(path, map_location=self.device, weights_only=False)
         self.weight_support = params["M"]
         self.stacked_weight_support = th.stack(self.weight_support)
         self.policy.load_state_dict(params["policy_state_dict"])
