@@ -276,6 +276,7 @@ class PerformanceBuffer2d:
             return
 
         inserted = False
+        # Inserts the new candidate at the right position in the bin, in accending order of the norm
         for idx, existing_eval in enumerate(self.bins_evals[buffer_id]):
             existing_norm = np.linalg.norm(center_eval(existing_eval))
             if norm_eval < existing_norm:
@@ -284,6 +285,7 @@ class PerformanceBuffer2d:
                 inserted = True
                 break
 
+        # If bin is not full or candidate's norm is better than entire bin, append it
         if not inserted:
             self.bins[buffer_id].append(deepcopy(candidate))
             self.bins_evals[buffer_id].append(evaluation)
@@ -346,6 +348,7 @@ class PerformanceBuffer3d:
                 max_dot, buffer_id = dot, i
 
         inserted = False
+        # Inserts the new candidate at the right position in the bin, in accending order of the norm
         for idx, existing_eval in enumerate(self.bins_evals[buffer_id]):
             existing_norm = np.linalg.norm(center_eval(existing_eval))
             if norm_eval < existing_norm:
@@ -354,6 +357,7 @@ class PerformanceBuffer3d:
                 inserted = True
                 break
 
+        # If bin is not full or candidate's norm is better than entire bin, append it
         if not inserted:
             self.bins[buffer_id].append(deepcopy(candidate))
             self.bins_evals[buffer_id].append(evaluation)
