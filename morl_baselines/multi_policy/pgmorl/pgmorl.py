@@ -276,7 +276,7 @@ class PerformanceBuffer2d:
             return
 
         inserted = False
-        # Inserts the new candidate at the right position in the bin, in accending order of the norm
+        # Inserts the new candidate at the right position in the bin, in ascending order of the norm
         for idx, existing_eval in enumerate(self.bins_evals[buffer_id]):
             existing_norm = np.linalg.norm(center_eval(existing_eval))
             if norm_eval < existing_norm:
@@ -348,7 +348,7 @@ class PerformanceBuffer3d:
                 max_dot, buffer_id = dot, i
 
         inserted = False
-        # Inserts the new candidate at the right position in the bin, in accending order of the norm
+        # Inserts the new candidate at the right position in the bin, in ascending order of the norm
         for idx, existing_eval in enumerate(self.bins_evals[buffer_id]):
             existing_norm = np.linalg.norm(center_eval(existing_eval))
             if norm_eval < existing_norm:
