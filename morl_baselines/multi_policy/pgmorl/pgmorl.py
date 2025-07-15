@@ -275,16 +275,25 @@ class PerformanceBuffer2d:
         if buffer_id < 0 or buffer_id >= self.num_bins:
             return
 
-        if len(self.bins[buffer_id]) < self.max_size:
+        inserted = False
+        # Inserts the new candidate at the right position in the bin, in ascending order of the norm
+        for idx, existing_eval in enumerate(self.bins_evals[buffer_id]):
+            existing_norm = np.linalg.norm(center_eval(existing_eval))
+            if norm_eval < existing_norm:
+                self.bins[buffer_id].insert(idx, deepcopy(candidate))
+                self.bins_evals[buffer_id].insert(idx, evaluation)
+                inserted = True
+                break
+
+        # If bin is not full or candidate's norm is better than entire bin, append it
+        if not inserted:
             self.bins[buffer_id].append(deepcopy(candidate))
             self.bins_evals[buffer_id].append(evaluation)
-        else:
-            for i in range(len(self.bins[buffer_id])):
-                stored_eval_centered = center_eval(self.bins_evals[buffer_id][i])
-                if np.linalg.norm(stored_eval_centered) < np.linalg.norm(centered_eval):
-                    self.bins[buffer_id][i] = deepcopy(candidate)
-                    self.bins_evals[buffer_id][i] = evaluation
-                    break
+
+        # Remove worst (first) if bin exceeds max size
+        if len(self.bins[buffer_id]) > self.max_size:
+            self.bins[buffer_id].pop(0)
+            self.bins_evals[buffer_id].pop(0)
 
 
 class PerformanceBuffer3d:
@@ -331,23 +340,32 @@ class PerformanceBuffer3d:
             return np.clip(eval + self.origin, 0.0, float("inf"))
 
         centered_eval = center_eval(evaluation)
-        dist = np.linalg.norm(centered_eval)
+        norm_eval = np.linalg.norm(centered_eval)
         max_dot, buffer_id = -np.inf, -1
         for i in range(self.num_bins):
             dot = np.dot(self.pbuffer_vec[i], centered_eval)
             if dot > max_dot:
                 max_dot, buffer_id = dot, i
 
-        if len(self.bins[buffer_id]) < self.max_size:
+        inserted = False
+        # Inserts the new candidate at the right position in the bin, in ascending order of the norm
+        for idx, existing_eval in enumerate(self.bins_evals[buffer_id]):
+            existing_norm = np.linalg.norm(center_eval(existing_eval))
+            if norm_eval < existing_norm:
+                self.bins[buffer_id].insert(idx, deepcopy(candidate))
+                self.bins_evals[buffer_id].insert(idx, evaluation)
+                inserted = True
+                break
+
+        # If bin is not full or candidate's norm is better than entire bin, append it
+        if not inserted:
             self.bins[buffer_id].append(deepcopy(candidate))
             self.bins_evals[buffer_id].append(evaluation)
-        else:
-            for i in range(len(self.bins[buffer_id])):
-                stored_eval_centered = center_eval(self.bins_evals[buffer_id][i])
-                if np.linalg.norm(stored_eval_centered) < dist:
-                    self.bins[buffer_id][i] = deepcopy(candidate)
-                    self.bins_evals[buffer_id][i] = evaluation
-                    break
+
+        # Remove worst (first) if bin exceeds max size
+        if len(self.bins[buffer_id]) > self.max_size:
+            self.bins[buffer_id].pop(0)
+            self.bins_evals[buffer_id].pop(0)
 
 
 class PGMORL(MOAgent):
