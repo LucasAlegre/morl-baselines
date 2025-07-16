@@ -305,11 +305,11 @@ It learns the policy and Q-networks conditioned on the weight vector.</p>
 <li><p><strong>gamma</strong> (<em>float</em><em>, </em><em>optional</em>) – The discount factor. Defaults to 0.99.</p></li>
 <li><p><strong>tau</strong> (<em>float</em><em>, </em><em>optional</em>) – The soft update coefficient. Defaults to 0.005.</p></li>
 <li><p><strong>buffer_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The size of the replay buffer. Defaults to int(1e6).</p></li>
-<li><p><strong>net_arch</strong> (<em>List</em><em>, </em><em>optional</em>) – The network architecture for the policy and Q-networks.</p></li>
-<li><p><strong>batch_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The batch size for training. Defaults to 256.</p></li>
+<li><p><strong>net_arch</strong> (<em>List</em><em>, </em><em>optional</em>) – The network architecture for the policy and Q-networks. Defaults to [256, 256].</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The batch size for training. Defaults to 128.</p></li>
 <li><p><strong>num_q_nets</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of Q-networks to use. Defaults to 2.</p></li>
 <li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – The entropy regularization coefficient. Defaults to 0.2.</p></li>
-<li><p><strong>learning_starts</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of steps to take before starting to train. Defaults to 100.</p></li>
+<li><p><strong>learning_starts</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of steps to take before starting to train. Defaults to 1000.</p></li>
 <li><p><strong>gradient_updates</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of gradient steps to take per update. Defaults to 1.</p></li>
 <li><p><strong>project_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the project. Defaults to “MORL Baselines”.</p></li>
 <li><p><strong>experiment_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the experiment. Defaults to “GPI-PD Continuous Action”.</p></li>
