@@ -214,11 +214,11 @@ class CAPQL(MOAgent, MOPolicy):
             gamma (float, optional): The discount factor. Defaults to 0.99.
             tau (float, optional): The soft update coefficient. Defaults to 0.005.
             buffer_size (int, optional): The size of the replay buffer. Defaults to int(1e6).
-            net_arch (List, optional): The network architecture for the policy and Q-networks.
-            batch_size (int, optional): The batch size for training. Defaults to 256.
+            net_arch (List, optional): The network architecture for the policy and Q-networks. Defaults to [256, 256].
+            batch_size (int, optional): The batch size for training. Defaults to 128.
             num_q_nets (int, optional): The number of Q-networks to use. Defaults to 2.
             alpha (float, optional): The entropy regularization coefficient. Defaults to 0.2.
-            learning_starts (int, optional): The number of steps to take before starting to train. Defaults to 100.
+            learning_starts (int, optional): The number of steps to take before starting to train. Defaults to 1000.
             gradient_updates (int, optional): The number of gradient steps to take per update. Defaults to 1.
             project_name (str, optional): The name of the project. Defaults to "MORL Baselines".
             experiment_name (str, optional): The name of the experiment. Defaults to "GPI-PD Continuous Action".
