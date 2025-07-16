@@ -389,7 +389,7 @@ class MOSAC(MOPolicy):
         """Load the model and the replay buffer if specified."""
         if save_dict is None:
             assert path is not None, "Either save_dict or path should be provided."
-            save_dict = th.load(path, map_location=self.device)
+            save_dict = th.load(path, map_location=self.device, weights_only=False)
 
         self.actor.load_state_dict(save_dict["actor_state_dict"])
         self.qf1.load_state_dict(save_dict["qf1_state_dict"])

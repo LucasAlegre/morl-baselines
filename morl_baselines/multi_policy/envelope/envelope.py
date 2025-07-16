@@ -253,7 +253,7 @@ class Envelope(MOPolicy, MOAgent):
             path: Path to the model.
             load_replay_buffer: Whether to load the replay buffer too.
         """
-        params = th.load(path)
+        params = th.load(path, weights_only=False)
         self.q_net.load_state_dict(params["q_net_state_dict"])
         self.target_q_net.load_state_dict(params["q_net_state_dict"])
         self.q_optim.load_state_dict(params["q_net_optimizer_state_dict"])

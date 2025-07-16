@@ -456,7 +456,7 @@ class MORLD(MOAgent):
 
     def load(self, path, load_replay_buffer=True):
         """Load the agent weights from a file. Loads both population and archive."""
-        params = th.load(path, map_location=self.device)
+        params = th.load(path, map_location=self.device, weights_only=False)
 
         # Load population
         for i, policy in enumerate(self.population):
