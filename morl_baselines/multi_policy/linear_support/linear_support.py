@@ -4,7 +4,6 @@ import random
 from copy import deepcopy
 from typing import List, Optional
 
-import cdd
 import cvxpy as cp
 import numpy as np
 from cvxpy import SolverError
@@ -14,6 +13,14 @@ from morl_baselines.common.evaluation import policy_evaluation_mo
 from morl_baselines.common.morl_algorithm import MOPolicy
 from morl_baselines.common.performance_indicators import hypervolume
 from morl_baselines.common.weights import extrema_weights
+
+
+try:
+    import cdd
+except ImportError as e:
+    raise ImportError(
+        "To use this feature, you need to install the optional dependency pycddlib==2.1.6 as stated in pyproject.toml of morl-baselines"
+    ) from e
 
 
 np.set_printoptions(precision=4)
