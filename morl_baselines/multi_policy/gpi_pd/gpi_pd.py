@@ -919,4 +919,6 @@ class GPILS(GPIPD):
 
     def __init__(self, *args, **kwargs):
         """Initialize GPI-LS deactivating the dynamics model."""
-        super().__init__(dyna=False, gpi_pd=False, experiment_name="GPI-LS", *args, **kwargs)
+        if "experiment_name" not in kwargs:
+            kwargs["experiment_name"] = "GPI-LS"
+        super().__init__(dyna=False, gpi_pd=False, *args, **kwargs)

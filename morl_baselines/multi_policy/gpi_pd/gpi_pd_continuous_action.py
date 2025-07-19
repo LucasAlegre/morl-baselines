@@ -712,4 +712,6 @@ class GPILSContinuousAction(GPIPDContinuousAction):
 
     def __init__(self, *args, **kwargs):
         """Initialize the agent deactivating the dynamics model."""
-        super().__init__(dyna=False, experiment_name="GPI-LS Continuous Action", *args, **kwargs)
+        if "experiment_name" not in kwargs:
+            kwargs["experiment_name"] = "GPI-LS Continuous Action"
+        super().__init__(dyna=False, *args, **kwargs)
