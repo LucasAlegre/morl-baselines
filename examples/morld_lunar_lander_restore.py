@@ -59,7 +59,7 @@ def main():
     print("restored archive size:", len(algo.archive.individuals))
     for i, policy in enumerate(algo.archive.individuals):
         returns = []
-        for ep in range(5):  # Run 3 episodes per policy
+        for ep in range(5):  # Run 5 episodes per policy
             _, _, _, discounted_reward = policy.wrapped.policy_eval(
                 eval_env,
                 weights=policy.weights,
@@ -69,7 +69,7 @@ def main():
             returns.append(discounted_reward)
         mean_return = np.mean(returns, axis=0)
         print(
-            f"Policy {i} mean discounted return over 3 episodes: {mean_return}, was {algo.archive.evaluations[i]} in the archive"
+            f"Policy {i} mean discounted return over 5 episodes: {mean_return}, was {algo.archive.evaluations[i]} in the archive"
         )
 
 
