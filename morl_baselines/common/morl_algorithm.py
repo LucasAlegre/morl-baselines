@@ -4,7 +4,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from distutils.util import strtobool
-from typing import Dict, Optional, Union
+from typing import Dict, Literal, Optional, Union
 
 import gymnasium as gym
 import numpy as np
@@ -295,6 +295,7 @@ class MOAgent(ABC):
         experiment_name: str,
         entity: Optional[str] = None,
         group: Optional[str] = None,
+        mode: Literal["online", "offline", "disabled", "shared"] | None = "online",
     ) -> None:
         """Initializes the wandb writer.
 
@@ -324,6 +325,7 @@ class MOAgent(ABC):
             monitor_gym=monitor_gym,
             save_code=True,
             group=group,
+            mode=mode,
         )
         # The default "step" of wandb is not the actual time step (gloabl_step) of the MDP
         wandb.define_metric("*", step_metric="global_step")
