@@ -178,7 +178,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -276,7 +276,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -286,85 +286,6 @@
 <h1>MORL/D<a class="headerlink" href="#morl-d" title="Link to this heading">¶</a></h1>
 <p>Multi-Objective Reinforcement Learning based on Decomposition. The idea of this framework is to decompose the multi-objective problem into a set of single-objective problems. The single-objective problems are then solved by a single-objective RL algorithm (or something close). There are multiple tricks which can be applied to improve the sample efficiency when compared to just sequentially solving each single-objective RL problem.</p>
 <p>See the paper <a class="reference external" href="https://arxiv.org/abs/2311.12495">Multi-Objective Reinforcement Learning based on Decomposition</a> for more details.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.morld.morld.MORLD">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.morld.morld.</span></span><span class="sig-name descname"><span class="pre">MORLD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">env:</span> <span class="pre">~gymnasium.core.Env,</span> <span class="pre">scalarization_method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'ws',</span> <span class="pre">evaluation_mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'ser',</span> <span class="pre">policy_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MOSAC',</span> <span class="pre">policy_args:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">{},</span> <span class="pre">gamma:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.995,</span> <span class="pre">pop_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">6,</span> <span class="pre">seed:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">42,</span> <span class="pre">rng:</span> <span class="pre">~numpy.random._generator.Generator</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">exchange_every:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">40000,</span> <span class="pre">neighborhood_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">dist_metric:</span> <span class="pre">~typing.Callable[[~numpy.ndarray,</span> <span class="pre">~numpy.ndarray],</span> <span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">MORLD.&lt;lambda&gt;&gt;,</span> <span class="pre">shared_buffer:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">sharing_mechanism:</span> <span class="pre">~typing.List[str]</span> <span class="pre">=</span> <span class="pre">[],</span> <span class="pre">update_passes:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">10,</span> <span class="pre">weight_init_method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'uniform',</span> <span class="pre">weight_adaptation_method:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MORL-Baselines',</span> <span class="pre">experiment_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MORL-D',</span> <span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">log:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">device:</span> <span class="pre">~torch.device</span> <span class="pre">|</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'auto'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.morld.morld.MORLD" title="Link to this definition">¶</a></dt>
-<dd><p>MORL/D implementation, decomposition based technique for MORL.</p>
-<p>Initializes MORL/D.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>env</strong> – environment</p></li>
-<li><p><strong>scalarization_method</strong> – scalarization method to apply. “ws” or “tch”.</p></li>
-<li><p><strong>evaluation_mode</strong> – esr or ser (for evaluation env)</p></li>
-<li><p><strong>policy_name</strong> – name of the underlying policy to use: “MOSAC”, EUPG can be easily adapted.</p></li>
-<li><p><strong>policy_args</strong> – arguments for the policy</p></li>
-<li><p><strong>gamma</strong> – gamma</p></li>
-<li><p><strong>pop_size</strong> – size of population</p></li>
-<li><p><strong>seed</strong> – seed for RNG</p></li>
-<li><p><strong>rng</strong> – RNG</p></li>
-<li><p><strong>exchange_every</strong> – exchange trigger (timesteps based)</p></li>
-<li><p><strong>neighborhood_size</strong> – size of the neighbordhood ( in [0, pop_size)</p></li>
-<li><p><strong>dist_metric</strong> – distance metric between weight vectors to determine neighborhood</p></li>
-<li><p><strong>shared_buffer</strong> – whether buffer should be shared or not</p></li>
-<li><p><strong>sharing_mechanism</strong> – list containing potential sharing mechanisms: “transfer” is only supported for now.</p></li>
-<li><p><strong>update_passes</strong> – number of times to update all policies after sampling from one policy.</p></li>
-<li><p><strong>weight_init_method</strong> – weight initialization method. “uniform” or “random”</p></li>
-<li><p><strong>weight_adaptation_method</strong> – weight adaptation method. “PSA” or None.</p></li>
-<li><p><strong>project_name</strong> – For wandb logging</p></li>
-<li><p><strong>experiment_name</strong> – For wandb logging</p></li>
-<li><p><strong>wandb_entity</strong> – For wandb logging</p></li>
-<li><p><strong>log</strong> – For wandb logging</p></li>
-<li><p><strong>device</strong> – torch device</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.morld.morld.MORLD.get_config">
-<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.morld.morld.MORLD.get_config" title="Link to this definition">¶</a></dt>
-<dd><p>Generates dictionary of the algorithm parameters configuration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>dict</strong> – Config</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.morld.morld.MORLD.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_replay_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.morld.morld.MORLD.load" title="Link to this definition">¶</a></dt>
-<dd><p>Load the agent weights from a file. Loads both population and archive.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.morld.morld.MORLD.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'weights/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_replay_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.morld.morld.MORLD.save" title="Link to this definition">¶</a></dt>
-<dd><p>Save the agent’s weights and replay buffer for all policies in both the population and the archive.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.morld.morld.MORLD.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_pareto_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_episodes_for_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_weights_for_eval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_num_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.morld.morld.MORLD.train" title="Link to this definition">¶</a></dt>
-<dd><p>Trains the algorithm.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>total_timesteps</strong> – total number of timesteps</p></li>
-<li><p><strong>eval_env</strong> – evaluation environment</p></li>
-<li><p><strong>ref_point</strong> – reference point for the hypervolume metric</p></li>
-<li><p><strong>known_pareto_front</strong> – optimal pareto front for the problem if known</p></li>
-<li><p><strong>num_eval_episodes_for_front</strong> – number of episodes for each policy evaluation</p></li>
-<li><p><strong>num_eval_weights_for_eval</strong> (<em>int</em>) – Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.</p></li>
-<li><p><strong>reset_num_timesteps</strong> – whether to reset the number of timesteps or not</p></li>
-<li><p><strong>checkpoints</strong> (<em>bool</em>) – Whether to save checkpoints.</p></li>
-<li><p><strong>save_freq</strong> (<em>int</em>) – Number of timesteps between checkpoints.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
         </article>
@@ -410,33 +331,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">MORL/D</a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.morld.morld.MORLD"><code class="docutils literal notranslate"><span class="pre">MORLD</span></code></a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.morld.morld.MORLD.get_config"><code class="docutils literal notranslate"><span class="pre">MORLD.get_config()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.morld.morld.MORLD.load"><code class="docutils literal notranslate"><span class="pre">MORLD.load()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.morld.morld.MORLD.save"><code class="docutils literal notranslate"><span class="pre">MORLD.save()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.morld.morld.MORLD.train"><code class="docutils literal notranslate"><span class="pre">MORLD.train()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

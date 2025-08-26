@@ -178,7 +178,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -276,7 +276,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -284,96 +284,6 @@
         <article role="main" id="furo-main-content">
           <section id="concave-augmented-pareto-q-learning-capql">
 <h1>Concave-Augmented Pareto Q-Learning (CAPQL)<a class="headerlink" href="#concave-augmented-pareto-q-learning-capql" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.capql.capql.</span></span><span class="sig-name descname"><span class="pre">CAPQL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0003</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.99</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">net_arch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[256,</span> <span class="pre">256]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_q_nets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_starts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_updates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'MORL-Baselines'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'CAPQL'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">device</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL" title="Link to this definition">¶</a></dt>
-<dd><p>CAPQL algorithm.</p>
-<p>MULTI-OBJECTIVE REINFORCEMENT LEARNING: CONVEXITY, STATIONARITY AND PARETO OPTIMALITY
-Haoye Lu, Daniel Herman &amp; Yaoliang Yu
-ICLR 2023
-Paper: <a class="reference external" href="https://openreview.net/pdf?id=TjEzIsyEsQ6">https://openreview.net/pdf?id=TjEzIsyEsQ6</a>
-Code based on: <a class="reference external" href="https://github.com/haoyelu/CAPQL">https://github.com/haoyelu/CAPQL</a></p>
-<p>CAPQL algorithm with continuous actions.</p>
-<p>It extends the Soft-Actor Critic algorithm to multi-objective RL.
-It learns the policy and Q-networks conditioned on the weight vector.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>env</strong> (<em>gym.Env</em>) – The environment to train on.</p></li>
-<li><p><strong>learning_rate</strong> (<em>float</em><em>, </em><em>optional</em>) – The learning rate. Defaults to 3e-4.</p></li>
-<li><p><strong>gamma</strong> (<em>float</em><em>, </em><em>optional</em>) – The discount factor. Defaults to 0.99.</p></li>
-<li><p><strong>tau</strong> (<em>float</em><em>, </em><em>optional</em>) – The soft update coefficient. Defaults to 0.005.</p></li>
-<li><p><strong>buffer_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The size of the replay buffer. Defaults to int(1e6).</p></li>
-<li><p><strong>net_arch</strong> (<em>List</em><em>, </em><em>optional</em>) – The network architecture for the policy and Q-networks. Defaults to [256, 256].</p></li>
-<li><p><strong>batch_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The batch size for training. Defaults to 128.</p></li>
-<li><p><strong>num_q_nets</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of Q-networks to use. Defaults to 2.</p></li>
-<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – The entropy regularization coefficient. Defaults to 0.2.</p></li>
-<li><p><strong>learning_starts</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of steps to take before starting to train. Defaults to 1000.</p></li>
-<li><p><strong>gradient_updates</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of gradient steps to take per update. Defaults to 1.</p></li>
-<li><p><strong>project_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the project. Defaults to “MORL Baselines”.</p></li>
-<li><p><strong>experiment_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the experiment. Defaults to “GPI-PD Continuous Action”.</p></li>
-<li><p><strong>wandb_entity</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The wandb entity. Defaults to None.</p></li>
-<li><p><strong>log</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to log to wandb. Defaults to True.</p></li>
-<li><p><strong>seed</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – The seed to use. Defaults to None.</p></li>
-<li><p><strong>device</strong> (<em>Union</em><em>[</em><em>th.device</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The device to use for training. Defaults to “auto”.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL.eval">
-<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_action</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL.eval" title="Link to this definition">¶</a></dt>
-<dd><p>Evaluate the policy action for the given observation and weight vector.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL.get_config">
-<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL.get_config" title="Link to this definition">¶</a></dt>
-<dd><p>Get the configuration of the agent.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_replay_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL.load" title="Link to this definition">¶</a></dt>
-<dd><p>Load the agent weights from a file.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'weights/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_replay_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL.save" title="Link to this definition">¶</a></dt>
-<dd><p>Save the agent’s weights and replay buffer.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_pareto_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_weights_for_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_episodes_for_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_weights_for_eval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_num_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL.train" title="Link to this definition">¶</a></dt>
-<dd><p>Train the agent.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>total_timesteps</strong> (<em>int</em>) – Total number of timesteps to train the agent for.</p></li>
-<li><p><strong>eval_env</strong> (<em>gym.Env</em>) – Environment to use for evaluation.</p></li>
-<li><p><strong>ref_point</strong> (<em>np.ndarray</em>) – Reference point for hypervolume calculation.</p></li>
-<li><p><strong>known_pareto_front</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>np.ndarray</em><em>]</em><em>]</em>) – Optimal Pareto front, if known.</p></li>
-<li><p><strong>num_eval_weights_for_front</strong> (<em>int</em>) – Number of weights to evaluate for the Pareto front.</p></li>
-<li><p><strong>num_eval_episodes_for_front</strong> – number of episodes to run when evaluating the policy.</p></li>
-<li><p><strong>num_eval_weights_for_eval</strong> (<em>int</em>) – Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.</p></li>
-<li><p><strong>eval_freq</strong> (<em>int</em>) – Number of timesteps between evaluations during an iteration.</p></li>
-<li><p><strong>reset_num_timesteps</strong> (<em>bool</em>) – Whether to reset the number of timesteps.</p></li>
-<li><p><strong>checkpoints</strong> (<em>bool</em>) – Whether to save checkpoints.</p></li>
-<li><p><strong>save_freq</strong> (<em>int</em>) – Number of timesteps between checkpoints.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.capql.capql.CAPQL.update">
-<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.capql.capql.CAPQL.update" title="Link to this definition">¶</a></dt>
-<dd><p>Update the policy and the Q-nets.</p>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
         </article>
@@ -419,35 +329,8 @@ It learns the policy and Q-networks conditioned on the weight vector.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Concave-Augmented Pareto Q-Learning (CAPQL)</a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.capql.capql.CAPQL"><code class="docutils literal notranslate"><span class="pre">CAPQL</span></code></a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.capql.capql.CAPQL.eval"><code class="docutils literal notranslate"><span class="pre">CAPQL.eval()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.capql.capql.CAPQL.get_config"><code class="docutils literal notranslate"><span class="pre">CAPQL.get_config()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.capql.capql.CAPQL.load"><code class="docutils literal notranslate"><span class="pre">CAPQL.load()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.capql.capql.CAPQL.save"><code class="docutils literal notranslate"><span class="pre">CAPQL.save()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.capql.capql.CAPQL.train"><code class="docutils literal notranslate"><span class="pre">CAPQL.train()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.capql.capql.CAPQL.update"><code class="docutils literal notranslate"><span class="pre">CAPQL.update()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

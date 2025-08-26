@@ -178,7 +178,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -276,7 +276,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -284,156 +284,6 @@
         <article role="main" id="furo-main-content">
           <section id="gpi-prioritized-dyna">
 <h1>GPI-Prioritized Dyna<a class="headerlink" href="#gpi-prioritized-dyna" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.gpi_pd.gpi_pd.</span></span><span class="sig-name descname"><span class="pre">GPIPD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">env,</span> <span class="pre">learning_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0003,</span> <span class="pre">initial_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01,</span> <span class="pre">final_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01,</span> <span class="pre">epsilon_decay_steps:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">tau:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0,</span> <span class="pre">target_net_update_freq:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1000,</span> <span class="pre">buffer_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1000000,</span> <span class="pre">net_arch:</span> <span class="pre">~typing.List</span> <span class="pre">=</span> <span class="pre">[256,</span> <span class="pre">256,</span> <span class="pre">256,</span> <span class="pre">256],</span> <span class="pre">num_nets:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2,</span> <span class="pre">batch_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">128,</span> <span class="pre">learning_starts:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100,</span> <span class="pre">gradient_updates:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20,</span> <span class="pre">gamma:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.99,</span> <span class="pre">max_grad_norm:</span> <span class="pre">float</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">use_gpi:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">dyna:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">per:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">gpi_pd:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">alpha_per:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6,</span> <span class="pre">min_priority:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01,</span> <span class="pre">drop_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01,</span> <span class="pre">layer_norm:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">dynamics_normalize_inputs:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">dynamics_uncertainty_threshold:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.5,</span> <span class="pre">dynamics_train_freq:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">GPIPD.&lt;lambda&gt;&gt;,</span> <span class="pre">dynamics_rollout_len:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">dynamics_rollout_starts:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5000,</span> <span class="pre">dynamics_rollout_freq:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">250,</span> <span class="pre">dynamics_rollout_batch_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">25000,</span> <span class="pre">dynamics_buffer_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100000,</span> <span class="pre">dynamics_net_arch:</span> <span class="pre">~typing.List</span> <span class="pre">=</span> <span class="pre">[256,</span> <span class="pre">256,</span> <span class="pre">256],</span> <span class="pre">dynamics_ensemble_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5,</span> <span class="pre">dynamics_num_elites:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">2,</span> <span class="pre">real_ratio:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5,</span> <span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MORL-Baselines',</span> <span class="pre">experiment_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'GPI-PD',</span> <span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">log:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">seed:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">device:</span> <span class="pre">~torch.device</span> <span class="pre">|</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'auto'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD" title="Link to this definition">¶</a></dt>
-<dd><p>GPI-PD Algorithm.</p>
-<p>Sample-Efficient Multi-Objective Learning via Generalized Policy Improvement Prioritization
-Lucas N. Alegre, Ana L. C. Bazzan, Diederik M. Roijers, Ann Nowé, Bruno C. da Silva
-AAMAS 2023
-Paper: <a class="reference external" href="https://arxiv.org/abs/2301.07784">https://arxiv.org/abs/2301.07784</a></p>
-<p>Initialize the GPI-PD algorithm.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>env</strong> – The environment to learn from.</p></li>
-<li><p><strong>learning_rate</strong> – The learning rate.</p></li>
-<li><p><strong>initial_epsilon</strong> – The initial epsilon value.</p></li>
-<li><p><strong>final_epsilon</strong> – The final epsilon value.</p></li>
-<li><p><strong>epsilon_decay_steps</strong> – The number of steps to decay epsilon.</p></li>
-<li><p><strong>tau</strong> – The soft update coefficient.</p></li>
-<li><p><strong>target_net_update_freq</strong> – The target network update frequency.</p></li>
-<li><p><strong>buffer_size</strong> – The size of the replay buffer.</p></li>
-<li><p><strong>net_arch</strong> – The network architecture.</p></li>
-<li><p><strong>num_nets</strong> – The number of networks.</p></li>
-<li><p><strong>batch_size</strong> – The batch size.</p></li>
-<li><p><strong>learning_starts</strong> – The number of steps before learning starts.</p></li>
-<li><p><strong>gradient_updates</strong> – The number of gradient updates per step.</p></li>
-<li><p><strong>gamma</strong> – The discount factor.</p></li>
-<li><p><strong>max_grad_norm</strong> – The maximum gradient norm.</p></li>
-<li><p><strong>use_gpi</strong> – Whether to use GPI.</p></li>
-<li><p><strong>dyna</strong> – Whether to use Dyna.</p></li>
-<li><p><strong>per</strong> – Whether to use PER.</p></li>
-<li><p><strong>gpi_pd</strong> – Whether to use GPI-PD.</p></li>
-<li><p><strong>alpha_per</strong> – The alpha parameter for PER.</p></li>
-<li><p><strong>min_priority</strong> – The minimum priority for PER.</p></li>
-<li><p><strong>drop_rate</strong> – The dropout rate.</p></li>
-<li><p><strong>layer_norm</strong> – Whether to use layer normalization.</p></li>
-<li><p><strong>dynamics_normalize_inputs</strong> – Whether to normalize inputs to the dynamics model.</p></li>
-<li><p><strong>dynamics_uncertainty_threshold</strong> – The uncertainty threshold for the dynamics model.</p></li>
-<li><p><strong>dynamics_train_freq</strong> – The dynamics model training frequency.</p></li>
-<li><p><strong>dynamics_rollout_len</strong> – The rollout length for the dynamics model.</p></li>
-<li><p><strong>dynamics_rollout_starts</strong> – The number of steps before the first rollout.</p></li>
-<li><p><strong>dynamics_rollout_freq</strong> – The rollout frequency.</p></li>
-<li><p><strong>dynamics_rollout_batch_size</strong> – The rollout batch size.</p></li>
-<li><p><strong>dynamics_buffer_size</strong> – The size of the dynamics model buffer.</p></li>
-<li><p><strong>dynamics_net_arch</strong> – The network architecture for the dynamics model.</p></li>
-<li><p><strong>dynamics_ensemble_size</strong> – The ensemble size for the dynamics model.</p></li>
-<li><p><strong>dynamics_num_elites</strong> – The number of elites for the dynamics model.</p></li>
-<li><p><strong>real_ratio</strong> – The ratio of real transitions to sample.</p></li>
-<li><p><strong>project_name</strong> – The name of the project.</p></li>
-<li><p><strong>experiment_name</strong> – The name of the experiment.</p></li>
-<li><p><strong>wandb_entity</strong> – The name of the wandb entity.</p></li>
-<li><p><strong>log</strong> – Whether to log.</p></li>
-<li><p><strong>seed</strong> – The seed for random number generators.</p></li>
-<li><p><strong>device</strong> – The device to use.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.eval">
-<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.eval" title="Link to this definition">¶</a></dt>
-<dd><p>Select an action for the given obs and weight vector.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.get_config">
-<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.get_config" title="Link to this definition">¶</a></dt>
-<dd><p>Return the configuration of the agent.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.gpi_action">
-<span class="sig-name descname"><span class="pre">gpi_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_policy_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.gpi_action" title="Link to this definition">¶</a></dt>
-<dd><p>Select an action using GPI.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_replay_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.load" title="Link to this definition">¶</a></dt>
-<dd><p>Load the model parameters and the replay buffer.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.max_action">
-<span class="sig-name descname"><span class="pre">max_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.max_action" title="Link to this definition">¶</a></dt>
-<dd><p>Select the greedy action.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_replay_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'weights/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.save" title="Link to this definition">¶</a></dt>
-<dd><p>Save the model parameters and the replay buffer.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.set_weight_support">
-<span class="sig-name descname"><span class="pre">set_weight_support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.set_weight_support" title="Link to this definition">¶</a></dt>
-<dd><p>Set the weight support set.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_pareto_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_weights_for_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_episodes_for_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_weights_for_eval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timesteps_per_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_selection_algo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'gpi-ls'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_mo_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.train" title="Link to this definition">¶</a></dt>
-<dd><p>Train agent.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>total_timesteps</strong> (<em>int</em>) – Number of timesteps to train for.</p></li>
-<li><p><strong>eval_env</strong> (<em>gym.Env</em>) – Environment to evaluate on.</p></li>
-<li><p><strong>ref_point</strong> (<em>np.ndarray</em>) – Reference point for hypervolume calculation.</p></li>
-<li><p><strong>known_pareto_front</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>np.ndarray</em><em>]</em><em>]</em>) – Optimal Pareto front if known.</p></li>
-<li><p><strong>num_eval_weights_for_front</strong> – Number of weights to evaluate for the Pareto front.</p></li>
-<li><p><strong>num_eval_episodes_for_front</strong> – number of episodes to run when evaluating the policy.</p></li>
-<li><p><strong>num_eval_weights_for_eval</strong> (<em>int</em>) – Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.</p></li>
-<li><p><strong>timesteps_per_iter</strong> (<em>int</em>) – Number of timesteps to train for per iteration.</p></li>
-<li><p><strong>weight_selection_algo</strong> (<em>str</em>) – Weight selection algorithm to use.</p></li>
-<li><p><strong>eval_freq</strong> (<em>int</em>) – Number of timesteps between evaluations.</p></li>
-<li><p><strong>eval_mo_freq</strong> (<em>int</em>) – Number of timesteps between multi-objective evaluations.</p></li>
-<li><p><strong>checkpoints</strong> (<em>bool</em>) – Whether to save checkpoints.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.train_iteration">
-<span class="sig-name descname"><span class="pre">train_iteration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_support</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">change_w_every_episode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_num_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Env</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_learning_starts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.train_iteration" title="Link to this definition">¶</a></dt>
-<dd><p>Train the agent for one iteration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>total_timesteps</strong> (<em>int</em>) – Number of timesteps to train for</p></li>
-<li><p><strong>weight</strong> (<em>np.ndarray</em>) – Weight vector</p></li>
-<li><p><strong>weight_support</strong> (<em>List</em><em>[</em><em>np.ndarray</em><em>]</em>) – Weight support set</p></li>
-<li><p><strong>change_w_every_episode</strong> (<em>bool</em>) – Whether to change the weight vector at the end of each episode</p></li>
-<li><p><strong>reset_num_timesteps</strong> (<em>bool</em>) – Whether to reset the number of timesteps</p></li>
-<li><p><strong>eval_env</strong> (<em>Optional</em><em>[</em><em>gym.Env</em><em>]</em>) – Environment to evaluate on</p></li>
-<li><p><strong>eval_freq</strong> (<em>int</em>) – Number of timesteps between evaluations</p></li>
-<li><p><strong>reset_learning_starts</strong> (<em>bool</em>) – Whether to reset the learning starts</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.update">
-<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.update" title="Link to this definition">¶</a></dt>
-<dd><p>Update the parameters of the networks.</p>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
         </article>
@@ -479,39 +329,8 @@ Paper: <a class="reference external" href="https://arxiv.org/abs/2301.07784">htt
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">GPI-Prioritized Dyna</a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD"><code class="docutils literal notranslate"><span class="pre">GPIPD</span></code></a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.eval"><code class="docutils literal notranslate"><span class="pre">GPIPD.eval()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.get_config"><code class="docutils literal notranslate"><span class="pre">GPIPD.get_config()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.gpi_action"><code class="docutils literal notranslate"><span class="pre">GPIPD.gpi_action()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.load"><code class="docutils literal notranslate"><span class="pre">GPIPD.load()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.max_action"><code class="docutils literal notranslate"><span class="pre">GPIPD.max_action()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.save"><code class="docutils literal notranslate"><span class="pre">GPIPD.save()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.set_weight_support"><code class="docutils literal notranslate"><span class="pre">GPIPD.set_weight_support()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.train"><code class="docutils literal notranslate"><span class="pre">GPIPD.train()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.train_iteration"><code class="docutils literal notranslate"><span class="pre">GPIPD.train_iteration()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.gpi_pd.gpi_pd.GPIPD.update"><code class="docutils literal notranslate"><span class="pre">GPIPD.update()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

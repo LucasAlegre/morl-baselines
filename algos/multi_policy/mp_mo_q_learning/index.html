@@ -178,7 +178,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -276,7 +276,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -284,89 +284,6 @@
         <article role="main" id="furo-main-content">
           <section id="mpmoq-learning">
 <h1>MPMOQ Learning<a class="headerlink" href="#mpmoq-learning" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.</span></span><span class="sig-name descname"><span class="pre">MPMOQLearning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalarization=&lt;function</span> <span class="pre">weighted_sum&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_epsilon:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_decay_steps:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_selection_algo:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'random'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_ols:</span> <span class="pre">float</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_gpi_policy:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_q_table:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyna:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyna_updates:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpi_pd:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MORL-Baselines'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'MultiPolicy</span> <span class="pre">MO</span> <span class="pre">Q-Learning'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning" title="Link to this definition">¶</a></dt>
-<dd><p>Multi-policy MOQ-Learning: Outer loop version of mo_q_learning.</p>
-<p>Paper: Paper: K. Van Moffaert, M. Drugan, and A. Nowe, Scalarized Multi-Objective Reinforcement Learning: Novel Design Techniques. 2013. doi: 10.1109/ADPRL.2013.6615007.</p>
-<p>Initialize the Multi-policy MOQ-learning algorithm.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>env</strong> – The environment to learn from.</p></li>
-<li><p><strong>scalarization</strong> – The scalarization function to use.</p></li>
-<li><p><strong>learning_rate</strong> – The learning rate.</p></li>
-<li><p><strong>gamma</strong> – The discount factor.</p></li>
-<li><p><strong>initial_epsilon</strong> – The initial epsilon value.</p></li>
-<li><p><strong>final_epsilon</strong> – The final epsilon value.</p></li>
-<li><p><strong>epsilon_decay_steps</strong> – The number of steps for epsilon decay.</p></li>
-<li><p><strong>weight_selection_algo</strong> – The algorithm to use for weight selection. Options: “random”, “ols”, “gpi-ls”</p></li>
-<li><p><strong>epsilon_ols</strong> – The epsilon value for the optimistic linear support.</p></li>
-<li><p><strong>use_gpi_policy</strong> – Whether to use Generalized Policy Improvement (GPI) or not.</p></li>
-<li><p><strong>transfer_q_table</strong> – Whether to reuse a Q-table from a previous learned policy when initializing a new policy.</p></li>
-<li><p><strong>dyna</strong> – Whether to use Dyna-Q or not.</p></li>
-<li><p><strong>dyna_updates</strong> – The number of Dyna-Q updates to perform.</p></li>
-<li><p><strong>gpi_pd</strong> – Whether to use the GPI-PD method to prioritize Dyna updates.</p></li>
-<li><p><strong>project_name</strong> – The name of the project for logging.</p></li>
-<li><p><strong>experiment_name</strong> – The name of the experiment for logging.</p></li>
-<li><p><strong>wandb_entity</strong> – The entity to use for logging.</p></li>
-<li><p><strong>seed</strong> – The seed to use for reproducibility.</p></li>
-<li><p><strong>log</strong> – Whether to log or not.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.delete_policies">
-<span class="sig-name descname"><span class="pre">delete_policies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delete_indx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.delete_policies" title="Link to this definition">¶</a></dt>
-<dd><p>Delete the policies with the given indices.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.eval">
-<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.eval" title="Link to this definition">¶</a></dt>
-<dd><p>If use_gpi is True, return the action given by the GPI policy. Otherwise, chooses the best policy for w and follows it.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.get_config">
-<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.get_config" title="Link to this definition">¶</a></dt>
-<dd><p>Generates dictionary of the algorithm parameters configuration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>dict</strong> – Config</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.max_scalar_q_value">
-<span class="sig-name descname"><span class="pre">max_scalar_q_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.max_scalar_q_value" title="Link to this definition">¶</a></dt>
-<dd><p>Get the maximum Q-value over all policies for the given state and weights.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_timesteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_pareto_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timesteps_per_iteration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">200000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_weights_for_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_episodes_for_front</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_eval_weights_for_eval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.train" title="Link to this definition">¶</a></dt>
-<dd><p>Learn a set of policies.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>total_timesteps</strong> – The total number of timesteps to train for.</p></li>
-<li><p><strong>eval_env</strong> – The environment to use for evaluation.</p></li>
-<li><p><strong>ref_point</strong> – The reference point for the hypervolume calculation.</p></li>
-<li><p><strong>known_pareto_front</strong> – The optimal Pareto front, if known. Used for metrics.</p></li>
-<li><p><strong>timesteps_per_iteration</strong> – The number of timesteps per iteration.</p></li>
-<li><p><strong>num_eval_weights_for_front</strong> – The number of weights to use to construct a Pareto front for evaluation.</p></li>
-<li><p><strong>num_eval_episodes_for_front</strong> – The number of episodes to run when evaluating the policy.</p></li>
-<li><p><strong>num_eval_weights_for_eval</strong> (<em>int</em>) – Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.</p></li>
-<li><p><strong>eval_freq</strong> – The frequency of evaluation.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
         </article>
@@ -412,34 +329,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">MPMOQ Learning</a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning</span></code></a><ul>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.delete_policies"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.delete_policies()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.eval"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.eval()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.get_config"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.get_config()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.max_scalar_q_value"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.max_scalar_q_value()</span></code></a></li>
-<li><a class="reference internal" href="#morl_baselines.multi_policy.multi_policy_moqlearning.mp_mo_q_learning.MPMOQLearning.train"><code class="docutils literal notranslate"><span class="pre">MPMOQLearning.train()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

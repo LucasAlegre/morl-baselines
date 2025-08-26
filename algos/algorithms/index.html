@@ -374,11 +374,39 @@
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return">Paper</a></p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ipro/ipro.py">Iterated Pareto Referent Optimisation (IPRO)</a></p></td>
+<td><p>Multi</p></td>
+<td><p>SER</p></td>
+<td><p>Continuous</p></td>
+<td><p>Discrete</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2402.07182">Paper</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ipro/ipro_2d.py">Iterated Pareto Referent Optimisation-2D (IPRO-2D)</a> <sup><a class="reference internal" href="#f2"><span class="xref myst">2</span></a></sup></p></td>
+<td><p>Multi</p></td>
+<td><p>SER</p></td>
+<td><p>Continuous</p></td>
+<td><p>Discrete</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2402.07182">Paper</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/nl_mo_ppo.py">Non-Linear Multi-Objective PPO (NLMOPPO)</a></p></td>
+<td><p>Single</p></td>
+<td><p>SER</p></td>
+<td><p>Continuous</p></td>
+<td><p>Discrete</p></td>
+<td><p>Derivation of the policy-gradient update in this <a class="reference external" href="https://cris.vub.be/ws/portalfiles/portal/106449930/96440748.pdf">paper</a></p></td>
+</tr>
+<tr class="row-even"><td><p>:warning: Some of the algorithms have limited features.</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
 </tbody>
 </table>
 </div>
-<p>:warning: Some of the algorithms have limited features.</p>
-<p><b id="f2">1</b>: PCN assumes environments with deterministic transitions.</p>
+<p><b id="f1">1</b>: PCN assumes environments with deterministic transitions. <br>
+<b id="f2">2</b>: IPRO-2D is a two-objective specialisation of IPRO designed for efficiency gains, but it cannot be applied to settings with more than two objectives.</p>
 </section>
 
         </article>
