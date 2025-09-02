@@ -123,7 +123,8 @@ This repository is open to contributions and we are always happy to receive new 
 
 ## Acknowledgements
 <!-- start acknowledgements -->
-* Willem Röpke, for his implementation of Pareto Q-Learning (@wilrop)
+* [Willem Röpke](https://wilrop.github.io/) (@wilrop), for his original implementation of IPRO(-2D) and
+  reimplementation of non-linear MO-PPO and Pareto Q-Learning.
 * Mathieu Reymond, for providing us with the original implementation of PCN.
 * Denis Steckelmacher and Conor F. Hayes, for providing us with the original implementation of EUPG.
 * Jayden Teoh, for providing several improvements in different algorithms and the implementation of MOSAC discrete.
