@@ -295,7 +295,7 @@ class LinearSupport:
             List of corner weights.
         """
         A = np.vstack(self.ccs)
-        A = np.round_(A, decimals=4)  # Round to avoid numerical issues
+        A = np.round(A, decimals=4)  # Round to avoid numerical issues
         A = np.concatenate((A, -np.ones(A.shape[0]).reshape(-1, 1)), axis=1)
 
         A_plus = np.ones(A.shape[1]).reshape(1, -1)

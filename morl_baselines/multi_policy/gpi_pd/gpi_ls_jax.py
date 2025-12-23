@@ -519,7 +519,7 @@ class GPILS(MOAgent, MOPolicy):
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         """Evaluate the policy."""
-        if type(obs) is gym.wrappers.frame_stack.LazyFrames:
+        if type(obs) is gym.wrappers.FrameStackObservation:
             obs = np.array(obs)
 
         if self.include_w:
@@ -545,7 +545,7 @@ class GPILS(MOAgent, MOPolicy):
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
-            if type(obs) is gym.wrappers.frame_stack.LazyFrames:
+            if type(obs) is gym.wrappers.FrameStackObservation:
                 obs = np.array(obs)
             if self.use_gpi:
                 action, self.key = GPILS.gpi_action(self.q_net, self.q_state, obs, w, self.weight_support, self.key)
