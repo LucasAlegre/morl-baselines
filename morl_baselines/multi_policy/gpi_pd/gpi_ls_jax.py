@@ -6,7 +6,7 @@ from functools import partial
 from typing import List, Optional
 
 import flax
-import flax.linen as nn
+from flax import nnx
 import gymnasium as gym
 import jax
 import jax.numpy as jnp
@@ -15,7 +15,6 @@ import optax
 import orbax
 import wandb
 from flax.training import orbax_utils
-from flax.training.train_state import TrainState
 
 from morl_baselines.common.buffer import ReplayBuffer
 from morl_baselines.common.evaluation import (
@@ -30,18 +29,58 @@ from morl_baselines.common.weights import equally_spaced_weights
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
 
 
-class QNetwork(nn.Module):
+class QNetwork(nnx.Module):
     """Multi-Objective Q Network."""
+    
+    def __init__(self,
+                 obs_dim: int,
+                 action_dim: int, 
+                 rew_dim: int, 
+                 dropout_rate: Optional[float] = 0.01,
+                 use_layer_norm: bool = True, 
+                 num_hidden_layers: int = 4, 
+                 hidden_dim: int = 256, 
+                 image_obs: bool = False,
+                 rngs: nnx.Rngs = None):
+        self.use_layer_norm = use_layer_norm
+        self.dropout_rate = dropout_rate
+        self.num_hidden_layers = num_hidden_layers
+        self.hidden_dim = hidden_dim
+        self.action_dim = action_dim
+        self.rew_dim = rew_dim
+        self.image_obs = image_obs
+        
+        if self.image_obs:
+            self.conv_layers = [nnx.Conv(1, 32, kernel_size=(8, 8), strides=(4, 4), padding=0, rngs=rngs),
+                          nnx.Conv(32, 64, kernel_size=(4, 4), strides=(2, 2), padding=0, rngs=rngs),
+                          nnx.Conv(64, 64, kernel_size=(3, 3), strides=(1, 1), padding=0, rngs=rngs)]
+            self.layer_norm_conv = [nnx.LayerNorm(self.hidden_dim, rngs=rngs) for _ in range(3)] if self.use_layer_norm else None
+            self.conv_dense = nnx.Linear(self.hidden_dim, rngs=rngs)
+            self.layer_norm_conv_dense = nnx.LayerNorm(self.hidden_dim, rngs=rngs) if self.use_layer_norm else None
+        else:
+            self.dense_obs = nnx.Linear(obs_dim, self.hidden_dim, rngs=rngs)
+            if self.dropout_rate is not None and self.dropout_rate > 0:
+                self.dropout_obs = nnx.Dropout(rate=self.dropout_rate, rngs=rngs)
+            if self.use_layer_norm:
+                self.layer_norm_obs = nnx.LayerNorm(self.hidden_dim, rngs=rngs)
+            
+        self.w_dense = nnx.Linear(rew_dim, self.hidden_dim, rngs=rngs)
+        if self.dropout_rate is not None and self.dropout_rate > 0:
+            self.dropout_w = nnx.Dropout(rate=self.dropout_rate, rngs=rngs)
+        if self.use_layer_norm:
+            self.layer_norm_w = nnx.LayerNorm(self.hidden_dim, rngs=rngs)
 
-    action_dim: int
-    rew_dim: int
-    dropout_rate: Optional[float] = 0.01
-    use_layer_norm: bool = True
-    num_hidden_layers: int = 4
-    hidden_dim: int = 256
-    image_obs: bool = False
+        self.dense_layers = nnx.List()
+        self.layer_norms = nnx.List()
+        self.dropouts = nnx.List()
+        for _ in range(self.num_hidden_layers - 1):
+            self.dense_layers.append(nnx.Linear(self.hidden_dim, self.hidden_dim, rngs=rngs))
+            if self.dropout_rate is not None and self.dropout_rate > 0:
+                self.dropouts.append(nnx.Dropout(rate=self.dropout_rate, rngs=rngs))
+            if self.use_layer_norm:
+                self.layer_norms.append(nnx.LayerNorm(self.hidden_dim, rngs=rngs))
+        self.output_layer = nnx.Linear(self.hidden_dim, self.action_dim * self.rew_dim, rngs=rngs)
 
-    @nn.compact
     def __call__(self, obs: jnp.ndarray, w: jnp.ndarray, deterministic: bool):
         """Forward pass of the Q network."""
         if self.image_obs:
@@ -49,89 +88,97 @@ class QNetwork(nn.Module):
                 obs = obs[None]
             x = jnp.transpose(obs, (0, 2, 3, 1))
             x = x / (255.0)
-            x = nn.Conv(32, kernel_size=(8, 8), strides=(4, 4), padding=0)(x)
-            if self.use_layer_norm:
-                x = nn.LayerNorm()(x)
-            x = nn.relu(x)
-            x = nn.Conv(64, kernel_size=(4, 4), strides=(2, 2), padding=0)(x)
-            if self.use_layer_norm:
-                x = nn.LayerNorm()(x)
-            x = nn.relu(x)
-            x = nn.Conv(64, kernel_size=(3, 3), strides=(1, 1), padding=0)(x)
-            if self.use_layer_norm:
-                x = nn.LayerNorm()(x)
-            x = nn.relu(x)
+
+            for i, layer in enumerate(self.conv_layers):
+                x = layer(x)
+                if self.use_layer_norm:
+                    x = self.layer_norm_conv[i](x)
+                x = nnx.relu(x)
+
             x = x.reshape((x.shape[0], -1))
-            x = nn.Dense(self.hidden_dim)(x)
+
+            x = self.conv_dense(x)
             if self.use_layer_norm:
-                x = nn.LayerNorm()(x)
-            h_obs = nn.relu(x)
+                x = self.layer_norm_conv_dense(x)
+            h_obs = nnx.relu(x)
+
         else:
-            h_obs = nn.Dense(self.hidden_dim)(obs)
+            h_obs = self.dense_obs(obs)
             if self.dropout_rate is not None and self.dropout_rate > 0:
-                h_obs = nn.Dropout(rate=self.dropout_rate)(h_obs, deterministic=deterministic)
+                h_obs = self.dropout_obs(h_obs, deterministic=deterministic)
             if self.use_layer_norm:
-                h_obs = nn.LayerNorm()(h_obs)
-            h_obs = nn.relu(h_obs)
+                h_obs = self.layer_norm_obs(h_obs)
+            h_obs = nnx.relu(h_obs)
 
-        h_w = nn.Dense(self.hidden_dim)(w)
+        h_w = self.w_dense(w)
         if self.dropout_rate is not None and self.dropout_rate > 0:
-            h_w = nn.Dropout(rate=self.dropout_rate)(h_w, deterministic=deterministic)
+            h_w = self.dropout_w(h_w, deterministic=deterministic)
         if self.use_layer_norm:
-            h_w = nn.LayerNorm()(h_w)
-        h_w = nn.relu(h_w)
+            h_w = self.layer_norm_w(h_w)
+        h_w = nnx.relu(h_w)
 
-        h = h_obs * h_w
-        for _ in range(self.num_hidden_layers - 1):
-            h = nn.Dense(self.hidden_dim)(h)
+        x = h_obs * h_w
+        for i in range(self.num_hidden_layers - 1):
+            x = self.dense_layers[i](x)
             if self.dropout_rate is not None and self.dropout_rate > 0:
-                h = nn.Dropout(rate=self.dropout_rate)(h, deterministic=deterministic)
+                x = self.dropouts[i](x, deterministic=deterministic)
             if self.use_layer_norm:
-                h = nn.LayerNorm()(h)
-            h = nn.relu(h)
-        x = nn.Dense(self.action_dim * self.rew_dim)(h)
+                x = self.layer_norms[i](x)
+            x = nnx.relu(x)
+        
+        x = self.output_layer(x)
+
         return x
 
 
-class VectorQNetwork(nn.Module):
+class VectorQNetwork(nnx.Module):
     """Vectorized QNetwork."""
 
-    action_dim: int
-    rew_dim: int
-    use_layer_norm: bool = True
-    dropout_rate: Optional[float] = 0.01
-    n_critics: int = 2
-    num_hidden_layers: int = 4
-    hidden_dim: int = 256
-    image_obs: bool = False
+    def __init__(self,
+                 obs_dim: int,
+                 action_dim: int,
+                 rew_dim: int,
+                 use_layer_norm: bool = True,
+                 dropout_rate: Optional[float] = 0.01,
+                 n_critics: int = 2,
+                 num_hidden_layers: int = 4,
+                 hidden_dim: int = 256,
+                 image_obs: bool = False,
+                 rngs: nnx.Rngs = None):
+        self.action_dim = action_dim
+        self.rew_dim = rew_dim
+        self.use_layer_norm = use_layer_norm
+        self.dropout_rate = dropout_rate
+        self.n_critics = n_critics
+        self.num_hidden_layers = num_hidden_layers
+        self.hidden_dim = hidden_dim
+        self.image_obs = image_obs
 
-    @nn.compact
+        @nnx.split_rngs(splits=n_critics)
+        @nnx.vmap
+        def create_q_net(rngs):
+            return QNetwork(
+                obs_dim=obs_dim,
+                action_dim=action_dim,
+                rew_dim=rew_dim,
+                dropout_rate=dropout_rate,
+                use_layer_norm=use_layer_norm,
+                num_hidden_layers=num_hidden_layers,
+                hidden_dim=hidden_dim,
+                image_obs=image_obs,
+                rngs=rngs,
+            )
+        
+        self.q_net = create_q_net(rngs)
+
     def __call__(self, obs: jnp.ndarray, w: jnp.ndarray, deterministic: bool):
         """Forward pass of the Q network."""
-        vmap_critic = nn.vmap(
-            QNetwork,
-            variable_axes={"params": 0},  # parameters not shared between the critics
-            split_rngs={"params": True, "dropout": True},  # different initializations
-            in_axes=None,
-            out_axes=0,
-            axis_size=self.n_critics,
-        )
-        q_values = vmap_critic(
-            action_dim=self.action_dim,
-            rew_dim=self.rew_dim,
-            dropout_rate=self.dropout_rate,
-            use_layer_norm=self.use_layer_norm,
-            num_hidden_layers=self.num_hidden_layers,
-            hidden_dim=self.hidden_dim,
-            image_obs=self.image_obs,
-        )(obs, w, deterministic)
+        def apply_q(q_net):
+            return q_net(obs, w, deterministic=deterministic)
+        
+        q_values = nnx.vmap(apply_q)(self.q_net)
         return q_values.reshape((self.n_critics, -1, self.action_dim, self.rew_dim))
 
-
-class TrainState(TrainState):
-    """Train state for the Q network."""
-
-    target_params: flax.core.FrozenDict
 
 
 class GPILS(MOAgent, MOPolicy):
@@ -228,13 +275,13 @@ class GPILS(MOAgent, MOPolicy):
         self.per = per
         self.include_w = False
 
-        key = jax.random.PRNGKey(seed)
-        self.key, psi_key, dropout_key = jax.random.split(key, 3)
+        self.rngs = nnx.Rngs(seed)
 
         obs = env.observation_space.sample()
         w = np.zeros(self.reward_dim, dtype=np.float32)
         self.image_obs = len(obs.shape) > 2
         self.q_net = VectorQNetwork(
+            self.observation_dim,
             self.action_dim,
             self.reward_dim,
             self.layer_norm,
@@ -243,24 +290,22 @@ class GPILS(MOAgent, MOPolicy):
             num_hidden_layers=len(self.net_arch),
             hidden_dim=self.net_arch[0],
             image_obs=self.image_obs,
+            rngs=self.rngs,
         )
-        self.q_state = TrainState.create(
-            apply_fn=self.q_net.apply,
-            params=self.q_net.init(
-                {"params": psi_key, "dropout": dropout_key},
-                obs,
-                w,
-                deterministic=False,
-            ),
-            target_params=self.q_net.init(
-                {"params": psi_key, "dropout": dropout_key},
-                obs,
-                w,
-                deterministic=False,
-            ),
-            tx=optax.adam(learning_rate=self.learning_rate),
+        self.target_q_net = VectorQNetwork(
+            self.observation_dim,
+            self.action_dim,
+            self.reward_dim,
+            self.layer_norm,
+            self.drop_rate,
+            self.num_nets,
+            num_hidden_layers=len(self.net_arch),
+            hidden_dim=self.net_arch[0],
+            image_obs=self.image_obs,
+            rngs=self.rngs,
         )
-        self.q_net.apply = jax.jit(self.q_net.apply, static_argnames=("dropout_rate", "use_layer_norm", "deterministic"))
+        nnx.update(self.target_q_net, nnx.state(self.q_net))
+        self.q_optimizer = nnx.Optimizer(self.q_net, optax.adam(self.learning_rate), wrt=nnx.Param)
 
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
@@ -306,6 +351,7 @@ class GPILS(MOAgent, MOPolicy):
 
     def save(self, save_dir="weights/", filename=None):
         """Save the model parameters."""
+        return
         if not os.path.isabs(save_dir):
             save_dir = os.path.join(os.getcwd(), save_dir)
         if not os.path.isdir(save_dir):
@@ -321,6 +367,7 @@ class GPILS(MOAgent, MOPolicy):
         orbax_checkpointer.save(save_dir + filename, saved_params, save_args=save_args, force=True)
 
     def load(self, path, step=None):
+        return
         """Load the model parameters."""
         target = {"q_net_state": self.q_state, "M": self.weight_support}
 
@@ -339,15 +386,14 @@ class GPILS(MOAgent, MOPolicy):
         return self.replay_buffer.sample(self.batch_size)
 
     @staticmethod
-    @partial(jax.jit, static_argnames=["q_net", "gamma", "min_priority"])
-    def _update_q(q_net, q_state, w, obs, actions, rewards, next_obs, dones, gamma, min_priority, key):
-        key, inds_key, dropout_key_target, dropout_key_current = jax.random.split(key, 4)
+    @partial(nnx.jit, static_argnames=["gamma", "min_priority"])
+    def _update_q(q_net, target_q_net, optimizer, w, obs, actions, rewards, next_obs, dones, gamma, min_priority, rng):
+        inds_key = rng()
 
         # DroQ update
         if q_net.n_critics >= 2:
-            psi_values_next = q_net.apply(
-                q_state.target_params, next_obs, w, deterministic=False, rngs={"dropout": dropout_key_target}
-            )
+            psi_values_next = target_q_net(next_obs, w, deterministic=False)
+            
             if psi_values_next.shape[0] > 2:
                 inds = jax.random.randint(inds_key, (2,), 0, psi_values_next.shape[0])
                 psi_values_next = psi_values_next[inds]
@@ -359,8 +405,8 @@ class GPILS(MOAgent, MOPolicy):
             max_acts = max_q.argmax(axis=1)
             target = min_psi_values[jnp.arange(min_psi_values.shape[0]), max_acts]
 
-            def mse_loss(params, droptout_key):
-                psi_values = q_net.apply(params, obs, w, deterministic=False, rngs={"dropout": droptout_key})
+            def mse_loss(model):
+                psi_values = model(obs, w, deterministic=False)
                 psi_values = psi_values[:, jnp.arange(psi_values.shape[1]), actions.squeeze()]
                 tds = psi_values - target_psi
                 loss = jnp.abs(tds)
@@ -369,14 +415,14 @@ class GPILS(MOAgent, MOPolicy):
 
         # DDQN update
         else:
-            psi_values_next = q_net.apply(q_state.target_params, next_obs, w, deterministic=True)[0]
-            psi_values_not_target = q_net.apply(q_state.params, next_obs, w, deterministic=True)
+            psi_values_next = target_q_net(next_obs, w, deterministic=True)[0]
+            psi_values_not_target = q_net(next_obs, w, deterministic=True)
             q_values_next = (psi_values_not_target * w.reshape(w.shape[0], 1, w.shape[1])).sum(axis=3)[0]
             max_acts = q_values_next.argmax(axis=1)
             target = psi_values_next[jnp.arange(psi_values_next.shape[0]), max_acts]
 
-            def mse_loss(params, droptout_key):
-                psi_values = q_net.apply(params, obs, w, deterministic=True)
+            def mse_loss(model):
+                psi_values = model(obs, w, deterministic=True)
                 psi_values = psi_values[:, jnp.arange(psi_values.shape[1]), actions.squeeze()]
                 tds = psi_values - target_psi
                 loss = jnp.abs(tds)
@@ -385,10 +431,11 @@ class GPILS(MOAgent, MOPolicy):
 
         target_psi = rewards + (1 - dones) * gamma * target
 
-        (loss_value, td_error), grads = jax.value_and_grad(mse_loss, has_aux=True)(q_state.params, dropout_key_current)
-        q_state = q_state.apply_gradients(grads=grads)
+        (loss_value, td_error), grads = nnx.value_and_grad(mse_loss, has_aux=True)(q_net)
 
-        return q_state, loss_value, td_error, key
+        optimizer.update(q_net, grads)
+
+        return loss_value, td_error
 
     def update(self, weight):
         """Update the parameters of the networks."""
@@ -413,9 +460,10 @@ class GPILS(MOAgent, MOPolicy):
             else:
                 w = weight.repeat(s_obs.shape[0], 1)
 
-            self.q_state, loss, td_error, self.key = GPILS._update_q(
+            loss, td_error = GPILS._update_q(
                 self.q_net,
-                self.q_state,
+                self.target_q_net,
+                self.q_optimizer,
                 w,
                 s_obs,
                 s_actions,
@@ -424,7 +472,7 @@ class GPILS(MOAgent, MOPolicy):
                 s_dones,
                 self.gamma,
                 self.min_priority,
-                self.key,
+                self.rngs,
             )
             critic_losses.append(loss.item())
 
@@ -436,7 +484,7 @@ class GPILS(MOAgent, MOPolicy):
                 self.replay_buffer.update_priorities(idxes, priority)
 
         if self.tau != 1 or self.global_step % self.target_net_update_freq == 0:
-            self.q_state = GPILS._target_net_update(self.q_state)
+            GPILS._target_net_update(self.q_net, self.target_q_net)
 
         if self.epsilon_decay_steps is not None:
             self.epsilon = linearly_decaying_value(
@@ -462,13 +510,12 @@ class GPILS(MOAgent, MOPolicy):
             )
 
     @staticmethod
-    @jax.jit
-    def _target_net_update(q_state):
-        q_state = q_state.replace(target_params=optax.incremental_update(q_state.params, q_state.target_params, 1))
-        return q_state
+    @nnx.jit
+    def _target_net_update(q_net, target_q_net):
+        nnx.update(target_q_net, nnx.state(q_net))
 
     @staticmethod
-    @partial(jax.jit, static_argnames=["q_net", "pessimism"])
+    @partial(nnx.jit, static_argnames=["pessimism"])
     def ugpi_action(q_net, q_state, obs, w, M, pessimism, key):
         """Uncertainty-Aware GPI (uGPI)."""
         M = jnp.stack(M)
@@ -499,14 +546,14 @@ class GPILS(MOAgent, MOPolicy):
         return action, key
 
     @staticmethod
-    @partial(jax.jit, static_argnames=["q_net"])
-    def gpi_action(q_net, q_state, obs, w, M, key):
+    @nnx.jit
+    def gpi_action(q_net, obs, w, M):
         """Generalized Policy Improvement (GPI)."""
         M = jnp.stack(M)
 
         # key, subkey = jax.random.split(key)
         obs_m = obs.reshape(1, *obs.shape).repeat(M.shape[0], axis=0)
-        psi_values = q_net.apply(q_state.params, obs_m, M, deterministic=True)
+        psi_values = q_net(obs_m, M, deterministic=True)
         q_values = (psi_values * w.reshape(1, 1, 1, w.shape[0])).sum(axis=3)
 
         q_values = q_values.mean(axis=0)
@@ -515,7 +562,7 @@ class GPILS(MOAgent, MOPolicy):
         policy_index = max_q.argmax()  # max_i max_a q(s,a,w_i)
         action = q_values[policy_index].argmax()
 
-        return action, key
+        return action
 
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
         """Evaluate the policy."""
@@ -531,9 +578,9 @@ class GPILS(MOAgent, MOPolicy):
                     self.q_net, self.q_state, obs, w, self.weight_support, self.pessimism, self.key
                 )
             elif self.gpi_type == "gpi":
-                action, self.key = GPILS.gpi_action(self.q_net, self.q_state, obs, w, self.weight_support, self.key)
+                action = GPILS.gpi_action(self.q_net, obs, w, self.weight_support)
         else:
-            action, self.key = GPILS.max_action(self.q_net, self.q_state, obs, w, self.key)
+            action = GPILS.max_action(self.q_net, self.q_state, obs, w, self.key)
 
         if self.include_w:
             self.weight_support.pop(-1)
@@ -548,23 +595,23 @@ class GPILS(MOAgent, MOPolicy):
             if type(obs) is gym.wrappers.FrameStackObservation:
                 obs = np.array(obs)
             if self.use_gpi:
-                action, self.key = GPILS.gpi_action(self.q_net, self.q_state, obs, w, self.weight_support, self.key)
+                action = GPILS.gpi_action(self.q_net, obs, w, self.weight_support)
                 action = jax.device_get(action)
             else:
-                action, self.key = GPILS.max_action(self.q_net, self.q_state, obs, w, self.key)
+                action = GPILS.max_action(self.q_net, self.q_state, obs, w)
                 action = jax.device_get(action)
             return action
 
     @staticmethod
-    @partial(jax.jit, static_argnames=["q_net"])
-    def max_action(q_net, q_state, obs, w, key) -> int:
+    @nnx.jit
+    def max_action(q_net, obs, w) -> int:
         """Select the action with the maximum Q-value."""
-        psi_values = q_net.apply(q_state.params, obs, w, deterministic=True)
+        psi_values = q_net(obs, w, deterministic=True)
         q_values = (psi_values * w.reshape(1, w.shape[0])).sum(axis=3)
         q_values = q_values.mean(axis=0).squeeze(0)
         action = q_values.argmax()
         action = jax.device_get(action)
-        return action, key
+        return action
 
     def set_weight_support(self, M: List[np.ndarray]):
         """Set the weight support set."""
