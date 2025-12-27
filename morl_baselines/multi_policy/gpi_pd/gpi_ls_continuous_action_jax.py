@@ -65,7 +65,7 @@ class Policy(nn.Module):
         h = jnp.concatenate([obs, w], axis=-1)
         h = BatchRenorm(use_running_average=not train, momentum=self.batch_norm_momentum)(h)
         for _ in range(self.num_hidden_layers):
-            h = nn.Dense(self.hidden_dim)(h)
+            h = nn.WeightNorm(nn.Dense(self.hidden_dim))(h)
             h = nn.leaky_relu(h)
             h = BatchRenorm(use_running_average=not train, momentum=self.batch_norm_momentum)(h)
 
@@ -97,7 +97,7 @@ class QNetwork(nn.Module):
         h = BatchRenorm(use_running_average=not train, momentum=self.batch_norm_momentum)(h)
 
         for _ in range(self.num_hidden_layers):
-            h = nn.Dense(self.hidden_dim)(h)
+            h = nn.WeightNorm(nn.Dense(self.hidden_dim))(h)
             if self.dropout_rate is not None and self.dropout_rate > 0:
                 h = nn.Dropout(rate=self.dropout_rate)(h, deterministic=deterministic)
             h = nn.leaky_relu(h)
@@ -162,8 +162,8 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         batch_size: int = 128,
         num_q_nets: int = 2,
         dropout_rate: Optional[float] = 0.01,
-        learning_starts: int = 100,
-        gradient_updates: int = 10,
+        learning_starts: int = 1000,
+        gradient_updates: int = 5,
         use_gpi: bool = False,  # In the continuous action case, GPI is only used to selected weights.
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
@@ -227,6 +227,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         self.min_priority = min_priority
         self.alpha = alpha
         self.include_w = False
+
         if self.per:
             self.replay_buffer = PrioritizedReplayBuffer(
                 self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size
@@ -236,14 +237,25 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
                 self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=buffer_size
             )
 
-        key = jax.random.PRNGKey(seed)
+        self._build_networks()
+
+        self.weight_support = []
+
+        self._n_updates = 0
+
+        self.log = log
+        if self.log:
+            self.setup_wandb(project_name, experiment_name, wandb_entity)
+
+    def _build_networks(self):
+        key = jax.random.PRNGKey(self.seed)
         self.key, q_key, actor_key, bn_key, drop_key = jax.random.split(key, 5)
 
-        obs = env.observation_space.sample()
-        action = env.action_space.sample()
+        obs = self.env.observation_space.sample()
+        action = self.env.action_space.sample()
         w = np.zeros(self.reward_dim, dtype=np.float32)
-        action_high = env.action_space.high
-        action_low = env.action_space.low
+        action_high = self.env.action_space.high
+        action_low = self.env.action_space.low
         action_scale = (action_high - action_low) / 2
         action_offset = (action_high + action_low) / 2
 
@@ -251,10 +263,10 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             self.action_dim,
             action_scale=action_scale,
             action_offset=action_offset,
-            policy_noise=policy_noise,
-            noise_clip=noise_clip,
-            num_hidden_layers=len(net_arch),
-            hidden_dim=net_arch[0],
+            policy_noise=self.policy_noise,
+            noise_clip=self.noise_clip,
+            num_hidden_layers=len(self.net_arch),
+            hidden_dim=self.net_arch[0],
             batch_norm_momentum=self.batch_norm_momentum,
         )
         actor_init_variables = self.actor.init({"params": actor_key, "batch_stats": bn_key}, obs, w, train=False)
@@ -262,13 +274,13 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             apply_fn=self.actor.apply,
             params=actor_init_variables["params"],
             batch_stats=actor_init_variables["batch_stats"],
-            tx=optax.adam(learning_rate=self.learning_rate, b1=0.5),  # CrossQ uses b1=0.5
+            tx=optax.adam(learning_rate=self.learning_rate),
         )
 
         self.q_net = VectorQNetwork(
             self.action_dim,
             rew_dim=self.reward_dim,
-            batch_norm_momentum=batch_norm_momentum,
+            batch_norm_momentum=self.batch_norm_momentum,
             dropout_rate=self.dropout_rate,
             n_critics=self.num_q_nets,
             num_hidden_layers=len(self.net_arch),
@@ -286,7 +298,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
             batch_stats=q_init_variables["batch_stats"],
             target_params=target_q_init_variables["params"],
             target_batch_stats=target_q_init_variables["batch_stats"],
-            tx=optax.adam(learning_rate=self.learning_rate, b1=0.5),
+            tx=optax.adam(learning_rate=self.learning_rate),
         )
         self.q_net.apply = jax.jit(self.q_net.apply, static_argnames=("batch_norm_momentum", "dropout_rate", "deterministic"))
         self.actor.apply = jax.jit(
@@ -300,14 +312,6 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
                 "noise_clip",
             ),
         )
-
-        self.weight_support = []
-
-        self._n_updates = 0
-
-        self.log = log
-        if self.log:
-            self.setup_wandb(project_name, experiment_name, wandb_entity)
 
     def get_config(self):
         """Returns the agent's config."""
@@ -546,7 +550,6 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         q_values = vmaxqpi(obs, actions_per_policy, w)
         max_a = q_values.argmax()
         action = actions_per_policy[max_a]
-        action = jax.device_get(action)
         return action
 
     def set_weight_support(self, M: List[np.ndarray]):
@@ -596,7 +599,6 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         action = actor_state.apply_fn(
             {"params": actor_state.params, "batch_stats": actor_state.batch_stats}, obs, w, train=False
         )
-        action = jax.device_get(action)
         return action
 
     def train_iteration(
