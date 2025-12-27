@@ -73,6 +73,7 @@ def eval_mo_reward_conditioned(
     scalarization=np.dot,
     w: Optional[np.ndarray] = None,
     render: bool = False,
+    **kwargs,
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Evaluates one episode of the agent in the environment. This makes the assumption that the agent is conditioned on the accrued reward i.e. for ESR agent.
 
@@ -93,7 +94,7 @@ def eval_mo_reward_conditioned(
     while not done:
         if render:
             env.render()
-        obs, r, terminated, truncated, info = env.step(agent.eval(obs, disc_vec_return))
+        obs, r, terminated, truncated, info = env.step(agent.eval(obs, disc_vec_return, **kwargs))
         done = terminated or truncated
         vec_return += r
         disc_vec_return += gamma * r

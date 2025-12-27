@@ -329,7 +329,7 @@ class GPIPD(MOPolicy, MOAgent):
 
     def load(self, path, load_replay_buffer=True):
         """Load the model parameters and the replay buffer."""
-        params = th.load(path, map_location=self.device)
+        params = th.load(path, map_location=self.device, weights_only=False)
         for i, (psi_net, target_psi_net) in enumerate(zip(self.q_nets, self.target_q_nets)):
             psi_net.load_state_dict(params[f"psi_net_{i}_state_dict"])
             target_psi_net.load_state_dict(params[f"psi_net_{i}_state_dict"])
@@ -919,4 +919,6 @@ class GPILS(GPIPD):
 
     def __init__(self, *args, **kwargs):
         """Initialize GPI-LS deactivating the dynamics model."""
-        super().__init__(dyna=False, gpi_pd=False, experiment_name="GPI-LS", *args, **kwargs)
+        if "experiment_name" not in kwargs:
+            kwargs["experiment_name"] = "GPI-LS"
+        super().__init__(dyna=False, gpi_pd=False, *args, **kwargs)

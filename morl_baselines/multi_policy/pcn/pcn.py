@@ -139,7 +139,7 @@ class PCN(MOAgent, MOPolicy):
         Args:
             env (Optional[gym.Env]): Gym environment.
             scaling_factor (np.ndarray): Scaling factor for the desired return and horizon used in the model.
-            learning_rate (float, optional): Learning rate. Defaults to 1e-2.
+            learning_rate (float, optional): Learning rate. Defaults to 1e-3.
             gamma (float, optional): Discount factor. Defaults to 1.0.
             batch_size (int, optional): Batch size. Defaults to 32.
             hidden_dim (int, optional): Hidden dimension. Defaults to 64.
@@ -153,7 +153,7 @@ class PCN(MOAgent, MOPolicy):
             model_class (Optional[Type[BasePCNModel]], optional): Model class to use. Defaults to None.
         """
         MOAgent.__init__(self, env, device=device, seed=seed)
-        MOPolicy.__init__(self, device)
+        MOPolicy.__init__(self, device=device)
 
         self.experience_replay = []  # List of (distance, time_step, transition)
         self.batch_size = batch_size
@@ -216,17 +216,17 @@ class PCN(MOAgent, MOPolicy):
 
         obs, actions, desired_return, desired_horizon = zip(*batch)
         prediction = self.model(
-            th.tensor(obs).to(self.device),
-            th.tensor(desired_return).to(self.device),
-            th.tensor(desired_horizon).unsqueeze(1).to(self.device),
+            th.tensor(np.array(obs)).to(self.device),
+            th.tensor(np.array(desired_return)).to(self.device),
+            th.tensor(np.array(desired_horizon)).unsqueeze(1).to(self.device),
         )
 
         self.opt.zero_grad()
         if self.continuous_action:
-            l = F.mse_loss(th.tensor(actions).float().to(self.device), prediction)
+            l = F.mse_loss(th.tensor(np.array(actions)).float().to(self.device), prediction)
         else:
             # one-hot of action for CE loss
-            actions = F.one_hot(th.tensor(actions).long().to(self.device), len(prediction[0]))
+            actions = F.one_hot(th.tensor(np.array(actions)).long().to(self.device), len(prediction[0]))
             # cross-entropy loss
             l = th.sum(-actions * prediction, -1)
             l = l.mean()
@@ -301,9 +301,9 @@ class PCN(MOAgent, MOPolicy):
 
     def _act(self, obs: np.ndarray, desired_return, desired_horizon, eval_mode=False) -> int:
         prediction = self.model(
-            th.tensor([obs]).float().to(self.device),
-            th.tensor([desired_return]).float().to(self.device),
-            th.tensor([desired_horizon]).unsqueeze(1).float().to(self.device),
+            th.tensor(np.array([obs])).float().to(self.device),
+            th.tensor(np.array([desired_return])).float().to(self.device),
+            th.tensor(np.array([desired_horizon])).unsqueeze(1).float().to(self.device),
         )
 
         if self.continuous_action:
@@ -375,11 +375,17 @@ class PCN(MOAgent, MOPolicy):
         distances = np.linalg.norm(np.array(returns) - np.array(e_returns), axis=-1)
         return e_returns, np.array(returns), distances
 
-    def save(self, filename: str = "PCN_model", savedir: str = "weights"):
+    def save(self, filename: str = "PCN_model", save_dir: str = "weights"):
         """Save PCN."""
-        if not os.path.isdir(savedir):
-            os.makedirs(savedir)
-        th.save(self.model, f"{savedir}/{filename}.pt")
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        th.save(self.model, f"{save_dir}/{filename}.pt")
+
+    def load(self, path: str):
+        """Load PCN."""
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"Model file {path} does not exist.")
+        self.model = th.load(path, map_location=self.device, weights_only=False)
 
     def train(
         self,

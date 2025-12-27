@@ -296,7 +296,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def load(self, path, load_replay_buffer=True):
         """Load the agent weights from a file."""
-        params = th.load(path, map_location=self.device)
+        params = th.load(path, map_location=self.device, weights_only=False)
         self.weight_support = params["M"]
         self.stacked_weight_support = th.stack(self.weight_support)
         self.policy.load_state_dict(params["policy_state_dict"])
@@ -575,7 +575,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     plot.close()
 
             if terminated or truncated:
-                obs, info = self.env.reset()
+                obs, _ = self.env.reset()
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():
@@ -712,4 +712,6 @@ class GPILSContinuousAction(GPIPDContinuousAction):
 
     def __init__(self, *args, **kwargs):
         """Initialize the agent deactivating the dynamics model."""
-        super().__init__(dyna=False, experiment_name="GPI-LS Continuous Action", *args, **kwargs)
+        if "experiment_name" not in kwargs:
+            kwargs["experiment_name"] = "GPI-LS Continuous Action"
+        super().__init__(dyna=False, *args, **kwargs)

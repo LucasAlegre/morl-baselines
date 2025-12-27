@@ -7,6 +7,30 @@ import numpy as np
 from scipy.spatial import ConvexHull
 
 
+def pareto_dominates(a: np.ndarray, b: np.ndarray) -> np.bool_:
+    """Check if the vector in a Pareto dominates vector b."""
+    a = np.array(a)
+    b = np.array(b)
+    return np.all(a >= b) and np.any(a > b)
+
+
+def strict_pareto_dominates(a: np.ndarray, b: np.ndarray) -> np.bool_:
+    """Check if the vector in a Pareto strictly dominates vector b."""
+    a = np.array(a)
+    b = np.array(b)
+    return np.all(a > b)
+
+
+def batched_strict_pareto_dominates(p1: np.ndarray, p2: np.ndarray) -> np.ndarray:
+    """Check if a vector Pareto dominates a set of points."""
+    return np.all(p1 > p2, axis=-1)
+
+
+def batched_pareto_dominates(p1: np.ndarray, p2: np.ndarray) -> np.ndarray:
+    """Check if a vector Pareto dominates a set of points."""
+    return np.logical_and(np.all(p1 >= p2, axis=-1), np.any(p1 > p2, axis=-1))
+
+
 def get_non_pareto_dominated_inds(candidates: Union[np.ndarray, List], remove_duplicates: bool = True) -> np.ndarray:
     """A batched and fast version of the Pareto coverage set algorithm.
 

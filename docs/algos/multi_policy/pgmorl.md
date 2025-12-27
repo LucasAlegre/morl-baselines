@@ -4,7 +4,6 @@ Some code for this algorithm has been adapted from the original code provided by
 
 ## Applicability and limitations
 * Supports continuous observation and continuous action spaces.
-* Limited to 2 objectives for now.
 * The post-processing phase (Pareto analysis stage) has not been implemented yet.
 
 ## Principle

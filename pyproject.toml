@@ -36,7 +36,6 @@ dependencies = [
     "cvxpy",
     "fire",
     "pycddlib==2.1.6",
-    "flax>=0.7.2",
 ]
 dynamic = ["version"]
 

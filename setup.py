@@ -7,7 +7,7 @@ CWD = pathlib.Path(__file__).absolute().parent
 
 
 def get_version():
-    """Gets the mo-gymnasium version."""
+    """Gets the morl-baselines version."""
     path = CWD / "morl_baselines" / "__init__.py"
     content = path.read_text()
     for line in content.splitlines():

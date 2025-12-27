@@ -10,19 +10,19 @@ import torch.nn.functional as F
 from gymnasium.spaces import Discrete
 
 
-def termination_fn_false(obs, act, next_obs):
+def termination_fn_false(obs, act, next_obs, rew):
     """Returns a vector of False values of the same length as the batch size."""
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     done = np.array([False]).repeat(len(obs))
     done = done[:, np.newaxis]
     return done
 
 
-def termination_fn_dst(obs, act, next_obs):
+def termination_fn_dst(obs, act, next_obs, rew):
     """Termination function of DST."""
     from mo_gymnasium.deep_sea_treasure.deep_sea_treasure import CONCAVE_MAP
 
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     done = np.array([False]).repeat(len(obs))
     next_obs_int = (next_obs * 10).astype(int)
     for i in range(len(done)):
@@ -34,9 +34,9 @@ def termination_fn_dst(obs, act, next_obs):
     return done
 
 
-def termination_fn_mountaincar(obs, act, next_obs):
+def termination_fn_mountaincar(obs, act, next_obs, rew):
     """Termination function of mountain car."""
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     position = next_obs[:, 0]
     velocity = next_obs[:, 1]
     done = (position >= 0.45) * (velocity >= 0.0)
@@ -44,9 +44,9 @@ def termination_fn_mountaincar(obs, act, next_obs):
     return done
 
 
-def termination_fn_minecart(obs, act, next_obs):
+def termination_fn_minecart(obs, act, next_obs, rew):
     """Termination function of minecart."""
-    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
     old_pos = obs[:, 0:2]
     pos = next_obs[:, 0:2]
     # had_ore = (obs[:,-2] > 0) + (obs[:,-1] > 0)
@@ -57,7 +57,7 @@ def termination_fn_minecart(obs, act, next_obs):
     return done
 
 
-def termination_fn_hopper(obs, act, next_obs):
+def termination_fn_hopper(obs, act, next_obs, rew):
     """Termination function of hopper."""
     assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
     height = next_obs[:, 0]
@@ -68,6 +68,35 @@ def termination_fn_hopper(obs, act, next_obs):
         * (height > 0.7)
         * (np.abs(angle) < 0.2)
     )
+    done = ~not_done
+    done = done[:, np.newaxis]
+    return done
+
+
+def termination_fn_lunarlander(obs, act, next_obs, rew):
+    """Termination function of lunarlander. Use reward prediction to determine termination."""
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
+
+    # Condition 1: out of screen
+    has_exited_screen = abs(next_obs[:, 0]) >= 1.0
+
+    # Condition 2: all legs have landed (supposed to be 1.0 but we allow for some margin of error) and reward is non-zero
+    has_crashed_or_landed = (rew[:, 0] != 0) & (next_obs[:, 6] >= 0.95) & (next_obs[:, 7] >= 0.95)
+
+    not_done = ~(has_exited_screen | has_crashed_or_landed)
+    done = ~not_done
+    done = done[:, np.newaxis]
+    return done
+
+
+def termination_fn_humanoid(obs, act, next_obs, rew):
+    """Termination function of hopper."""
+    assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == len(rew.shape) == 2
+    min_z, max_z = 1.0, 2.0  # if u change healthy_z_range in the humanoid env, change this too
+
+    # index needs to be +2 if you unset the exclude_current_positions_from_observation
+    # parameter in the humanoid env
+    not_done = (min_z < next_obs[:, 0]) & (next_obs[:, 0] < max_z)
     done = ~not_done
     done = done[:, np.newaxis]
     return done
@@ -90,8 +119,10 @@ class ModelEnv:
             self.termination_func = termination_fn_hopper
         elif "halfcheetah" in env_id:
             self.termination_func = termination_fn_false
+        elif "humanoid" in env_id:
+            self.termination_func = termination_fn_humanoid
         elif "lunar-lander" in env_id:
-            self.termination_func = termination_fn_false
+            self.termination_func = termination_fn_lunarlander
         elif "mo-reacher" in env_id:
             self.termination_func = termination_fn_false
         elif "mountaincar" in env_id:
@@ -135,7 +166,7 @@ class ModelEnv:
         samples[:, self.rew_dim :] += obs
 
         rewards, next_obs = samples[:, : self.rew_dim], samples[:, self.rew_dim :]
-        terminals = self.termination_func(obs, act, next_obs)
+        terminals = self.termination_func(obs, act, next_obs, rewards)
         var_rewards, var_obs = vars[:, : self.rew_dim], vars[:, self.rew_dim :]
 
         if return_single:
