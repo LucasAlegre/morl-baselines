@@ -35,6 +35,7 @@ dependencies = [
     "seaborn",
     "cvxpy",
     "fire",
+    "sortedcontainers",
     "pycddlib==2.1.6",
 ]
 dynamic = ["version"]
