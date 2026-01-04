@@ -163,7 +163,7 @@ class PrioritizedReplayBuffer:
             self.obs[idxes], self.actions[idxes], self.rewards[idxes], self.next_obs[idxes], self.dones[idxes], idxes
         )
         if to_tensor:
-            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples)) + (idxes,)  # , weights)
+            return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples))
         else:
             return experience_tuples
 
