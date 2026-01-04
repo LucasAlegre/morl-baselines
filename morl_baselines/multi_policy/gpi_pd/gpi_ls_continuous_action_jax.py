@@ -20,7 +20,7 @@ from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 from jax.nn import initializers
 
-from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.buffer import ReplayBuffer, ReplayBufferSamplesNp
 from morl_baselines.common.evaluation import (
     log_all_multi_policy_metrics,
     log_episode_info,
@@ -164,7 +164,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         dropout_rate: Optional[float] = 0.01,
         learning_starts: int = 1000,
         gradient_updates: int = 5,
-        use_gpi: bool = False,  # In the continuous action case, GPI is only used to selected weights.
+        use_gpi: bool = False,  # In the continuous action case, GPI is only used to selected reward weights.
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
         per: bool = True,
@@ -368,8 +368,8 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
     def sample_batch_experiences(self):
         """Samples a mini-batch of experiences."""
-        return self.replay_buffer.sample(self.batch_size)
-
+        return self.replay_buffer.sample(self.batch_size * self.gradient_updates)
+    
     @staticmethod
     @partial(jax.jit, static_argnames=["gamma", "kappa"])
     def update_critic(q_state, actor_state, w, obs, actions, rewards, next_obs, dones, kappa, gamma, key):
@@ -447,58 +447,99 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         actor_state = actor_state.replace(batch_stats=state_updates["batch_stats"])
         return actor_state, actor_loss_value, key
 
-    def update(self, weight):
-        """Updates the agent's parameters."""
-        critic_losses = []
-        actor_losses = []
-        for g in range(self.gradient_updates):
-            if self.per:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.sample_batch_experiences()
-            else:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones = self.sample_batch_experiences()
+    @staticmethod
+    @partial(jax.jit, static_argnames=["min_priority", "gamma", "gradient_updates"])
+    def one_update(q_state, actor_state, weight, weight_support, min_priority, gamma, gradient_updates, data: ReplayBufferSamplesNp, key):
+        """Performs one update of the agent's networks gradient_udpates times."""
+        batch_size = data.observations.shape[0] // gradient_updates
 
-            if len(self.weight_support) > 1:
+        carry = {"q_state": q_state, "key": key, 
+                 "loss": jnp.repeat(0.0, gradient_updates), 
+                 "td_error": jnp.zeros((batch_size * gradient_updates))}
+
+        if weight_support.shape[0] > 1:
+            w1 = jnp.repeat(weight[None, ...], batch_size, axis=0)
+            idx = jax.random.choice(key, weight_support.shape[0], shape=(batch_size,), replace=True)
+            w2 = jnp.take(weight_support, idx, axis=0)
+            w = jnp.concatenate([w1, w2], axis=0)
+        else:
+            w = jnp.repeat(weight[None, ...], batch_size, axis=0)
+
+        def _one_update(i: int, carry):
+            q_state = carry["q_state"]
+            key = carry["key"]
+
+            s_obs = jax.lax.dynamic_slice_in_dim(data.observations, i * batch_size, batch_size)
+            s_actions = jax.lax.dynamic_slice_in_dim(data.actions, i * batch_size, batch_size)
+            s_next_obs = jax.lax.dynamic_slice_in_dim(data.next_observations, i * batch_size, batch_size)
+            s_rewards = jax.lax.dynamic_slice_in_dim(data.rewards, i * batch_size, batch_size)
+            s_dones = jax.lax.dynamic_slice_in_dim(data.dones, i * batch_size, batch_size)
+
+            if weight_support.shape[0] > 1:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
-                    np.vstack([s_obs] * 2),
-                    np.vstack([s_actions] * 2),
-                    np.vstack([s_rewards] * 2),
-                    np.vstack([s_next_obs] * 2),
-                    np.vstack([s_dones] * 2),
+                    jnp.concatenate([s_obs, s_obs], axis=0),
+                    jnp.concatenate([s_actions, s_actions], axis=0),
+                    jnp.concatenate([s_rewards, s_rewards], axis=0),
+                    jnp.concatenate([s_next_obs, s_next_obs], axis=0),
+                    jnp.concatenate([s_dones, s_dones], axis=0),
                 )
-                w = np.vstack(
-                    [weight for _ in range(s_obs.shape[0] // 2)] + random.choices(self.weight_support, k=s_obs.shape[0] // 2)
-                )
-            else:
-                w = weight.repeat(s_obs.shape[0], 1)
 
-            self.q_state, loss, td_error, self.key = GPILSContinuousAction.update_critic(
-                self.q_state,
-                self.actor_state,
+            q_state, loss, td_error, key = GPILSContinuousAction.update_critic(
+                q_state,
+                actor_state,
                 w,
                 s_obs,
                 s_actions,
                 s_rewards,
                 s_next_obs,
                 s_dones,
-                self.min_priority,
-                self.gamma,
-                self.key,
+                min_priority,
+                gamma,
+                key,
             )
-            self._n_updates += 1
+            carry["loss"] = carry["loss"].at[i].set(loss)
+            td_error = jnp.abs((td_error[:, : batch_size] * w[: batch_size]).sum(axis=2))
+            td_error = jnp.max(td_error, axis=0)  # maximum over critics
+            carry["td_error"] = jax.lax.dynamic_update_slice_in_dim(carry["td_error"], td_error, i * batch_size, axis=0)
+            carry["q_state"] = q_state
+            carry["key"] = key
+            return carry
+        
+        carry = jax.lax.fori_loop(0, gradient_updates, _one_update, carry)
 
-            critic_losses.append(loss.item())
+        q_state = carry["q_state"]
+        key = carry["key"]
 
-            if self.per:
-                td_error = jax.device_get(td_error)
-                td_error = np.abs((td_error[:, : len(idxes)] * w[: len(idxes)]).sum(axis=2))
-                per = np.max(td_error, axis=0)
-                priority = per.clip(min=self.min_priority) ** self.alpha
-                self.replay_buffer.update_priorities(idxes, priority)
-
-        self.actor_state, actor_loss, self.key = GPILSContinuousAction.update_actor(
-            self.actor_state, self.q_state, s_obs, w, self.key
+        obs_actor = jax.lax.dynamic_slice_in_dim(data.observations, (gradient_updates - 1) * batch_size, batch_size)
+        if weight_support.shape[0] > 1:
+            obs_actor = jnp.concatenate([obs_actor, obs_actor], axis=0)
+        actor_state, actor_loss, key = GPILSContinuousAction.update_actor(
+            actor_state, q_state, obs_actor, w, key
         )
-        actor_losses.append(actor_loss.item())
+
+        return q_state, actor_state, carry["loss"], actor_loss, carry["td_error"], key
+
+    def update(self, weight):
+        """Updates the agent's parameters."""
+        data = self.sample_batch_experiences()
+
+        self.q_state, self.actor_state, critic_losses, actor_losses, td_error, self.key = GPILSContinuousAction.one_update(
+            self.q_state,
+            self.actor_state,
+            weight,
+            jnp.array(self.weight_support),
+            self.min_priority,
+            self.gamma,
+            self.gradient_updates,
+            data,
+            self.key,
+        )
+        self._n_updates += self.gradient_updates
+
+        if self.per:
+            per = jax.device_get(td_error)
+            priority = per.clip(min=self.min_priority) ** self.alpha
+            self.replay_buffer.update_priorities(data.idxes[::-1], priority[::-1])  # Reverse so last priorities are used
 
         if self.log and self.global_step % 100 == 0:
             if self.per:
@@ -650,7 +691,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
                 self.policy_eval(eval_env, weights=weight, log=self.log)
 
             if terminated or truncated:
-                obs, info = self.env.reset()
+                obs, _ = self.env.reset()
                 self.num_episodes += 1
 
                 if self.log and "episode" in info.keys():

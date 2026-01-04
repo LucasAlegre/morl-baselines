@@ -17,7 +17,7 @@ import wandb
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
-from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.buffer import ReplayBuffer, ReplayBufferSamplesNp
 from morl_baselines.common.evaluation import (
     log_all_multi_policy_metrics,
     log_episode_info,
@@ -150,8 +150,7 @@ class GPILS(MOAgent, MOPolicy):
         initial_epsilon: float = 0.01,
         final_epsilon: float = 0.01,
         epsilon_decay_steps: int = None,  # None == fixed epsilon
-        tau: float = 1.0,
-        target_net_update_freq: int = 1000,  # ignored if tau != 1.0
+        target_net_update_freq: int = 1000,
         buffer_size: int = int(1e6),
         net_arch: List = [256, 256, 256, 256],
         num_nets: int = 2,
@@ -181,7 +180,6 @@ class GPILS(MOAgent, MOPolicy):
             initial_epsilon: The initial epsilon value.
             final_epsilon: The final epsilon value.
             epsilon_decay_steps: The number of steps to decay epsilon.
-            tau: The soft update coefficient.
             target_net_update_freq: The target network update frequency.
             buffer_size: The size of the replay buffer.
             net_arch: The network architecture.
@@ -211,7 +209,6 @@ class GPILS(MOAgent, MOPolicy):
         self.epsilon = initial_epsilon
         self.epsilon_decay_steps = epsilon_decay_steps
         self.final_epsilon = final_epsilon
-        self.tau = tau
         self.target_net_update_freq = target_net_update_freq
         self.gamma = gamma
         self.use_gpi = use_gpi
@@ -296,7 +293,6 @@ class GPILS(MOAgent, MOPolicy):
             "per": self.per,
             "alpha_per": self.alpha,
             "min_priority": self.min_priority,
-            "tau": self.tau,
             "num_nets": self.num_nets,
             "target_net_update_freq": self.target_net_update_freq,
             "gamma": self.gamma,
@@ -340,7 +336,7 @@ class GPILS(MOAgent, MOPolicy):
         self.weight_support = [w for w in restored["M"].values()]
 
     def _sample_batch_experiences(self):
-        return self.replay_buffer.sample(self.batch_size)
+        return self.replay_buffer.sample(self.batch_size * self.gradient_updates)
 
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net", "gamma", "min_priority"])
@@ -393,53 +389,88 @@ class GPILS(MOAgent, MOPolicy):
         q_state = q_state.apply_gradients(grads=grads)
 
         return q_state, loss_value, td_error, key
+    
+    @staticmethod
+    @partial(jax.jit, static_argnames=["q_net", "gamma", "gradient_updates", "min_priority"])
+    def one_update(q_net, q_state, weight, weight_support, data: ReplayBufferSamplesNp, gamma, min_priority, gradient_updates, key):
+        """Perform a single update step."""
+        batch_size = data.observations.shape[0] // gradient_updates
+        carry = {"q_state": q_state, "key": key, "loss": jnp.repeat(0.0, gradient_updates), "td_error": jnp.zeros((batch_size * gradient_updates))}
 
-    def update(self, weight):
-        """Update the parameters of the networks."""
-        critic_losses = []
-        for g in range(self.gradient_updates):
-            if self.per:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self._sample_batch_experiences()
-            else:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones = self._sample_batch_experiences()
+        if weight_support.shape[0] > 1:
+            w1 = jnp.repeat(weight[None, ...], batch_size, axis=0)
+            idx = jax.random.choice(key, weight_support.shape[0], shape=(batch_size,), replace=True)
+            w2 = jnp.take(weight_support, idx, axis=0)
+            w = jnp.concatenate([w1, w2], axis=0)
+        else:
+            w = jnp.repeat(weight[None, ...], batch_size, axis=0)
 
-            if len(self.weight_support) > 1:
+        def _one_update(i: int, carry):
+            q_state = carry["q_state"]
+            key = carry["key"]
+
+            s_obs = jax.lax.dynamic_slice_in_dim(data.observations, i * batch_size, batch_size)
+            s_actions = jax.lax.dynamic_slice_in_dim(data.actions, i * batch_size, batch_size)
+            s_next_obs = jax.lax.dynamic_slice_in_dim(data.next_observations, i * batch_size, batch_size)
+            s_rewards = jax.lax.dynamic_slice_in_dim(data.rewards, i * batch_size, batch_size)
+            s_dones = jax.lax.dynamic_slice_in_dim(data.dones, i * batch_size, batch_size)
+
+            if weight_support.shape[0] > 1:
                 s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
-                    np.vstack([s_obs] * 2),
-                    np.vstack([s_actions] * 2),
-                    np.vstack([s_rewards] * 2),
-                    np.vstack([s_next_obs] * 2),
-                    np.vstack([s_dones] * 2),
+                    jnp.concatenate([s_obs, s_obs], axis=0),
+                    jnp.concatenate([s_actions, s_actions], axis=0),
+                    jnp.concatenate([s_rewards, s_rewards], axis=0),
+                    jnp.concatenate([s_next_obs, s_next_obs], axis=0),
+                    jnp.concatenate([s_dones, s_dones], axis=0),
                 )
-                w = np.vstack(
-                    [weight for _ in range(s_obs.shape[0] // 2)] + random.choices(self.weight_support, k=s_obs.shape[0] // 2)
-                )
-            else:
-                w = weight.repeat(s_obs.shape[0], 1)
 
-            self.q_state, loss, td_error, self.key = GPILS._update_q(
-                self.q_net,
-                self.q_state,
+            q_state, loss, td_error, key = GPILS._update_q(
+                q_net,
+                q_state,
                 w,
                 s_obs,
                 s_actions,
                 s_rewards,
                 s_next_obs,
                 s_dones,
-                self.gamma,
-                self.min_priority,
-                self.key,
+                gamma,
+                min_priority,
+                key,
             )
-            critic_losses.append(loss.item())
+            carry["loss"] = carry["loss"].at[i].set(loss)
+            td_error = jnp.abs((td_error[:, : batch_size] * w[: batch_size]).sum(axis=2))
+            td_error = jnp.max(td_error, axis=0)
+            carry["td_error"] = jax.lax.dynamic_update_slice_in_dim(carry["td_error"], td_error, i * batch_size, axis=0)
+            carry["q_state"] = q_state
+            carry["key"] = key
+            return carry
+        
+        carry = jax.lax.fori_loop(0, gradient_updates, _one_update, carry)
 
-            if self.per:
-                td_error = jax.device_get(td_error)
-                td_error = np.abs((td_error[:, : len(idxes)] * w[: len(idxes)]).sum(axis=2))
-                per = np.max(td_error, axis=0)
-                priority = per.clip(min=self.min_priority) ** self.alpha
-                self.replay_buffer.update_priorities(idxes, priority)
+        return carry["q_state"], carry["loss"], carry["td_error"], carry["key"]
 
-        if self.tau != 1 or self.global_step % self.target_net_update_freq == 0:
+    def update(self, weight):
+        """Update the parameters of the networks."""
+        data = self._sample_batch_experiences()
+
+        self.q_state, critic_losses, td_error, self.key = GPILS.one_update(
+            self.q_net,
+            self.q_state,
+            weight,
+            jnp.array(self.weight_support),
+            data,
+            self.gamma,
+            self.min_priority,
+            self.gradient_updates,
+            self.key,
+        )
+
+        if self.per:
+            per = jax.device_get(td_error)
+            priority = per.clip(min=self.min_priority) ** self.alpha
+            self.replay_buffer.update_priorities(data.idxes[::-1], priority[::-1])  # Reverse so last priorities are used
+
+        if self.global_step % self.target_net_update_freq == 0:
             self.q_state = GPILS._target_net_update(self.q_state)
 
         if self.epsilon_decay_steps is not None:
@@ -506,7 +537,6 @@ class GPILS(MOAgent, MOPolicy):
         """Generalized Policy Improvement (GPI)."""
         M = jnp.stack(M)
 
-        # key, subkey = jax.random.split(key)
         obs_m = obs.reshape(1, *obs.shape).repeat(M.shape[0], axis=0)
         psi_values = q_net.apply(q_state.params, obs_m, M, deterministic=True)
         q_values = (psi_values * w.reshape(1, 1, 1, w.shape[0])).sum(axis=3)
