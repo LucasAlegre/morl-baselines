@@ -6,7 +6,6 @@ Code adapted from https://github.com/sfujim/LAP-PAL
 import numpy as np
 import torch as th
 
-
 from morl_baselines.common.buffer import ReplayBufferSamplesNp
 
 
@@ -161,12 +160,7 @@ class PrioritizedReplayBuffer:
         idxes = self.tree.sample(batch_size)
 
         experience_tuples = ReplayBufferSamplesNp(
-            self.obs[idxes],
-            self.actions[idxes],
-            self.rewards[idxes],
-            self.next_obs[idxes],
-            self.dones[idxes],
-            idxes
+            self.obs[idxes], self.actions[idxes], self.rewards[idxes], self.next_obs[idxes], self.dones[idxes], idxes
         )
         if to_tensor:
             return tuple(map(lambda x: th.tensor(x).to(device), experience_tuples)) + (idxes,)  # , weights)

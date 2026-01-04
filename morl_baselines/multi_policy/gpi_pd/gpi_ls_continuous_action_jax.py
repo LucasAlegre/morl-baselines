@@ -369,7 +369,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
     def sample_batch_experiences(self):
         """Samples a mini-batch of experiences."""
         return self.replay_buffer.sample(self.batch_size * self.gradient_updates)
-    
+
     @staticmethod
     @partial(jax.jit, static_argnames=["gamma", "kappa"])
     def update_critic(q_state, actor_state, w, obs, actions, rewards, next_obs, dones, kappa, gamma, key):
@@ -449,13 +449,18 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
     @staticmethod
     @partial(jax.jit, static_argnames=["min_priority", "gamma", "gradient_updates"])
-    def one_update(q_state, actor_state, weight, weight_support, min_priority, gamma, gradient_updates, data: ReplayBufferSamplesNp, key):
+    def one_update(
+        q_state, actor_state, weight, weight_support, min_priority, gamma, gradient_updates, data: ReplayBufferSamplesNp, key
+    ):
         """Performs one update of the agent's networks gradient_udpates times."""
         batch_size = data.observations.shape[0] // gradient_updates
 
-        carry = {"q_state": q_state, "key": key, 
-                 "loss": jnp.repeat(0.0, gradient_updates), 
-                 "td_error": jnp.zeros((batch_size * gradient_updates))}
+        carry = {
+            "q_state": q_state,
+            "key": key,
+            "loss": jnp.repeat(0.0, gradient_updates),
+            "td_error": jnp.zeros(batch_size * gradient_updates),
+        }
 
         if weight_support.shape[0] > 1:
             w1 = jnp.repeat(weight[None, ...], batch_size, axis=0)
@@ -498,13 +503,13 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
                 key,
             )
             carry["loss"] = carry["loss"].at[i].set(loss)
-            td_error = jnp.abs((td_error[:, : batch_size] * w[: batch_size]).sum(axis=2))
+            td_error = jnp.abs((td_error[:, :batch_size] * w[:batch_size]).sum(axis=2))
             td_error = jnp.max(td_error, axis=0)  # maximum over critics
             carry["td_error"] = jax.lax.dynamic_update_slice_in_dim(carry["td_error"], td_error, i * batch_size, axis=0)
             carry["q_state"] = q_state
             carry["key"] = key
             return carry
-        
+
         carry = jax.lax.fori_loop(0, gradient_updates, _one_update, carry)
 
         q_state = carry["q_state"]
@@ -513,9 +518,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         obs_actor = jax.lax.dynamic_slice_in_dim(data.observations, (gradient_updates - 1) * batch_size, batch_size)
         if weight_support.shape[0] > 1:
             obs_actor = jnp.concatenate([obs_actor, obs_actor], axis=0)
-        actor_state, actor_loss, key = GPILSContinuousAction.update_actor(
-            actor_state, q_state, obs_actor, w, key
-        )
+        actor_state, actor_loss, key = GPILSContinuousAction.update_actor(actor_state, q_state, obs_actor, w, key)
 
         return q_state, actor_state, carry["loss"], actor_loss, carry["td_error"], key
 

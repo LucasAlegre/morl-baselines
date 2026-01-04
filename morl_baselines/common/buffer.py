@@ -1,12 +1,14 @@
 """Replay buffer for multi-objective reinforcement learning."""
 
+from typing import NamedTuple
+
 import numpy as np
 import torch as th
 
-from typing import NamedTuple
-
 
 class ReplayBufferSamplesNp(NamedTuple):
+    """Samples from the replay buffer in numpy format."""
+
     observations: np.ndarray
     actions: np.ndarray
     rewards: np.ndarray

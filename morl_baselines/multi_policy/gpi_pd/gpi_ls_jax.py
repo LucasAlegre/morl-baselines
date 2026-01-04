@@ -389,13 +389,20 @@ class GPILS(MOAgent, MOPolicy):
         q_state = q_state.apply_gradients(grads=grads)
 
         return q_state, loss_value, td_error, key
-    
+
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net", "gamma", "gradient_updates", "min_priority"])
-    def one_update(q_net, q_state, weight, weight_support, data: ReplayBufferSamplesNp, gamma, min_priority, gradient_updates, key):
+    def one_update(
+        q_net, q_state, weight, weight_support, data: ReplayBufferSamplesNp, gamma, min_priority, gradient_updates, key
+    ):
         """Perform a single update step."""
         batch_size = data.observations.shape[0] // gradient_updates
-        carry = {"q_state": q_state, "key": key, "loss": jnp.repeat(0.0, gradient_updates), "td_error": jnp.zeros((batch_size * gradient_updates))}
+        carry = {
+            "q_state": q_state,
+            "key": key,
+            "loss": jnp.repeat(0.0, gradient_updates),
+            "td_error": jnp.zeros(batch_size * gradient_updates),
+        }
 
         if weight_support.shape[0] > 1:
             w1 = jnp.repeat(weight[None, ...], batch_size, axis=0)
@@ -438,13 +445,13 @@ class GPILS(MOAgent, MOPolicy):
                 key,
             )
             carry["loss"] = carry["loss"].at[i].set(loss)
-            td_error = jnp.abs((td_error[:, : batch_size] * w[: batch_size]).sum(axis=2))
+            td_error = jnp.abs((td_error[:, :batch_size] * w[:batch_size]).sum(axis=2))
             td_error = jnp.max(td_error, axis=0)
             carry["td_error"] = jax.lax.dynamic_update_slice_in_dim(carry["td_error"], td_error, i * batch_size, axis=0)
             carry["q_state"] = q_state
             carry["key"] = key
             return carry
-        
+
         carry = jax.lax.fori_loop(0, gradient_updates, _one_update, carry)
 
         return carry["q_state"], carry["loss"], carry["td_error"], carry["key"]
