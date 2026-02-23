@@ -5,7 +5,16 @@ import torch as th
 
 
 class ReplayBuffer:
-    """Multi-objective replay buffer for multi-objective reinforcement learning."""
+    """Multi-objective replay buffer for multi-objective reinforcement learning.
+
+    Memory is allocated on-demand starting from a small initial capacity and
+    doubling until ``max_size`` is reached, rather than pre-allocating the full
+    ``max_size`` up front.  Once the buffer is full, oldest transitions are
+    overwritten in circular fashion (identical behaviour to the previous
+    implementation).
+    """
+
+    _GROWTH_FACTOR = 2
 
     def __init__(
         self,
@@ -15,6 +24,7 @@ class ReplayBuffer:
         max_size=100000,
         obs_dtype=np.float32,
         action_dtype=np.float32,
+        initial_capacity=1024,
     ):
         """Initialize the replay buffer.
 
@@ -25,14 +35,62 @@ class ReplayBuffer:
             max_size: Maximum size of the buffer
             obs_dtype: Data type of the observations
             action_dtype: Data type of the actions
+            initial_capacity: Number of slots allocated at construction time.
+                The buffer grows automatically (doubling each time) up to
+                ``max_size``.  Defaults to ``min(1024, max_size)``.
         """
+        self.obs_shape = obs_shape
+        self.action_dim = action_dim
+        self.rew_dim = rew_dim
         self.max_size = max_size
-        self.ptr, self.size = 0, 0
-        self.obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
-        self.next_obs = np.zeros((max_size,) + obs_shape, dtype=obs_dtype)
-        self.actions = np.zeros((max_size, action_dim), dtype=action_dtype)
-        self.rewards = np.zeros((max_size, rew_dim), dtype=np.float32)
-        self.dones = np.zeros((max_size, 1), dtype=np.float32)
+        self.obs_dtype = obs_dtype
+        self.action_dtype = action_dtype
+
+        self._capacity = min(initial_capacity, max_size)
+        self.ptr = 0
+        self.size = 0
+
+        self._allocate(self._capacity)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _allocate(self, capacity):
+        """Allocate (or reallocate) backing arrays for *capacity* slots.
+
+        Existing data up to ``self.size`` is preserved.
+        """
+        new_obs = np.empty((capacity,) + self.obs_shape, dtype=self.obs_dtype)
+        new_next_obs = np.empty((capacity,) + self.obs_shape, dtype=self.obs_dtype)
+        new_actions = np.empty((capacity, self.action_dim), dtype=self.action_dtype)
+        new_rewards = np.empty((capacity, self.rew_dim), dtype=np.float32)
+        new_dones = np.empty((capacity, 1), dtype=np.float32)
+
+        if self.size > 0:
+            n = self.size
+            new_obs[:n] = self.obs[:n]
+            new_next_obs[:n] = self.next_obs[:n]
+            new_actions[:n] = self.actions[:n]
+            new_rewards[:n] = self.rewards[:n]
+            new_dones[:n] = self.dones[:n]
+
+        self.obs = new_obs
+        self.next_obs = new_next_obs
+        self.actions = new_actions
+        self.rewards = new_rewards
+        self.dones = new_dones
+        self._capacity = capacity
+
+    def _maybe_grow(self):
+        """Grow backing arrays if the current capacity is exhausted."""
+        if self.size < self._capacity or self._capacity >= self.max_size:
+            return
+        self._allocate(min(self._capacity * self._GROWTH_FACTOR, self.max_size))
+
+    # ------------------------------------------------------------------
+    # Public API  (unchanged from original)
+    # ------------------------------------------------------------------
 
     def add(self, obs, action, reward, next_obs, done):
         """Add a new experience to the buffer.
@@ -44,6 +102,8 @@ class ReplayBuffer:
             next_obs: Next observation
             done: Done
         """
+        self._maybe_grow()
+
         self.obs[self.ptr] = np.array(obs).copy()
         self.next_obs[self.ptr] = np.array(next_obs).copy()
         self.actions[self.ptr] = np.array(action).copy()
