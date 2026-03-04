@@ -143,13 +143,10 @@ class VectorQNetwork(nn.Module):
 class GPILSContinuousAction(MOAgent, MOPolicy):
     """GPI-LS algorithm with continuous actions in Jax.
 
-    This version is based on the CrossQ algorithm instead of TD3, and written on Jax for efficiency.
-
-    Sample-Efficient Multi-Objective Learning via Generalized Policy Improvement Prioritization
-    Lucas N. Alegre, Ana L. C. Bazzan, Diederik M. Roijers, Ann Nowé, Bruno C. da Silva
-    AAMAS 2023
-    Paper: https://arxiv.org/abs/2301.07784
-    See Appendix for Continuous Action details.
+    Alegre, L.N., Bazzan, A.L.C., Roijers, D.M. et al. 
+    Generalized policy improvement for efficient and robust multi-objective reinforcement learning. 
+    Autonomous Agents and Multi-Agent Systems 40, 12 (2026). 
+    https://doi.org/10.1007/s10458-026-09736-w
     """
 
     def __init__(
