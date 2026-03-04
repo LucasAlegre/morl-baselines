@@ -137,9 +137,9 @@ class TrainState(TrainState):
 class GPILS(MOAgent, MOPolicy):
     """GPI-LS Algorithm in Jax.
 
-    Alegre, L.N., Bazzan, A.L.C., Roijers, D.M. et al. 
-    Generalized policy improvement for efficient and robust multi-objective reinforcement learning. 
-    Autonomous Agents and Multi-Agent Systems 40, 12 (2026). 
+    Alegre, L.N., Bazzan, A.L.C., Roijers, D.M. et al.
+    Generalized policy improvement for efficient and robust multi-objective reinforcement learning.
+    Autonomous Agents and Multi-Agent Systems 40, 12 (2026).
     https://doi.org/10.1007/s10458-026-09736-w
     """
 
