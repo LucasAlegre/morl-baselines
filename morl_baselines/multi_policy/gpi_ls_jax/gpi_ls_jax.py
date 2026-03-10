@@ -3,7 +3,7 @@
 import os
 import random
 from functools import partial
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import flax
 import flax.linen as nn
@@ -320,7 +320,7 @@ class GPILS(MOAgent, MOPolicy):
         save_args = orbax_utils.save_args_from_target(saved_params)
         orbax_checkpointer.save(save_dir + filename, saved_params, save_args=save_args, force=True)
 
-    def load(self, path, step=None):
+    def load(self, path: str, step: Optional[int] = None):
         """Load the model parameters."""
         target = {"q_net_state": self.q_state, "M": self.weight_support}
 
@@ -340,7 +340,19 @@ class GPILS(MOAgent, MOPolicy):
 
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net", "gamma", "min_priority"])
-    def _update_q(q_net, q_state, w, obs, actions, rewards, next_obs, dones, gamma, min_priority, key):
+    def _update_q(
+        q_net: VectorQNetwork,
+        q_state: TrainState,
+        w: jnp.ndarray,
+        obs: jnp.ndarray,
+        actions: jnp.ndarray,
+        rewards: jnp.ndarray,
+        next_obs: jnp.ndarray,
+        dones: jnp.ndarray,
+        gamma: float,
+        min_priority: float,
+        key: jax.random.PRNGKey,
+    ) -> Tuple[TrainState, jnp.ndarray, jnp.ndarray, jnp.ndarray, jax.random.PRNGKey]:
         key, inds_key, dropout_key_target, dropout_key_current = jax.random.split(key, 4)
 
         # DroQ update
@@ -393,8 +405,16 @@ class GPILS(MOAgent, MOPolicy):
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net", "gamma", "gradient_updates", "min_priority"])
     def one_update(
-        q_net, q_state, weight, weight_support, data: ReplayBufferSamplesNp, gamma, min_priority, gradient_updates, key
-    ):
+        q_net: VectorQNetwork,
+        q_state: TrainState,
+        weight: jnp.ndarray,
+        weight_support: jnp.ndarray,
+        data: ReplayBufferSamplesNp,
+        gamma: float,
+        min_priority: float,
+        gradient_updates: int,
+        key: jax.random.PRNGKey,
+    ) -> Tuple[TrainState, jnp.ndarray, jnp.ndarray, jnp.ndarray, jax.random.PRNGKey]:
         """Perform a single update step."""
         batch_size = data.observations.shape[0] // gradient_updates
         carry = {
@@ -456,7 +476,7 @@ class GPILS(MOAgent, MOPolicy):
 
         return carry["q_state"], carry["loss"], carry["td_error"], carry["key"]
 
-    def update(self, weight):
+    def update(self, weight: jnp.ndarray):
         """Update the parameters of the networks."""
         data = self._sample_batch_experiences()
 
@@ -505,13 +525,21 @@ class GPILS(MOAgent, MOPolicy):
 
     @staticmethod
     @jax.jit
-    def _target_net_update(q_state):
+    def _target_net_update(q_state: TrainState) -> TrainState:
         q_state = q_state.replace(target_params=optax.incremental_update(q_state.params, q_state.target_params, 1))
         return q_state
 
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net", "pessimism"])
-    def ugpi_action(q_net, q_state, obs, w, M, pessimism, key):
+    def ugpi_action(
+        q_net: VectorQNetwork,
+        q_state: TrainState,
+        obs: jnp.ndarray,
+        w: jnp.ndarray,
+        M: jnp.ndarray,
+        pessimism: float,
+        key: jax.random.PRNGKey,
+    ) -> jnp.ndarray:
         """Uncertainty-Aware GPI (uGPI)."""
         M = jnp.stack(M)
 
@@ -540,7 +568,9 @@ class GPILS(MOAgent, MOPolicy):
 
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net"])
-    def gpi_action(q_net, q_state, obs, w, M, key):
+    def gpi_action(
+        q_net: VectorQNetwork, q_state: TrainState, obs: jnp.ndarray, w: jnp.ndarray, M: jnp.ndarray, key: jax.random.PRNGKey
+    ) -> jnp.ndarray:
         """Generalized Policy Improvement (GPI)."""
         M = jnp.stack(M)
 
@@ -580,7 +610,7 @@ class GPILS(MOAgent, MOPolicy):
         action = jax.device_get(action)
         return action
 
-    def _act(self, obs, w) -> int:
+    def _act(self, obs: np.ndarray, w: np.ndarray) -> int:
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
@@ -596,7 +626,9 @@ class GPILS(MOAgent, MOPolicy):
 
     @staticmethod
     @partial(jax.jit, static_argnames=["q_net"])
-    def max_action(q_net, q_state, obs, w, key) -> int:
+    def max_action(
+        q_net: VectorQNetwork, q_state: TrainState, obs: jnp.ndarray, w: jnp.ndarray, key: jax.random.PRNGKey
+    ) -> int:
         """Select the action with the maximum Q-value."""
         psi_values = q_net.apply(q_state.params, obs, w, deterministic=True)
         q_values = (psi_values * w.reshape(1, w.shape[0])).sum(axis=3)

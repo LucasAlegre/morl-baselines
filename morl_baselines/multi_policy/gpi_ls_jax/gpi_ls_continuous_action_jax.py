@@ -369,7 +369,19 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
     @staticmethod
     @partial(jax.jit, static_argnames=["gamma", "kappa"])
-    def update_critic(q_state, actor_state, w, obs, actions, rewards, next_obs, dones, kappa, gamma, key):
+    def update_critic(
+        q_state: RLTrainState,
+        actor_state: ActorTrainState,
+        w: jnp.ndarray,
+        obs: jnp.ndarray,
+        actions: jnp.ndarray,
+        rewards: jnp.ndarray,
+        next_obs: jnp.ndarray,
+        dones: jnp.ndarray,
+        kappa: float,
+        gamma: float,
+        key: jax.random.PRNGKey,
+    ) -> RLTrainState:
         """Updates the agent's critic."""
         key, noise_key, inds_key, drop_key = jax.random.split(key, 4)
 
@@ -416,7 +428,9 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
     @staticmethod
     @jax.jit
-    def update_actor(actor_state, q_state, obs, w, key):
+    def update_actor(
+        actor_state: ActorTrainState, q_state: RLTrainState, obs: jnp.ndarray, w: jnp.ndarray, key: jax.random.PRNGKey
+    ) -> ActorTrainState:
         """Updates the agent's actor."""
         key, drop_key = jax.random.split(key)
 
@@ -447,8 +461,16 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
     @staticmethod
     @partial(jax.jit, static_argnames=["min_priority", "gamma", "gradient_updates"])
     def one_update(
-        q_state, actor_state, weight, weight_support, min_priority, gamma, gradient_updates, data: ReplayBufferSamplesNp, key
-    ):
+        q_state: RLTrainState,
+        actor_state: ActorTrainState,
+        weight: jnp.ndarray,
+        weight_support: jnp.ndarray,
+        min_priority: float,
+        gamma: float,
+        gradient_updates: int,
+        data: ReplayBufferSamplesNp,
+        key: jax.random.PRNGKey,
+    ) -> Tuple[RLTrainState, ActorTrainState, jnp.ndarray, jnp.ndarray, jnp.ndarray, jax.random.PRNGKey]:
         """Performs one update of the agent's networks gradient_udpates times."""
         batch_size = data.observations.shape[0] // gradient_updates
 
@@ -519,7 +541,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
         return q_state, actor_state, carry["loss"], actor_loss, carry["td_error"], key
 
-    def update(self, weight):
+    def update(self, weight: jnp.ndarray):
         """Updates the agent's parameters."""
         data = self.sample_batch_experiences()
 
@@ -561,7 +583,9 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
     @staticmethod
     @jax.jit
-    def gpi_action(actor_state, q_state, obs, w, M):
+    def gpi_action(
+        actor_state: ActorTrainState, q_state: RLTrainState, obs: jnp.ndarray, w: jnp.ndarray, M: jnp.ndarray
+    ) -> jnp.ndarray:
         """GPI with continuous actions."""
         M = jnp.vstack(M)
 
@@ -619,7 +643,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         action = jax.device_get(action)
         return action
 
-    def act(self, obs, w) -> int:
+    def act(self, obs: np.ndarray, w: np.ndarray) -> np.ndarray:
         """Act with exploration noise."""
         self.key, noise_key = jax.random.split(self.key)
         action = self.actor_state.apply_fn(
@@ -635,7 +659,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
     @staticmethod
     @jax.jit
-    def max_action(actor_state, obs, w) -> np.ndarray:
+    def max_action(actor_state: ActorTrainState, obs: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
         """Returns action given directly by the policy."""
         action = actor_state.apply_fn(
             {"params": actor_state.params, "batch_stats": actor_state.batch_stats}, obs, w, train=False
