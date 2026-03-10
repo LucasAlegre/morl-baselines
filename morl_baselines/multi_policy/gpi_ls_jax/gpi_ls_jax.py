@@ -548,12 +548,13 @@ class GPILS(MOAgent, MOPolicy):
         q_values = (psi_values * w.reshape(1, 1, 1, w.shape[0])).sum(axis=3)
 
         n = q_values.shape[0]
+        # tinv is is the critical value of the Student’s t distribution with confidence "pessimism", assuming n=10
         if pessimism == 0.9:
-            tinv = 1.383028
+            tinv = 1.383028  # stats.t.ppf(0.9, 9)
         elif pessimism == 0.95:
-            tinv = 1.833113
+            tinv = 1.833113  # stats.t.ppf(0.95, 9)
         elif pessimism == 0.99:
-            tinv = 2.821438
+            tinv = 2.821438  # stats.t.ppf(0.99, 9)
 
         if pessimism == 1.0:
             q_values = q_values.mean(axis=0) - pessimism * q_values.std(axis=0)
