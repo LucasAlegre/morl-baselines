@@ -1,14 +1,14 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="../../">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Multi-Policy Algorithms" href="../multi_policy/" /><link rel="prev" title="Overview" href="../../quickstart/overview/" />
+<link rel="index" title="Index" href="../../genindex/"><link rel="search" title="Search" href="../../search/"><link rel="next" title="Multi-Policy Algorithms" href="../multi_policy/"><link rel="prev" title="Overview" href="../../quickstart/overview/">
 
-    <!-- Generated with Sphinx 7.4.7 and Furo 2025.07.19 -->
+    <!-- Generated with Sphinx 7.4.7 and Furo 2025.12.19 -->
         <title>Overview - MORL-Baselines 1.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
@@ -22,14 +22,14 @@
   }
   @media not print {
     body[data-theme="dark"] {
-      --color-code-background: #2b2b2b;
-  --color-code-foreground: #f8f8f2;
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
   
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
-        --color-code-background: #2b2b2b;
-  --color-code-foreground: #f8f8f2;
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
   
       }
     }
@@ -144,14 +144,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -161,8 +157,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -170,8 +165,7 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -179,8 +173,7 @@
         </button>
       </div>
       <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
@@ -204,8 +197,9 @@
 <p class="caption" role="heading"><span class="caption-text">MORL Algorithms</span></p>
 <ul class="current">
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Overview</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../multi_policy/">Multi-Policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Multi-Policy Algorithms</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../multi_policy/">Multi-Policy Algorithms</a><input aria-label="Toggle navigation of Multi-Policy Algorithms" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/gpi_pd/">GPI-Prioritized Dyna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multi_policy/gpi_ls_jax/">GPI-Linear Support (Jax)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/envelope/">Envelope Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/capql/">Concave-Augmented Pareto Q-Learning (CAPQL)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/pgmorl/">PGMORL</a></li>
@@ -215,7 +209,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../multi_policy/mp_mo_q_learning/">MPMOQ Learning</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../single_policy/">Single-policy Algorithms</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Single-policy Algorithms</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../single_policy/">Single-policy Algorithms</a><input aria-label="Toggle navigation of Single-policy Algorithms" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../single_policy/moq_learning/">MOQ-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../single_policy/eupg/">EUPG</a></li>
 </ul>
@@ -268,8 +262,7 @@
     <span class="visually-hidden">Edit this page</span>
   </a>
 </div><div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -277,8 +270,7 @@
             </button>
           </div>
           <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
@@ -304,98 +296,105 @@
 <td><p>Discrete / Continuous</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2301.07784">Paper and Supplementary Materials</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/morld/morld.py">MORL/D</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/gpi_pd/gpi_ls_jax.py">GPI-LS (Jax)</a></p></td>
+<td><p>Multi</p></td>
+<td><p>SER</p></td>
+<td><p>Continuous</p></td>
+<td><p>Discrete / Continuous</p></td>
+<td><p><a class="reference external" href="https://link.springer.com/article/10.1007/s10458-026-09736-whttps://link.springer.com/article/10.1007/s10458-026-09736-w">Paper and Supplementary Materials</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/morld/morld.py">MORL/D</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER / ESR</p></td>
 <td><p>Discrete / Continuous</p></td>
 <td><p>Discrete / Continuous</p></td>
 <td><p><a class="reference external" href="https://doi.org/10.1613/jair.1.15702">Paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/envelope/envelope.py">Envelope Q-Learning</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/envelope/envelope.py">Envelope Q-Learning</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1908.08342.pdf">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/capql/capql.py">CAPQL</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/capql/capql.py">CAPQL</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Continuous</p></td>
 <td><p><a class="reference external" href="https://openreview.net/pdf?id=TjEzIsyEsQ6">Paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pgmorl/pgmorl.py">PGMORL</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pgmorl/pgmorl.py">PGMORL</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Continuous</p></td>
 <td><p><a class="reference external" href="https://people.csail.mit.edu/jiex/papers/PGMORL/paper.pdf">Paper</a> / <a class="reference external" href="https://people.csail.mit.edu/jiex/papers/PGMORL/supp.pdf">Supplementary Materials</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pcn/pcn.py">Pareto Conditioned Networks (PCN)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pcn/pcn.py">Pareto Conditioned Networks (PCN)</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER/ESR <sup><a class="reference internal" href="#f1"><span class="xref myst">1</span></a></sup></p></td>
 <td><p>Continuous</p></td>
 <td><p>Discrete / Continuous</p></td>
 <td><p><a class="reference external" href="https://www.ifaamas.org/Proceedings/aamas2022/pdfs/p1110.pdf">Paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pareto_q_learning/pql.py">Pareto Q-Learning</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/pareto_q_learning/pql.py">Pareto Q-Learning</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Discrete</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://jmlr.org/papers/volume15/vanmoffaert14a/vanmoffaert14a.pdf">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/mo_q_learning.py">MO Q learning</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/mo_q_learning.py">MO Q learning</a></p></td>
 <td><p>Single</p></td>
 <td><p>SER</p></td>
 <td><p>Discrete</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques">Paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/multi_policy_moqlearning/mp_mo_q_learning.py">MPMOQLearning</a>  (outer loop MOQL)</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/multi_policy_moqlearning/mp_mo_q_learning.py">MPMOQLearning</a>  (outer loop MOQL)</p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Discrete</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://www.researchgate.net/publication/235698665_Scalarized_Multi-Objective_Reinforcement_Learning_Novel_Design_Techniques">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py">Optimistic Linear Support (OLS)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ols/ols.py">Optimistic Linear Support (OLS)</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>/</p></td>
 <td><p>/</p></td>
 <td><p>Section 3.3 of the <a class="reference external" href="http://roijers.info/pub/thesis.pdf">thesis</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py">Expected Utility Policy Gradient (EUPG)</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/esr/eupg.py">Expected Utility Policy Gradient (EUPG)</a></p></td>
 <td><p>Single</p></td>
 <td><p>ESR</p></td>
 <td><p>Discrete</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://www.researchgate.net/publication/328718263_Multi-objective_Reinforcement_Learning_for_the_Expected_Utility_of_the_Return">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ipro/ipro.py">Iterated Pareto Referent Optimisation (IPRO)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ipro/ipro.py">Iterated Pareto Referent Optimisation (IPRO)</a></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2402.07182">Paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ipro/ipro_2d.py">Iterated Pareto Referent Optimisation-2D (IPRO-2D)</a> <sup><a class="reference internal" href="#f2"><span class="xref myst">2</span></a></sup></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/multi_policy/ipro/ipro_2d.py">Iterated Pareto Referent Optimisation-2D (IPRO-2D)</a> <sup><a class="reference internal" href="#f2"><span class="xref myst">2</span></a></sup></p></td>
 <td><p>Multi</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Discrete</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2402.07182">Paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/nl_mo_ppo.py">Non-Linear Multi-Objective PPO (NLMOPPO)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/LucasAlegre/morl-baselines/blob/main/morl_baselines/single_policy/ser/nl_mo_ppo.py">Non-Linear Multi-Objective PPO (NLMOPPO)</a></p></td>
 <td><p>Single</p></td>
 <td><p>SER</p></td>
 <td><p>Continuous</p></td>
 <td><p>Discrete</p></td>
 <td><p>Derivation of the policy-gradient update in this <a class="reference external" href="https://cris.vub.be/ws/portalfiles/portal/106449930/96440748.pdf">paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p>:warning: Some of the algorithms have limited features.</p></td>
+<tr class="row-odd"><td><p>:warning: Some of the algorithms have limited features.</p></td>
 <td><p></p></td>
 <td><p></p></td>
 <td><p></p></td>
