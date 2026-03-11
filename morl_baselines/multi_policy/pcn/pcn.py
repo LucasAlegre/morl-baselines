@@ -410,7 +410,7 @@ class PCN(MOAgent, MOPolicy):
             known_pareto_front: Optimal pareto front for metrics calculation, if known.
             num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
             num_er_episodes: number of episodes to fill experience replay buffer
-            num_step_episodes: number of steps per episode
+            num_step_episodes: number of episodes per training step
             num_model_updates: number of model updates per episode
             max_return: maximum return for clipping desired return. When None, this will be set to 100 for all objectives.
             max_buffer_size: maximum buffer size
