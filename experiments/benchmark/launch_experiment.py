@@ -158,13 +158,13 @@ def main():
         elif "mario" in args.env_id:
 
             def wrap_mario(env):
+                from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
                 from gymnasium.wrappers import (
                     FrameStackObservation,
                     GrayscaleObservation,
                     ResizeObservation,
                     TimeLimit,
                 )
-                from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
                 from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
                 from mo_gymnasium.wrappers import MOMaxAndSkipObservation
 
