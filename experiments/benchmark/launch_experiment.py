@@ -14,7 +14,6 @@ from distutils.util import strtobool
 import mo_gymnasium as mo_gym
 import numpy as np
 import requests
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from gymnasium.wrappers import FlattenObservation, RecordVideo
 from mo_gymnasium.wrappers import MORecordEpisodeStatistics
 
@@ -165,6 +164,7 @@ def main():
                     ResizeObservation,
                     TimeLimit,
                 )
+                from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
                 from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
                 from mo_gymnasium.wrappers import MOMaxAndSkipObservation
 
