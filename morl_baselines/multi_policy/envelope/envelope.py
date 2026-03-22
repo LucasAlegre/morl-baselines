@@ -355,16 +355,15 @@ class Envelope(MOPolicy, MOAgent):
             )
 
         if self.log and self.global_step % 100 == 0:
-            wandb.log(
-                {
-                    "losses/critic_loss": np.mean(critic_losses),
-                    "metrics/epsilon": self.epsilon,
-                    "metrics/homotopy_lambda": self.homotopy_lambda,
-                    "global_step": self.global_step,
-                },
-            )
+            metrics = {
+                "losses/critic_loss": np.mean(critic_losses),
+                "metrics/epsilon": self.epsilon,
+                "metrics/homotopy_lambda": self.homotopy_lambda,
+                "global_step": self.global_step,
+            }
             if self.per:
-                wandb.log({"metrics/mean_priority": np.mean(priority)})
+                metrics["metrics/mean_priority"] = np.mean(priority)
+            wandb.log(metrics)
 
     @override
     def eval(self, obs: np.ndarray, w: np.ndarray) -> int:
