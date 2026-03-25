@@ -15,7 +15,7 @@ import mo_gymnasium as mo_gym
 import numpy as np
 import requests
 from gymnasium.wrappers import FlattenObservation, RecordVideo
-from mo_gymnasium.wrappers import MORecordEpisodeStatistics
+from mo_gymnasium.wrappers import MORecordEpisodeStatistics, RecordMarioVideo
 
 from morl_baselines.common.evaluation import seed_everything
 from morl_baselines.common.experiments import (
@@ -180,11 +180,18 @@ def main():
             eval_env = wrap_mario(eval_env)
 
         if args.record_video:
-            eval_env = RecordVideo(
-                eval_env,
-                video_folder=f"videos/{args.algo}-{args.env_id}",
-                episode_trigger=lambda ep: ep % args.record_video_ep_freq == 0,
-            )
+            if "mario" in args.env_id:
+                eval_env = RecordMarioVideo(
+                    eval_env,
+                    video_folder=f"videos/{args.algo}-{args.env_id}",
+                    episode_trigger=lambda ep: ep % args.record_video_ep_freq == 0,
+                )
+            else:
+                eval_env = RecordVideo(
+                    eval_env,
+                    video_folder=f"videos/{args.algo}-{args.env_id}",
+                    episode_trigger=lambda ep: ep % args.record_video_ep_freq == 0,
+                )
 
         print(f"Instantiating {args.algo} on {args.env_id}")
         if args.algo == "ols":
