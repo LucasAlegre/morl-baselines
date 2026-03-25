@@ -320,13 +320,6 @@ def test_nlmoppo():
     eval_env = make_env(env_id, gamma=1.0, kwargs={"dst_map": CONCAVE_MAP})()
     weights = [1.0, 0.0]
     weights_np = np.array(weights)
-    weights_th = th.tensor(weights, dtype=th.float32)
-
-    def scalarization_th(reward: th.Tensor) -> th.Tensor:
-        return th.sum(reward * weights_th, dim=-1)
-
-    def scalarization_np(reward: np.ndarray) -> np.ndarray:
-        return np.sum(reward * weights_np, axis=-1)
 
     agent = NLMOPPO(
         0,
@@ -337,6 +330,14 @@ def test_nlmoppo():
         norm_adv=False,
         log=False,
     )
+    weights_th = th.tensor(weights, dtype=th.float32, device=agent.device)
+
+    def scalarization_th(reward: th.Tensor) -> th.Tensor:
+        return th.sum(reward * weights_th, dim=-1)
+
+    def scalarization_np(reward: np.ndarray) -> np.ndarray:
+        return np.sum(reward * weights_np, axis=-1)
+
     agent.train(eval_env=eval_env, u_func=scalarization_th, deterministic=True)
 
     scalar_return, scalarized_disc_return, vec_ret, vec_disc_ret = eval_mo_reward_conditioned(
