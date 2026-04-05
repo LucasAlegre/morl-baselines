@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import wandb
 
-from morl_baselines.common.buffer import ReplayBuffer
+from morl_baselines.common.buffer import ReplayBuffer, TensorReplayBuffer
 from morl_baselines.common.evaluation import (
     log_all_multi_policy_metrics,
     log_episode_info,
@@ -49,7 +49,11 @@ class Policy(nn.Module):
 
     def forward(self, obs, w, noise=None, noise_clip=None):
         """Forward pass of the policy network."""
-        h = self.latent_pi(th.concat((obs, w), dim=obs.dim() - 1))
+        if obs.dim() > 1 and w.dim() == 1:
+            w = w.expand(obs.shape[0], -1)
+        
+        cat_input = th.concat((obs, w), dim=obs.dim() - 1)
+        h = self.latent_pi(cat_input)
         action = self.mean(h)
         action = th.tanh(action)
         if noise is not None:
@@ -69,6 +73,8 @@ class QNetwork(nn.Module):
 
     def forward(self, obs, action, w):
         """Forward pass of the Q-network."""
+        if obs.dim() > 1 and w.dim() == 1:
+            w = w.expand(obs.shape[0], -1)
         q_values = self.net(th.cat((obs, action, w), dim=obs.dim() - 1))
         return q_values
 
@@ -95,7 +101,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         num_q_nets: int = 2,
         delay_policy_update: int = 2,
         learning_starts: int = 100,
-        gradient_updates: int = 20,
+        gradient_updates: int = 1,
         use_gpi: bool = False,  # In the continuous action case, GPI is only used to selected weights.
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
@@ -108,7 +114,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         dynamics_rollout_len: int = 5,
         dynamics_rollout_starts: int = 1000,
         dynamics_rollout_freq: int = 250,
-        dynamics_rollout_batch_size: int = 50000,
+        dynamics_rollout_batch_size: int = 5000,
         dynamics_buffer_size: int = 200000,
         dynamics_min_uncertainty: float = 2.0,
         dynamics_real_ratio: float = 0.1,
@@ -201,10 +207,10 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 param.requires_grad = False
 
         self.policy = Policy(
-            self.observation_dim, self.reward_dim, self.action_dim, self.env.action_space, net_arch=net_arch
+            self.observation_dim, self.reward_dim, self.action_dim, self.action_space, net_arch=net_arch
         ).to(self.device)
         self.target_policy = Policy(
-            self.observation_dim, self.reward_dim, self.action_dim, self.env.action_space, net_arch=net_arch
+            self.observation_dim, self.reward_dim, self.action_dim, self.action_space, net_arch=net_arch
         ).to(self.device)
         self.target_policy.load_state_dict(self.policy.state_dict())
         for param in self.target_policy.parameters():
@@ -223,9 +229,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 arch=self.dynamics_net_arch,
                 device=self.device,
             )
-            self.dynamics_buffer = ReplayBuffer(
-                self.observation_shape, self.action_dim, rew_dim=self.reward_dim, max_size=dynamics_buffer_size
-            )
+            self.dynamics_buffer = TensorReplayBuffer(
+            self.env.observation_space.shape,
+            self.env.action_space.shape[0],
+            rew_dim=self.reward_dim,
+            max_size=dynamics_buffer_size,
+            device=self.device,
+        )
+        if self.dyna:
+            self.model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=self.reward_dim)
+        
+        self.stacked_weight_support = None
         self.dynamics_train_freq = dynamics_train_freq
         self.dynamics_rollout_len = dynamics_rollout_len
         self.dynamics_rollout_starts = dynamics_rollout_starts
@@ -245,8 +259,17 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def get_config(self):
         """Get the configuration of the agent."""
+        env_id = "VectorEnv"
+        if hasattr(self.env, "spec") and self.env.spec is not None:
+            env_id = self.env.spec.id
+        elif hasattr(self.env, "get_attr"):
+            try:
+                env_id = self.env.get_attr("spec")[0].id
+            except:
+                pass
+        
         return {
-            "env_id": self.env.unwrapped.spec.id,
+            "env_id": env_id,
             "learning_rate": self.learning_rate,
             "num_q_nets": self.num_q_nets,
             "batch_size": self.batch_size,
@@ -339,20 +362,24 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         num_times = int(np.ceil(self.dynamics_rollout_batch_size / 10000))
         batch_size = min(self.dynamics_rollout_batch_size, 10000)
         for _ in range(num_times):
-            obs = self.replay_buffer.sample_obs(batch_size, to_tensor=False)
-            model_env = ModelEnv(self.dynamics, self.env.unwrapped.spec.id, rew_dim=self.reward_dim)
+            obs = self.replay_buffer.sample_obs(batch_size, to_tensor=True, device=self.device)
             for plan_step in range(self.dynamics_rollout_len):
-                obs = th.tensor(obs).to(self.device)
-                w = weight.repeat(obs.shape[0], 1)
+                w = weight.expand(obs.shape[0], -1)
                 actions = self.policy(obs, w, noise=self.policy_noise, noise_clip=self.noise_clip)
 
-                next_obs_pred, r_pred, dones, info = model_env.step(obs, actions)
-                obs, actions = (obs.detach().cpu().numpy(), actions.detach().cpu().numpy())
-
+                next_obs_pred, r_pred, dones, info = self.model_env.step(obs, actions)
+                
                 uncertainties = info["uncertainty"]
-                for i in range(len(obs)):
-                    if uncertainties[i] < self.dynamics_min_uncertainty:
-                        self.dynamics_buffer.add(obs[i], actions[i], r_pred[i], next_obs_pred[i], dones[i])
+                mask = uncertainties < self.dynamics_min_uncertainty
+                
+                if mask.any():
+                    self.dynamics_buffer.add_batch(
+                        obs[mask], 
+                        actions[mask], 
+                        r_pred[mask], 
+                        next_obs_pred[mask], 
+                        dones[mask]
+                    )
 
                 nonterm_mask = ~dones.squeeze(-1)
                 if nonterm_mask.sum() == 0:
@@ -372,46 +399,48 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
 
     def update(self, weight: th.Tensor):
         """Update the policy and the Q-nets."""
+        critic_losses = []
+        policy_losses = []
         for _ in range(self.gradient_updates):
             if self.per:
                 (s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes) = self._sample_batch_experiences()
             else:
                 (s_obs, s_actions, s_rewards, s_next_obs, s_dones) = self._sample_batch_experiences()
 
+            batch_size = s_obs.size(0)
             if len(self.weight_support) > 1:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones = (
-                    s_obs.repeat(2, 1),
-                    s_actions.repeat(2, 1),
-                    s_rewards.repeat(2, 1),
-                    s_next_obs.repeat(2, 1),
-                    s_dones.repeat(2, 1),
-                )
-                w = th.vstack(
-                    [weight for _ in range(s_obs.size(0) // 2)] + random.choices(self.weight_support, k=s_obs.size(0) // 2)
-                )
+                idx = th.randint(0, len(self.weight_support) + 1, (batch_size,), device=self.device)
+                w = th.empty((batch_size, self.reward_dim), device=self.device)
+                mask = idx == 0
+                w[mask] = weight
+                if (~mask).any():
+                    if self.stacked_weight_support is None or self.stacked_weight_support.size(0) != len(self.weight_support):
+                        self.stacked_weight_support = th.stack(self.weight_support)
+                    w[~mask] = self.stacked_weight_support[idx[~mask] - 1]
             else:
-                w = weight.repeat(s_obs.size(0), 1)
+                w = weight.expand(batch_size, -1)
 
             with th.no_grad():
                 next_actions = self.target_policy(s_next_obs, w, noise=self.policy_noise, noise_clip=self.noise_clip)
                 q_targets = th.stack([q_target(s_next_obs, next_actions, w) for q_target in self.target_q_nets])
-                scalarized_q_targets = th.einsum("nbr,br->nb", q_targets, w)
+                scalarized_q_targets = (q_targets * w.unsqueeze(0)).sum(-1)
                 inds = th.argmin(scalarized_q_targets, dim=0, keepdim=True)
                 inds = inds.reshape(1, -1, 1).expand(1, q_targets.size(1), q_targets.size(2))
                 target_q = q_targets.gather(0, inds).squeeze(0)
 
                 target_q = (s_rewards + (1 - s_dones) * self.gamma * target_q).detach()
 
-            q_values = [q_net(s_obs, s_actions, w) for q_net in self.q_nets]
-            critic_loss = (1 / self.num_q_nets) * sum([F.mse_loss(q_value, target_q) for q_value in q_values])
+            q_values = th.stack([q_net(s_obs, s_actions, w) for q_net in self.q_nets], dim=0)
+            critic_loss = F.mse_loss(q_values, target_q.unsqueeze(0).expand_as(q_values))
 
             self.q_optim.zero_grad()
             critic_loss.backward()
             self.q_optim.step()
+            critic_losses.append(critic_loss.item())
 
             if self.per:
                 per = (q_values[0] - target_q)[: len(idxes)].detach().abs() * 0.05
-                per = th.einsum("br,br->b", per, w[: len(idxes)])
+                per = (per * w[: len(idxes)]).sum(-1)
                 priority = per.cpu().numpy().flatten()
                 priority = priority.clip(min=self.min_priority) ** self.alpha
                 self.replay_buffer.update_priorities(idxes, priority)
@@ -422,19 +451,20 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             if self._n_updates % self.delay_policy_update == 0:
                 # Policy update
                 actions = self.policy(s_obs, w)
-                q_values_pi = (1 / self.num_q_nets) * sum(q_net(s_obs, actions, w) for q_net in self.q_nets)
-                policy_loss = -th.einsum("br,br->b", q_values_pi, w).mean()
+                q_values_pi = th.stack([q_net(s_obs, actions, w) for q_net in self.q_nets], dim=0).mean(0)
+                policy_loss = -(q_values_pi * w).sum(-1).mean()
 
                 self.policy_optim.zero_grad()
                 policy_loss.backward()
                 self.policy_optim.step()
+                policy_losses.append(policy_loss.item())
 
                 polyak_update(self.policy.parameters(), self.target_policy.parameters(), self.tau)
 
             self._n_updates += 1
 
-        if self.log and self.global_step % 100 == 0:
-            if self.per:
+        if self.log and self.global_step % 1000 == 0:
+            if self.per and "priority" in locals():
                 wandb.log(
                     {
                         "metrics/mean_priority": np.mean(priority),
@@ -443,13 +473,14 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     },
                     commit=False,
                 )
-            wandb.log(
-                {
-                    "losses/critic_loss": critic_loss.item(),
-                    "losses/policy_loss": policy_loss.item(),
-                    "global_step": self.global_step,
-                },
-            )
+            
+            log_dict = {"global_step": self.global_step}
+            if len(critic_losses) > 0:
+                log_dict["losses/critic_loss"] = np.mean(critic_losses)
+            if len(policy_losses) > 0:
+                log_dict["losses/policy_loss"] = np.mean(policy_losses)
+            
+            wandb.log(log_dict)
 
     @th.no_grad()
     def eval(
@@ -471,7 +502,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
             )
             values = self.q_nets[0](obs, actions, stackedM)
 
-            scalar_values = th.einsum("par,r->pa", values, w)
+            scalar_values = (values * w).sum(-1)
             max_q, a = th.max(scalar_values, dim=1)
             policy_index = th.argmax(max_q)  # max_i max_a q(s,a,w_i)
             action = a[policy_index].detach().item()
@@ -515,21 +546,26 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
         weight_support = unique_tol(weight_support)
         self.set_weight_support(weight_support)
         tensor_w = th.tensor(weight).float().to(self.device)
-
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
         obs, info = self.env.reset()
-        for _ in range(1, total_timesteps + 1):
-            self.global_step += 1
+        
+        # Check if environment is vectorized
+        n_envs = getattr(self.env, "num_envs", 1)
+        is_vectorized = n_envs > 1
+
+        for _ in range(1, (total_timesteps // n_envs) + 1):
+            self.global_step += n_envs
 
             if self.global_step < self.learning_starts:
                 action = self.env.action_space.sample()
             else:
                 with th.no_grad():
+                    obs_tensor = th.as_tensor(obs, device=self.device, dtype=th.float32)
                     action = (
                         self.policy(
-                            th.tensor(obs).float().to(self.device),
+                            obs_tensor,
                             tensor_w,
                             noise=self.policy_noise,
                             noise_clip=self.noise_clip,
@@ -539,15 +575,16 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                         .numpy()
                     )
 
-            action_env = action
+            next_obs, vector_reward, terminated, truncated, info = self.env.step(action)
 
-            next_obs, vector_reward, terminated, truncated, info = self.env.step(action_env)
-
-            self.replay_buffer.add(obs, action, vector_reward, next_obs, terminated)
+            if is_vectorized:
+                self.replay_buffer.add_batch(obs, action, vector_reward, next_obs, terminated)
+            else:
+                self.replay_buffer.add(obs, action, vector_reward, next_obs, terminated)
 
             if self.global_step >= self.learning_starts:
                 if self.dyna:
-                    if self.global_step % self.dynamics_train_freq == 0:
+                    if self.global_step % self.dynamics_train_freq < n_envs:
                         (m_obs, m_actions, m_rewards, m_next_obs, m_dones) = self.replay_buffer.get_all_data()
                         X = np.hstack((m_obs, m_actions))
                         Y = np.hstack((m_rewards, m_next_obs - m_obs))
@@ -557,12 +594,12 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                                 {"dynamics/mean_holdout_loss": mean_holdout_loss, "global_step": self.global_step},
                             )
 
-                    if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq == 0:
+                    if self.global_step >= self.dynamics_rollout_starts and self.global_step % self.dynamics_rollout_freq < n_envs:
                         self._rollout_dynamics(tensor_w)
 
                 self.update(tensor_w)
 
-            if eval_env is not None and self.log and self.global_step % eval_freq == 0:
+            if eval_env is not None and self.log and self.global_step % eval_freq < n_envs:
                 self.policy_eval(eval_env, weights=weight, log=self.log)
 
                 if self.dyna and self.global_step >= self.dynamics_rollout_starts:
@@ -570,18 +607,29 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                     wandb.log({"dynamics/predictions": wandb.Image(plot), "global_step": self.global_step})
                     plot.close()
 
-            if terminated or truncated:
-                obs, _ = self.env.reset()
-                self.num_episodes += 1
-
-                if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, weight, self.global_step)
-
-                if change_weight_every_episode:
-                    weight = random.choice(weight_support)
-                    tensor_w = th.tensor(weight).float().to(self.device)
+            if not is_vectorized:
+                if terminated or truncated:
+                    obs, _ = self.env.reset()
+                    self.num_episodes += 1
+                    if self.log and "episode" in info.keys():
+                        log_episode_info(info["episode"], np.dot, weight, self.global_step)
+                    if change_weight_every_episode:
+                        weight = random.choice(weight_support)
+                        tensor_w = th.tensor(weight).float().to(self.device)
+                else:
+                    obs = next_obs
             else:
+                # Vectorized envs auto-reset, just track episodes and info
                 obs = next_obs
+                if "final_info" in info:
+                    for _info in info["final_info"]:
+                        if _info is not None:
+                            self.num_episodes += 1
+                            if self.log and "episode" in _info:
+                                log_episode_info(_info["episode"], np.dot, weight, self.global_step)
+                            if change_weight_every_episode:
+                                weight = random.choice(weight_support)
+                                tensor_w = th.tensor(weight).float().to(self.device)
 
     def train(
         self,
