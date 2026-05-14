@@ -14,7 +14,6 @@ from distutils.util import strtobool
 import mo_gymnasium as mo_gym
 import numpy as np
 import requests
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from gymnasium.wrappers import FlattenObservation, RecordVideo
 from mo_gymnasium.wrappers import MORecordEpisodeStatistics
 
@@ -159,6 +158,7 @@ def main():
         elif "mario" in args.env_id:
 
             def wrap_mario(env):
+                from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
                 from gymnasium.wrappers import (
                     FrameStackObservation,
                     GrayscaleObservation,

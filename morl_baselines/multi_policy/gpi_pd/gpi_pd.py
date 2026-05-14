@@ -345,15 +345,12 @@ class GPIPD(MOPolicy, MOAgent):
             return self.replay_buffer.sample(self.batch_size, to_tensor=True, device=self.device)
         else:
             num_real_samples = int(self.batch_size * self.real_ratio)  # real_ratio% of real world data
-            if self.per:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(
-                    num_real_samples, to_tensor=True, device=self.device
-                )
-            else:
-                s_obs, s_actions, s_rewards, s_next_obs, s_dones = self.replay_buffer.sample(
-                    num_real_samples, to_tensor=True, device=self.device
-                )
-            m_obs, m_actions, m_rewards, m_next_obs, m_dones = self.dynamics_buffer.sample(
+
+            s_obs, s_actions, s_rewards, s_next_obs, s_dones, idxes = self.replay_buffer.sample(
+                num_real_samples, to_tensor=True, device=self.device
+            )
+
+            m_obs, m_actions, m_rewards, m_next_obs, m_dones, _ = self.dynamics_buffer.sample(
                 self.batch_size - num_real_samples, to_tensor=True, device=self.device
             )
             experience_tuples = (

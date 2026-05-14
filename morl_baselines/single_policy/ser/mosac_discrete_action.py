@@ -443,7 +443,7 @@ class MOSACDiscrete(MOPolicy):
 
     @override
     def update(self):
-        (mb_obs, mb_act, mb_rewards, mb_next_obs, mb_dones) = self.buffer.sample(
+        (mb_obs, mb_act, mb_rewards, mb_next_obs, mb_dones, _) = self.buffer.sample(
             self.batch_size, to_tensor=True, device=self.device
         )
         actor_obs = mb_obs

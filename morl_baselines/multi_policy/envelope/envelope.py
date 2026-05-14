@@ -267,23 +267,14 @@ class Envelope(MOPolicy, MOAgent):
     def update(self):
         critic_losses = []
         for g in range(self.gradient_updates):
-            if self.per:
-                (
-                    b_obs,
-                    b_actions,
-                    b_rewards,
-                    b_next_obs,
-                    b_dones,
-                    b_inds,
-                ) = self.__sample_batch_experiences()
-            else:
-                (
-                    b_obs,
-                    b_actions,
-                    b_rewards,
-                    b_next_obs,
-                    b_dones,
-                ) = self.__sample_batch_experiences()
+            (
+                b_obs,
+                b_actions,
+                b_rewards,
+                b_next_obs,
+                b_dones,
+                b_inds,
+            ) = self.__sample_batch_experiences()
 
             sampled_w = (
                 th.tensor(random_weights(dim=self.reward_dim, n=self.num_sample_w, dist="gaussian", rng=self.np_random))
