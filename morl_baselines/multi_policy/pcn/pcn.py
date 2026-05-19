@@ -22,7 +22,7 @@ from morl_baselines.common.performance_indicators import hypervolume
 def crowding_distance(points):
     """Compute the crowding distance of a set of points."""
     # first normalize across dimensions
-    points = (points - points.min(axis=0)) / (points.ptp(axis=0) + 1e-8)
+    points = (points - points.min(axis=0)) / (np.ptp(points, axis=0) + 1e-8)
     # sort points per dimension
     dim_sorted = np.argsort(points, axis=0)
     point_sorted = np.take_along_axis(points, dim_sorted, axis=0)
