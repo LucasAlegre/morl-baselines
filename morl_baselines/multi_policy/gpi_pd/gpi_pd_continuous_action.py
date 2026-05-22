@@ -414,7 +414,7 @@ class GPIPDContinuousAction(MOAgent, MOPolicy):
                 per = th.einsum("br,br->b", per, w[: len(idxes)])
                 priority = per.cpu().numpy().flatten()
                 priority = priority.clip(min=self.min_priority) ** self.alpha
-                self.replay_buffer.update_priorities(idxes, priority)
+                self.replay_buffer.update_priorities(idxes.cpu(), priority)
 
             for q_net, target_q_net in zip(self.q_nets, self.target_q_nets):
                 polyak_update(q_net.parameters(), target_q_net.parameters(), self.tau)
