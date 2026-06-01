@@ -345,7 +345,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
         filename = self.experiment_name if filename is None else filename
         orbax_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
         save_args = orbax_utils.save_args_from_target(saved_params)
-        orbax_checkpointer.save(save_dir + filename, saved_params, save_args=save_args, force=True)
+        orbax_checkpointer.save(os.path.abspath(save_dir) + "/" + filename, saved_params, save_args=save_args, force=True)
 
     def load(self, path):
         """Load agent's parameters from the given path."""
