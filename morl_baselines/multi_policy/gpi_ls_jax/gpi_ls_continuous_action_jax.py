@@ -361,7 +361,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
 
         self.q_state = restored["q_net_state"]
         self.actor_state = restored["actor_state"]
-        self.weight_support = [w for w in restored["M"].values()]
+        self.weight_support = restored["M"]
 
     def sample_batch_experiences(self):
         """Samples a mini-batch of experiences."""
