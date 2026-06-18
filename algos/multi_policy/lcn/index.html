@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../../genindex/"><link rel="search" title="Search" href="../../../search/"><link rel="next" title="Concave-Augmented Pareto Q-Learning (CAPQL)" href="../capql/"><link rel="prev" title="GPI-Linear Support (Jax)" href="../gpi_ls_jax/">
+<link rel="index" title="Index" href="../../../genindex/"><link rel="search" title="Search" href="../../../search/"><link rel="next" title="Pareto Q-Learning" href="../pareto_q_learning/"><link rel="prev" title="Pareto Conditioned Networks" href="../pcn/">
 
     <!-- Generated with Sphinx 7.4.7 and Furo 2025.12.19 -->
-        <title>Envelope Q-Learning - MORL-Baselines 1.1.0 documentation</title>
+        <title>Lorenz Conditioned Networks - MORL-Baselines 1.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -200,12 +200,12 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">Multi-Policy Algorithms</a><input aria-label="Toggle navigation of Multi-Policy Algorithms" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../gpi_pd/">GPI-Prioritized Dyna</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../gpi_ls_jax/">GPI-Linear Support (Jax)</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Envelope Q-Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../envelope/">Envelope Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../capql/">Concave-Augmented Pareto Q-Learning (CAPQL)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pgmorl/">PGMORL</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../morld/">MORL/D</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pcn/">Pareto Conditioned Networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../lcn/">Lorenz Conditioned Networks</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Lorenz Conditioned Networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pareto_q_learning/">Pareto Q-Learning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../mp_mo_q_learning/">MPMOQ Learning</a></li>
 </ul>
@@ -253,12 +253,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/blob/main/docs/algos/multi_policy/envelope.md?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/blob/main/docs/algos/multi_policy/lcn.md?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/algos/multi_policy/envelope.md" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/LucasAlegre/morl-baselines/edit/main/docs/algos/multi_policy/lcn.md" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -275,8 +275,30 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="envelope-q-learning">
-<h1>Envelope Q-Learning<a class="headerlink" href="#envelope-q-learning" title="Link to this heading">¶</a></h1>
+          <section id="lorenz-conditioned-networks">
+<h1>Lorenz Conditioned Networks<a class="headerlink" href="#lorenz-conditioned-networks" title="Link to this heading">¶</a></h1>
+<p>Lorenz Conditioned Networks (LCN) extends <a class="reference internal" href="../pcn/"><span class="doc std std-doc">Pareto Conditioned Networks (PCN)</span></a> by replacing the
+dominance criterion used to select and condition on past episodes. Where PCN uses
+Pareto dominance, LCN instead uses <strong>Lorenz dominance</strong>: each return’s
+objective values are sorted in increasing order and cumulatively summed (its <em>Lorenz vector</em>), and one
+return Lorenz-dominates another if its Lorenz vector is at least as high in every position. Lorenz dominance favors returns that
+distribute reward more <em>equitably</em> across objectives.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">lcn_lambda</span></code> parameter controls <strong>λ-Lorenz dominance</strong>, an interpolation between strict Lorenz
+dominance and ordinary dominance computed on the sorted returns:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fv</span> <span class="o">=</span> <span class="n">lcn_lambda</span> <span class="o">*</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">returns</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">lcn_lambda</span><span class="p">)</span> <span class="o">*</span> <span class="n">lorenz_vector</span><span class="p">(</span><span class="n">returns</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">lcn_lambda=0</span></code> recovers strict Lorenz dominance (maximizes fairness), while values closer to <code class="docutils literal notranslate"><span class="pre">1</span></code> relax
+the fairness bias towards rewarding raw performance on the best-performing sorted objectives. Pick one of
+the two <code class="docutils literal notranslate"><span class="pre">distance_ref</span></code> options to choose between the two:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;nondominated&quot;</span></code> (default): strict Lorenz dominance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;lambda_lorenz&quot;</span></code>: λ-Lorenz dominance, requires <code class="docutils literal notranslate"><span class="pre">lcn_lambda</span></code> to be set.</p></li>
+</ul>
+<p>For more details, see:</p>
+<p>Michailidis, D., Röpke, W., Roijers, D. M., Ghebreab, S., &amp; Santos, F. P. (2026). Scalable
+Multi-Objective Reinforcement Learning with Fairness Guarantees using Lorenz Dominance. Journal of
+Artificial Intelligence Research, 85. https://jair.org/index.php/jair/article/view/19862</p>
 </section>
 
         </article>
@@ -284,23 +306,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../capql/">
+          <a class="next-page" href="../pareto_q_learning/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Concave-Augmented Pareto Q-Learning (CAPQL)</div>
+                <div class="title">Pareto Q-Learning</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../gpi_ls_jax/">
+          <a class="prev-page" href="../pcn/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">GPI-Linear Support (Jax)</div>
+                <div class="title">Pareto Conditioned Networks</div>
                 
               </div>
             </a>

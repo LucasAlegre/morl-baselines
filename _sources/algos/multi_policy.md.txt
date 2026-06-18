@@ -9,6 +9,7 @@ multi_policy/capql
 multi_policy/pgmorl
 multi_policy/morld
 multi_policy/pcn
+multi_policy/lcn
 multi_policy/pareto_q_learning
 multi_policy/mp_mo_q_learning
 multi_policy/ols
