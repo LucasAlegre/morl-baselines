@@ -196,6 +196,11 @@ class PQL(MOAgent):
         non_dominated = get_non_dominated(candidates)
         return non_dominated
 
+    def _get_state_index(self, state: int | np.ndarray) -> int:
+        if np.issubdtype(type(state), np.integer):
+            return int(state)
+        return int(np.ravel_multi_index(state, self.env_shape))
+
     def train(
         self,
         total_timesteps: int,
@@ -242,7 +247,7 @@ class PQL(MOAgent):
 
         while self.global_step < total_timesteps:
             state, _ = self.env.reset()
-            state = int(np.ravel_multi_index(state, self.env_shape))
+            state = self._get_state_index(state)
             terminated = False
             truncated = False
 
@@ -250,7 +255,7 @@ class PQL(MOAgent):
                 action = self.select_action(state, score_func)
                 next_state, reward, terminated, truncated, _ = self.env.step(action)
                 self.global_step += 1
-                next_state = int(np.ravel_multi_index(next_state, self.env_shape))
+                next_state = self._get_state_index(next_state)
 
                 self.counts[state, action] += 1
                 self.non_dominated[state][action] = self.calc_non_dominated(next_state)
@@ -303,7 +308,7 @@ class PQL(MOAgent):
         current_gamma = 1.0
 
         while not (terminated or truncated):
-            state = np.ravel_multi_index(state, self.env_shape)
+            state = self._get_state_index(state)
             closest_dist = np.inf
             closest_action = 0
             found_action = False
