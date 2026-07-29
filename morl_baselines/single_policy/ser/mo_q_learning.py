@@ -1,6 +1,7 @@
 """Scalarized Q-learning for single policy multi-objective reinforcement learning."""
 
 import time
+from collections.abc import Iterable
 from typing import Optional
 from typing_extensions import override
 
@@ -127,9 +128,15 @@ class MOQLearning(MOPolicy, MOAgent):
         else:
             return self.eval(obs, self.weights)
 
+    @staticmethod
+    def _state_to_tuple(obs: np.ndarray) -> tuple:
+        if isinstance(obs, Iterable):
+            return tuple(obs)
+        return tuple((obs,))
+
     def scalarized_q_values(self, obs, w: np.ndarray) -> np.ndarray:
         """Returns the scalarized Q values for each action, given observation and weights."""
-        t_obs = tuple(obs)
+        t_obs = self._state_to_tuple(obs)
         if t_obs not in self.q_table:
             return np.zeros(self.action_dim)
         return np.array([self.scalarization(state_action_value, w) for state_action_value in self.q_table[t_obs]])
@@ -144,7 +151,7 @@ class MOQLearning(MOPolicy, MOAgent):
         priority = (
             np.dot(reward, weights)
             + (1 - terminal) * self.gamma * self.parent.max_scalar_q_value(next_obs, weights)
-            - np.dot(self.q_table[tuple(obs)][action], weights)
+            - np.dot(self.q_table[self._state_to_tuple(obs)][action], weights)
         )
         priority = max(np.abs(priority), self.min_priority) ** self.alpha
         return priority
@@ -154,7 +161,7 @@ class MOQLearning(MOPolicy, MOAgent):
         if self.use_gpi_policy:
             return self.parent.eval(obs, w)
         """Greedily chooses best action using the scalarization method"""
-        t_obs = tuple(obs)
+        t_obs = self._state_to_tuple(obs)
         if t_obs not in self.q_table:
             return int(self.env.action_space.sample())
         scalarized = np.array(
@@ -165,8 +172,8 @@ class MOQLearning(MOPolicy, MOAgent):
     @override
     def update(self):
         """Updates the Q table."""
-        obs = tuple(self.obs)
-        next_obs = tuple(self.next_obs)
+        obs = self._state_to_tuple(self.obs)
+        next_obs = self._state_to_tuple(self.next_obs)
         if obs not in self.q_table:
             self.q_table[obs] = np.zeros((self.action_dim, self.reward_dim))
         if next_obs not in self.q_table:
