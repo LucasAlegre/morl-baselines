@@ -174,20 +174,17 @@ def log_all_multi_policy_metrics(
     eum = expected_utility(filtered_front, weights_set=equally_spaced_weights(reward_dim, n_sample_weights))
     card = cardinality(filtered_front)
 
-    wandb.log(
-        {
-            "eval/hypervolume": hv,
-            "eval/eum": eum,
-            "eval/cardinality": card,
-            "global_step": global_step,
-        },
-        commit=False,
-    )
+    metrics = {
+        "eval/hypervolume": hv,
+        "eval/eum": eum,
+        "eval/cardinality": card,
+        "global_step": global_step,
+    }
     front = wandb.Table(
         columns=[f"objective_{i}" for i in range(1, reward_dim + 1)],
         data=[p.tolist() for p in filtered_front],
     )
-    wandb.log({"eval/front": front})
+    metrics["eval/front"] = front
 
     # If PF is known, log the additional metrics
     if ref_front is not None:
@@ -197,7 +194,10 @@ def log_all_multi_policy_metrics(
             reference_set=ref_front,
             weights_set=get_reference_directions("energy", reward_dim, n_sample_weights).astype(np.float32),
         )
-        wandb.log({"eval/igd": generational_distance, "eval/mul": mul})
+        metrics["eval/igd"] = generational_distance
+        metrics["eval/mul"] = mul
+
+    wandb.log(metrics)
 
 
 def seed_everything(seed: int):
@@ -257,21 +257,16 @@ def log_episode_info(
         idstr = "_" + str(id)
     else:
         idstr = ""
-    wandb.log(
-        {
-            f"charts{idstr}/timesteps_per_episode": episode_ts,
-            f"charts{idstr}/episode_time": episode_time,
-            f"metrics{idstr}/scalarized_episode_return": scal_return,
-            f"metrics{idstr}/discounted_scalarized_episode_return": disc_scal_return,
-            "global_step": global_timestep,
-        },
-        commit=False,
-    )
+    metrics = {
+        f"charts{idstr}/timesteps_per_episode": episode_ts,
+        f"charts{idstr}/episode_time": episode_time,
+        f"metrics{idstr}/scalarized_episode_return": scal_return,
+        f"metrics{idstr}/discounted_scalarized_episode_return": disc_scal_return,
+        "global_step": global_timestep,
+    }
 
     for i in range(episode_return.shape[0]):
-        wandb.log(
-            {
-                f"metrics{idstr}/episode_return_obj_{i}": episode_return[i],
-                f"metrics{idstr}/disc_episode_return_obj_{i}": disc_episode_return[i],
-            },
-        )
+        metrics[f"metrics{idstr}/episode_return_obj_{i}"] = episode_return[i]
+        metrics[f"metrics{idstr}/disc_episode_return_obj_{i}"] = disc_episode_return[i]
+    
+    wandb.log(metrics)
