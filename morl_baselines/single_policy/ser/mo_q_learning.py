@@ -165,7 +165,10 @@ class MOQLearning(MOPolicy, MOAgent):
         if t_obs not in self.q_table:
             return int(self.env.action_space.sample())
         scalarized = np.array(
-            [self.scalarization(state_action_value, self.weights) for state_action_value in self.q_table[t_obs]]
+            [
+                self.scalarization(state_action_value, self.weights if w is None else w)
+                for state_action_value in self.q_table[t_obs]
+            ]
         )
         return int(np.argmax(scalarized))
 
