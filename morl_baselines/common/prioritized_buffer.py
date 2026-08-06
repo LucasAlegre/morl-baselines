@@ -146,6 +146,51 @@ class PrioritizedReplayBuffer:
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 
+    def add_batch(self, obs, actions, rewards, next_obs, dones, priorities=None):
+        """Add a batch of experiences to the buffer.
+
+        Args:
+            obs: Observations
+            actions: Actions
+            rewards: Rewards
+            next_obs: Next observations
+            dones: Dones
+            priorities: Priorities of the new experiences
+        """
+        batch_size = len(obs)
+        if self.ptr + batch_size <= self.max_size:
+            self.obs[self.ptr : self.ptr + batch_size] = np.array(obs).copy()
+            self.next_obs[self.ptr : self.ptr + batch_size] = np.array(next_obs).copy()
+            self.actions[self.ptr : self.ptr + batch_size] = np.array(actions).copy()
+            self.rewards[self.ptr : self.ptr + batch_size] = np.array(rewards).copy()
+            self.dones[self.ptr : self.ptr + batch_size] = np.array(dones).reshape(-1, 1).copy()
+ 
+            if priorities is None:
+                priorities = np.full(batch_size, self.min_priority)
+            self.tree.batch_set(np.arange(self.ptr, self.ptr + batch_size), priorities)
+        else:
+            first_part = self.max_size - self.ptr
+            second_part = batch_size - first_part
+            self.obs[self.ptr :] = np.array(obs[:first_part]).copy()
+            self.next_obs[self.ptr :] = np.array(next_obs[:first_part]).copy()
+            self.actions[self.ptr :] = np.array(actions[:first_part]).copy()
+            self.rewards[self.ptr :] = np.array(rewards[:first_part]).copy()
+            self.dones[self.ptr :] = np.array(dones[:first_part]).reshape(-1, 1).copy()
+ 
+            self.obs[:second_part] = np.array(obs[first_part:]).copy()
+            self.next_obs[:second_part] = np.array(next_obs[first_part:]).copy()
+            self.actions[:second_part] = np.array(actions[first_part:]).copy()
+            self.rewards[:second_part] = np.array(rewards[first_part:]).copy()
+            self.dones[:second_part] = np.array(dones[first_part:]).reshape(-1, 1).copy()
+
+            if priorities is None:
+                priorities = np.full(batch_size, self.min_priority)
+            self.tree.batch_set(np.arange(self.ptr, self.max_size), priorities[:first_part])
+            self.tree.batch_set(np.arange(0, second_part), priorities[first_part:])
+
+        self.ptr = (self.ptr + batch_size) % self.max_size
+        self.size = min(self.size + batch_size, self.max_size)
+
     def sample(self, batch_size, to_tensor=False, device=None):
         """Sample a batch of experience tuples from the buffer.
 
