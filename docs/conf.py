@@ -6,6 +6,8 @@
 import os
 import sys
 
+import morl_baselines
+
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -15,7 +17,8 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "MORL-Baselines"
 copyright = "2024, Florian Felten & Lucas Alegre"
 author = "Florian Felten & Lucas Alegre"
-import morl_baselines
+
+
 release = morl_baselines.__version__
 
 # -- General configuration ---------------------------------------------------
