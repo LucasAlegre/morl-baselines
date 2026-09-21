@@ -4,7 +4,7 @@ import random
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Iterable, Literal, Optional, TypeAlias
+from typing import Any, Callable, Iterable, Literal, Optional, TypeAlias, Union
 
 import gymnasium as gym
 import numpy as np
@@ -21,7 +21,6 @@ from morl_baselines.common.pareto import (
     strict_pareto_dominates,
 )
 from morl_baselines.single_policy.ser.nl_mo_ppo import NLMOPPO
-
 
 Config.warnings["not_compiled"] = False
 
@@ -297,7 +296,7 @@ class OuterLoop(MOAgent):
         subproblem: Subproblem,
         vec: np.ndarray,
         item: Any,
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add a new solution to the Pareto front if possible."""
         raise NotImplementedError
 
@@ -306,7 +305,7 @@ class OuterLoop(MOAgent):
         subproblem: Subproblem,
         vec: np.ndarray,
         item: Any,
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add to the completed set if possible."""
         raise NotImplementedError
 

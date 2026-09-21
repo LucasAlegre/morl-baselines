@@ -15,7 +15,8 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "MORL-Baselines"
 copyright = "2024, Florian Felten & Lucas Alegre"
 author = "Florian Felten & Lucas Alegre"
-release = "1.1.0"
+import morl_baselines
+release = morl_baselines.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
