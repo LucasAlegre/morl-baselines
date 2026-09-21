@@ -1,7 +1,7 @@
 """Pareto Q-Learning."""
 
 import numbers
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 import gymnasium as gym
 import numpy as np
@@ -196,7 +196,7 @@ class PQL(MOAgent):
         non_dominated = get_non_dominated(candidates)
         return non_dominated
 
-    def _get_state_index(self, state: int | np.ndarray) -> int:
+    def _get_state_index(self, state: Union[int, np.ndarray]) -> int:
         if np.issubdtype(type(state), np.integer):
             return int(state)
         return int(np.ravel_multi_index(state, self.env_shape))

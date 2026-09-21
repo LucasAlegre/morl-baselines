@@ -295,7 +295,7 @@ class MOAgent(ABC):
         experiment_name: str,
         entity: Optional[str] = None,
         group: Optional[str] = None,
-        mode: Literal["online", "offline", "disabled", "shared"] | None = "online",
+        mode: Optional[Literal["online", "offline", "disabled", "shared"]] = "online",
     ) -> None:
         """Initializes the wandb writer.
 

@@ -4,7 +4,7 @@ import random
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Iterable, Literal, Optional, TypeAlias
+from typing import Any, Callable, Iterable, Literal, Optional, TypeAlias, Union
 
 import gymnasium as gym
 import numpy as np
@@ -297,7 +297,7 @@ class OuterLoop(MOAgent):
         subproblem: Subproblem,
         vec: np.ndarray,
         item: Any,
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add a new solution to the Pareto front if possible."""
         raise NotImplementedError
 
@@ -306,7 +306,7 @@ class OuterLoop(MOAgent):
         subproblem: Subproblem,
         vec: np.ndarray,
         item: Any,
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add to the completed set if possible."""
         raise NotImplementedError
 

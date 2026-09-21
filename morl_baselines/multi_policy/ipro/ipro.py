@@ -282,7 +282,7 @@ class IPRO(OuterLoop):
         subproblem: Subproblem,
         point: np.ndarray,
         lower: np.ndarray,
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add a new solution to the Pareto front if possible."""
         if strict_pareto_dominates(point, lower):
             new_subproblem = Subproblem(referent=lower, nadir=self.nadir, ideal=self.ideal)
@@ -296,7 +296,7 @@ class IPRO(OuterLoop):
         subproblem: Subproblem,
         point: np.ndarray,
         lower: np.ndarray,
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add to the completed set if possible."""
         if pareto_dominates(lower, subproblem.referent):
             new_subproblem = Subproblem(referent=lower, nadir=self.nadir, ideal=self.ideal)

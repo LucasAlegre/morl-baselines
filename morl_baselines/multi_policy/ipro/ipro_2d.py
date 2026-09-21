@@ -220,7 +220,7 @@ class IPRO2D(OuterLoop):
         subproblem: Subproblem,
         point: np.ndarray,
         item: tuple[int, Box],
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add a new solution to the Pareto front if possible."""
         open_box_idx, open_box = item
         if strict_pareto_dominates(point, open_box.nadir):
@@ -235,7 +235,7 @@ class IPRO2D(OuterLoop):
         subproblem: Subproblem,
         point: np.ndarray,
         item: tuple[int, Box],
-    ) -> Subproblem | bool:
+    ) -> Union[Subproblem, bool]:
         """Check and add to the completed set if possible."""
         open_box_idx, open_box = item
         if pareto_dominates(open_box.nadir, subproblem.referent):
