@@ -27,6 +27,7 @@ Finally, the PF can also be logged as a wandb table for a posteriori analysis. K
 Here is the function that logs all the metrics:
 ```{eval-rst}
 .. autofunction:: morl_baselines.common.utils.log_all_multi_policy_metrics
+.. autofunction:: morl_baselines.common.evaluation.log_all_multi_policy_metrics
 ```
 
 ## Storage
