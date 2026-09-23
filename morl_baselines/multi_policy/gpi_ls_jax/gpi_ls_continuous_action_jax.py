@@ -837,7 +837,7 @@ class GPILSContinuousAction(MOAgent, MOPolicy):
                 mean_gpi_returns_test_tasks = np.mean(
                     [np.dot(ew, q) for ew, q in zip(eval_weights, gpi_returns_test_tasks)], axis=0
                 )
-                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter})
+                wandb.log({"eval/Mean Utility - GPI": mean_gpi_returns_test_tasks, "iteration": iter, "global_step": self.global_step})
 
             # Checkpoint
             if checkpoints:
