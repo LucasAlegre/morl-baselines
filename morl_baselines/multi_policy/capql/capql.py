@@ -11,9 +11,11 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import time
 import wandb
 from torch.distributions import Normal
 
+from morl_baselines.common.buffer import TensorReplayBuffer
 from morl_baselines.common.evaluation import (
     log_all_multi_policy_metrics,
     log_episode_info,
@@ -29,74 +31,40 @@ LOG_SIG_MIN = -20
 EPSILON = 1e-6
 
 
-class ReplayMemory:
-    """Replay memory."""
-
-    def __init__(self, capacity: int):
-        """Initialize the replay memory."""
-        self.capacity = capacity
-        self.buffer = []
-        self.position = 0
-
-    def push(self, state, action, weights, reward, next_state, done):
-        """Push a transition."""
-        if len(self.buffer) < self.capacity:
-            self.buffer.append(None)
-        self.buffer[self.position] = (
-            np.array(state).copy(),
-            np.array(action).copy(),
-            np.array(weights).copy(),
-            np.array(reward).copy(),
-            np.array(next_state).copy(),
-            np.array(done).copy(),
-        )
-        self.position = (self.position + 1) % self.capacity
-
-    def sample(self, batch_size, to_tensor=True, device=None):
-        """Sample a batch of transitions."""
-        batch = random.sample(self.buffer, batch_size)
-        state, action, w, reward, next_state, done = map(np.stack, zip(*batch))
-        experience_tuples = (state, action, w, reward, next_state, done)
-        if to_tensor:
-            return tuple(map(lambda x: th.tensor(x, dtype=th.float32).to(device), experience_tuples))
-        return state, action, w, reward, next_state, done
-
-    def __len__(self):
-        """Return the current size of the buffer."""
-        return len(self.buffer)
-
-
 class WeightSamplerAngle:
     """Sample weight vectors from normal distribution."""
-
-    def __init__(self, rwd_dim, angle, w=None):
+ 
+    def __init__(self, rwd_dim, angle, w=None, device="cpu"):
         """Initialize the weight sampler."""
         self.rwd_dim = rwd_dim
         self.angle = angle
+        self.device = device
         if w is None:
-            w = th.ones(rwd_dim)
+            w = th.ones(rwd_dim, device=device)
+        else:
+            w = th.as_tensor(w, device=device, dtype=th.float32)
         w = w / th.norm(w)
         self.w = w
-
+ 
     def sample(self, n_sample):
         """Sample n_sample weight vectors from normal distribution."""
-        s = th.normal(th.zeros(n_sample, self.rwd_dim))
-
+        s = th.randn(n_sample, self.rwd_dim, device=self.device)
+ 
         # remove fluctuation on dir w
         s = s - (s @ self.w).view(-1, 1) * self.w.view(1, -1)
-
+ 
         # normalize it
-        s = s / th.norm(s, dim=1, keepdim=True)
-
+        s = s / (th.norm(s, dim=1, keepdim=True) + 1e-8)
+ 
         # sample angle
-        s_angle = th.rand(n_sample, 1) * self.angle
-
+        s_angle = th.rand(n_sample, 1, device=self.device) * self.angle
+ 
         # compute shifted vector from w
         w_sample = th.tan(s_angle) * s + self.w.view(1, -1)
-
+ 
         w_sample = w_sample / th.norm(w_sample, dim=1, keepdim=True, p=1)
-
-        return w_sample.float()
+ 
+        return w_sample
 
 
 class Policy(nn.Module):
@@ -118,6 +86,10 @@ class Policy(nn.Module):
 
     def forward(self, obs, w):
         """Forward pass of the policy network."""
+        if obs.dim() == 1:
+            obs = obs.unsqueeze(0)
+        if w.dim() == 1:
+            w = w.unsqueeze(0)
         h = self.latent_pi(th.concat((obs, w), dim=obs.dim() - 1))
         mean = self.mean(h)
         log_std = self.log_std_linear(h)
@@ -130,47 +102,55 @@ class Policy(nn.Module):
         return th.tanh(mean) * self.action_scale + self.action_bias
 
     def sample(self, obs, w):
-        """Sample an action from the policy network."""
-        # for each state in the mini-batch, get its mean and std
+        """Sample an action from the policy network using reparameterization trick."""
         mean, log_std = self.forward(obs, w)
         std = log_std.exp()
-
-        # sample actions
-        normal = Normal(mean, std)
-        x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
-
+ 
+        # manual rsample
+        noise = th.randn_like(mean)
+        x_t = mean + std * noise
+ 
         # restrict the outputs
         y_t = th.tanh(x_t)
         action = y_t * self.action_scale + self.action_bias
-
-        # compute the prob density of the samples
-
-        log_prob = normal.log_prob(x_t).sum(dim=1)
-
-        # Enforcing Action Bound
-        # compute the log_prob as the normal distribution sample is processed by tanh
-        #       (reparameterization trick)
-        log_prob -= th.log(self.action_scale * (1 - y_t.pow(2)) + EPSILON).sum(dim=1)
+ 
+        # manual log_prob calculation for Normal distribution
+        # log_p = -0.5 * ( ((x-mean)/std)**2 + 2*log_std + log(2*pi) )
+        log_prob = -0.5 * (noise.pow(2) + 2 * log_std + th.log(th.tensor(2 * np.pi, device=mean.device))).sum(dim=-1)
+ 
+        # tanh correction: log_prob -= sum(log(scale * (1 - tanh(x)^2) + epsilon))
+        log_prob -= th.log(self.action_scale * (1 - y_t.pow(2)) + EPSILON).sum(dim=-1)
         log_prob = log_prob.clamp(-1e3, 1e3)
-
-        mean = th.tanh(mean) * self.action_scale + self.action_bias
-
-        return action, log_prob, mean
+ 
+        mean_action = th.tanh(mean) * self.action_scale + self.action_bias
+ 
+        return action, log_prob, mean_action
 
 
 class QNetwork(nn.Module):
-    """Q-network S x Ax W -> R^reward_dim."""
+    """Q-network ensemble S x Ax W -> R^(num_q_nets * reward_dim)."""
 
-    def __init__(self, obs_dim, action_dim, rew_dim, net_arch=[256, 256]):
-        """Initialize the Q-network."""
+    def __init__(self, obs_dim, action_dim, rew_dim, num_q_nets=2, net_arch=[256, 256]):
+        """Initialize the Q-network ensemble."""
         super().__init__()
-        self.net = mlp(obs_dim + action_dim + rew_dim, rew_dim, net_arch)
+        self.num_q_nets = num_q_nets
+        self.rew_dim = rew_dim
+        self.net = mlp(obs_dim + action_dim + rew_dim, num_q_nets * rew_dim, net_arch)
         self.apply(layer_init)
 
     def forward(self, obs, action, w):
-        """Forward pass of the Q-network."""
-        q_values = self.net(th.cat((obs, action, w), dim=obs.dim() - 1))
-        return q_values
+        """Forward pass of the Q-network ensemble."""
+        if obs.dim() == 1:
+            obs = obs.unsqueeze(0)
+        if action.dim() == 1:
+            action = action.unsqueeze(0)
+        if w.dim() == 1:
+            w = w.unsqueeze(0)
+
+        batch_size = obs.shape[0]
+        q_values = self.net(th.cat((obs, action, w), dim=-1))
+        # Reshape to (num_q_nets, batch_size, rew_dim) to match previous stack behavior
+        return q_values.view(batch_size, self.num_q_nets, self.rew_dim).permute(1, 0, 2)
 
 
 class CAPQL(MOAgent, MOPolicy):
@@ -240,27 +220,31 @@ class CAPQL(MOAgent, MOPolicy):
         self.gradient_updates = gradient_updates
         self.alpha = alpha
 
-        self.replay_buffer = ReplayMemory(self.buffer_size)
-
-        self.q_nets = [
-            QNetwork(self.observation_dim, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
-            for _ in range(num_q_nets)
-        ]
-        self.target_q_nets = [
-            QNetwork(self.observation_dim, self.action_dim, self.reward_dim, net_arch=net_arch).to(self.device)
-            for _ in range(num_q_nets)
-        ]
-        for q_net, target_q_net in zip(self.q_nets, self.target_q_nets):
-            target_q_net.load_state_dict(q_net.state_dict())
-            for param in target_q_net.parameters():
-                param.requires_grad = False
-
-        self.policy = Policy(
-            self.observation_dim, self.reward_dim, self.action_dim, self.env.action_space, net_arch=net_arch
+        self.replay_buffer = TensorReplayBuffer(
+            self.observation_shape,
+            self.action_dim,
+            rew_dim=self.reward_dim,
+            max_size=self.buffer_size,
+            device=self.device,
+        )
+ 
+        self.q_nets = QNetwork(
+            self.observation_dim, self.action_dim, self.reward_dim, num_q_nets=num_q_nets, net_arch=net_arch
         ).to(self.device)
-
-        self.q_optim = optim.Adam(chain(*[net.parameters() for net in self.q_nets]), lr=self.learning_rate)
-        self.policy_optim = optim.Adam(list(self.policy.parameters()), lr=self.learning_rate)
+        self.target_q_nets = QNetwork(
+            self.observation_dim, self.action_dim, self.reward_dim, num_q_nets=num_q_nets, net_arch=net_arch
+        ).to(self.device)
+ 
+        self.target_q_nets.load_state_dict(self.q_nets.state_dict())
+        for param in self.target_q_nets.parameters():
+            param.requires_grad = False
+ 
+        self.policy = Policy(
+            self.observation_dim, self.reward_dim, self.action_dim, self.action_space, net_arch=net_arch
+        ).to(self.device)
+ 
+        self.q_optim = optim.Adam(self.q_nets.parameters(), lr=self.learning_rate)
+        self.policy_optim = optim.Adam(self.policy.parameters(), lr=self.learning_rate)
 
         self._n_updates = 0
 
@@ -271,7 +255,7 @@ class CAPQL(MOAgent, MOPolicy):
     def get_config(self):
         """Get the configuration of the agent."""
         return {
-            "env_id": self.env.unwrapped.spec.id,
+            "env_id": getattr(self.env.unwrapped.spec, "id", "Unknown"),
             "learning_rate": self.learning_rate,
             "num_q_nets": self.num_q_nets,
             "batch_size": self.batch_size,
@@ -322,37 +306,38 @@ class CAPQL(MOAgent, MOPolicy):
         """Update the policy and the Q-nets."""
         for _ in range(self.gradient_updates):
             (s_obs, s_actions, w, s_rewards, s_next_obs, s_dones) = self._sample_batch_experiences()
-
+ 
             with th.no_grad():
                 next_actions, log_pi, _ = self.policy.sample(s_next_obs, w)
-                q_targets = th.stack([q_target(s_next_obs, next_actions, w) for q_target in self.target_q_nets])
+                # Single forward pass for target ensemble
+                q_targets = self.target_q_nets(s_next_obs, next_actions, w)
                 min_target_q = th.min(q_targets, dim=0)[0] - self.alpha * log_pi.reshape(-1, 1)
-
-                target_q = (s_rewards + (1 - s_dones.reshape(-1, 1)) * self.gamma * min_target_q).detach()
-
-            q_values = [q_net(s_obs, s_actions, w) for q_net in self.q_nets]
-            critic_loss = (1 / self.num_q_nets) * sum([F.mse_loss(q_value, target_q) for q_value in q_values])
-
+                target_q = s_rewards + (1 - s_dones) * self.gamma * min_target_q
+ 
+            # Single forward pass for critic ensemble
+            q_values = self.q_nets(s_obs, s_actions, w)
+            critic_loss = F.mse_loss(q_values, target_q.unsqueeze(0).expand_as(q_values))
+ 
             self.q_optim.zero_grad()
             critic_loss.backward()
             self.q_optim.step()
-
+ 
             # Policy update
             pi, log_pi, _ = self.policy.sample(s_obs, w)
-            q_values = th.stack([q_target(s_obs, pi, w) for q_target in self.q_nets])
-            min_q = th.min(q_values, dim=0)[0]
-
+            # Single forward pass for actor update
+            q_values_pi = self.q_nets(s_obs, pi, w)
+            min_q = th.min(q_values_pi, dim=0)[0]
+ 
             min_q = (min_q * w).sum(dim=-1, keepdim=True)
-            policy_loss = ((self.alpha * log_pi) - min_q).mean()
-
+            policy_loss = ((self.alpha * log_pi.unsqueeze(-1)) - min_q).mean()
+ 
             self.policy_optim.zero_grad()
             policy_loss.backward()
             self.policy_optim.step()
-
-            for q_net, target_q_net in zip(self.q_nets, self.target_q_nets):
-                polyak_update(q_net.parameters(), target_q_net.parameters(), self.tau)
-
-        if self.log and self.global_step % 100 == 0:
+ 
+            polyak_update(self.q_nets.parameters(), self.target_q_nets.parameters(), self.tau)
+ 
+        if self.log and self.global_step % 1000 == 0:
             wandb.log(
                 {
                     "losses/critic_loss": critic_loss.item(),
@@ -371,10 +356,13 @@ class CAPQL(MOAgent, MOPolicy):
             w = th.tensor(w).float().to(self.device)
 
         action = self.policy.get_action(obs, w)
-
+ 
         if not torch_action:
             action = action.detach().cpu().numpy()
-
+        
+        if action.ndim == 2 and action.shape[0] == 1:
+            action = action.squeeze(0)
+ 
         return action
 
     def train(
@@ -391,21 +379,7 @@ class CAPQL(MOAgent, MOPolicy):
         checkpoints: bool = False,
         save_freq: int = 10000,
     ):
-        """Train the agent.
-
-        Args:
-            total_timesteps (int): Total number of timesteps to train the agent for.
-            eval_env (gym.Env): Environment to use for evaluation.
-            ref_point (np.ndarray): Reference point for hypervolume calculation.
-            known_pareto_front (Optional[List[np.ndarray]]): Optimal Pareto front, if known.
-            num_eval_weights_for_front (int): Number of weights to evaluate for the Pareto front.
-            num_eval_episodes_for_front: number of episodes to run when evaluating the policy.
-            num_eval_weights_for_eval (int): Number of weights use when evaluating the Pareto front, e.g., for computing expected utility.
-            eval_freq (int): Number of timesteps between evaluations during an iteration.
-            reset_num_timesteps (bool): Whether to reset the number of timesteps.
-            checkpoints (bool): Whether to save checkpoints.
-            save_freq (int): Number of timesteps between checkpoints.
-        """
+        """Train the agent."""
         if self.log:
             self.register_additional_config(
                 {
@@ -419,51 +393,68 @@ class CAPQL(MOAgent, MOPolicy):
                     "reset_num_timesteps": reset_num_timesteps,
                 }
             )
-
+ 
+        self.n_envs = self.env.num_envs if hasattr(self.env, "num_envs") else 1
         eval_weights = equally_spaced_weights(self.reward_dim, n=num_eval_weights_for_front)
-
+ 
         angle = th.pi * (22.5 / 180)
-        weight_sampler = WeightSamplerAngle(self.env.unwrapped.reward_dim, angle)
-
+        weight_sampler = WeightSamplerAngle(self.reward_dim, angle, device=self.device)
+ 
         self.global_step = 0 if reset_num_timesteps else self.global_step
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
-
+ 
+        start_time = time.time()
         obs, info = self.env.reset()
-        for _ in range(1, total_timesteps + 1):
-            self.global_step += 1
-
-            tensor_w = weight_sampler.sample(1).view(-1).to(self.device)
-            w = tensor_w.detach().cpu().numpy()
-
-            if self.global_step < self.learning_starts:
-                action = self.env.action_space.sample()
-            else:
-                with th.no_grad():
-                    action = self.policy.get_action(
-                        th.tensor(obs).float().to(self.device),
-                        tensor_w,
-                    )
+        for _ in range(1, (total_timesteps // self.n_envs) + 1):
+            self.global_step += self.n_envs
+ 
+            with th.no_grad():
+                tensor_w = weight_sampler.sample(1).view(-1)
+                w_batch = tensor_w.unsqueeze(0).expand(self.n_envs, -1)
+ 
+                if self.global_step < self.learning_starts:
+                    action = self.env.action_space.sample()
+                else:
+                    obs_tensor = th.from_numpy(obs).to(self.device).float()
+                    action = self.policy.get_action(obs_tensor, w_batch)
                     action = action.detach().cpu().numpy()
-
-            action_env = action
-
-            next_obs, vector_reward, terminated, truncated, info = self.env.step(action_env)
-
-            self.replay_buffer.push(obs, action, w, vector_reward, next_obs, terminated)
-
+                    if self.n_envs == 1:
+                        action = action.squeeze(0)
+ 
+            next_obs, vector_reward, terminated, truncated, info = self.env.step(action)
+ 
+            # add_batch handles n_envs > 1
+            self.replay_buffer.add_batch(obs, action, vector_reward, next_obs, terminated, weights=w_batch)
+ 
             if self.global_step >= self.learning_starts:
                 self.update()
-
-            if terminated or truncated:
-                obs, _ = self.env.reset()
-                self.num_episodes += 1
-
-                if self.log and "episode" in info.keys():
-                    log_episode_info(info["episode"], np.dot, w, self.global_step)
+ 
+            if self.n_envs == 1:
+                if terminated or truncated:
+                    obs, _ = self.env.reset()
+                    self.num_episodes += 1
+                    if self.log and "episode" in info.keys():
+                        log_episode_info(info["episode"], np.dot, w_np, self.global_step)
+                else:
+                    obs = next_obs
             else:
+                # Vectorized envs handle reset automatically
                 obs = next_obs
-
-            if self.log and self.global_step % eval_freq == 0:
+                if "final_info" in info:
+                    for i, has_final in enumerate(info["_final_info"]):
+                        if has_final:
+                            self.num_episodes += 1
+                            if self.log and "episode" in info["final_info"][i]:
+                                w_np = tensor_w.detach().cpu().numpy()
+                                log_episode_info(info["final_info"][i]["episode"], np.dot, w_np, self.global_step)
+ 
+            if self.log and self.global_step % 1000 < self.n_envs:
+                sps = int(self.global_step / (time.time() - start_time))
+                if self.log:
+                    wandb.log({"charts/SPS": sps}, commit=False)
+                print(f"Step: {self.global_step}, SPS: {sps}")
+ 
+            if self.log and self.global_step % eval_freq < self.n_envs:
                 # Evaluation
                 returns_test_tasks = [
                     policy_evaluation_mo(self, eval_env, ew, rep=num_eval_episodes_for_front)[3] for ew in eval_weights
@@ -476,9 +467,9 @@ class CAPQL(MOAgent, MOPolicy):
                     n_sample_weights=num_eval_weights_for_eval,
                     ref_front=known_pareto_front,
                 )
-
+ 
             # Checkpoint
-            if checkpoints and self.global_step % save_freq == 0:
+            if checkpoints and self.global_step % save_freq < self.n_envs:
                 self.save(filename=f"CAPQL step={self.global_step}", save_replay_buffer=False)
-
+ 
         self.close_wandb()

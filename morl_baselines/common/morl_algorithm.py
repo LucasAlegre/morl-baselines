@@ -255,22 +255,50 @@ class MOAgent(ABC):
         # So env can be None. It is the responsibility of the implemented MORLAlgorithm to call this method in those cases
         if env is not None:
             self.env = env
-            if isinstance(self.env.observation_space, spaces.Discrete):
-                self.observation_shape = (1,)
-                self.observation_dim = self.env.observation_space.n
+            
+            # Handle vectorized environments
+            if hasattr(self.env, "single_observation_space"):
+                self.observation_shape = self.env.single_observation_space.shape
+                self.observation_dim = self.observation_shape[0] if len(self.observation_shape) > 0 else 1
+                self.action_space = self.env.single_action_space
             else:
                 self.observation_shape = self.env.observation_space.shape
-                self.observation_dim = self.env.observation_space.shape[0]
+                if isinstance(self.env.observation_space, spaces.Discrete):
+                    self.observation_dim = self.env.observation_space.n
+                else:
+                    self.observation_dim = self.observation_shape[0]
+                self.action_space = self.env.action_space
 
-            self.action_space = env.action_space
-            if isinstance(self.env.action_space, (spaces.Discrete, spaces.MultiBinary)):
+            if isinstance(self.action_space, (spaces.Discrete, spaces.MultiBinary)):
                 self.action_shape = (1,)
-                self.action_dim = self.env.action_space.n
+                self.action_dim = self.action_space.n
             else:
-                self.action_shape = self.env.action_space.shape
-                self.action_dim = self.env.action_space.shape[0]
+                self.action_shape = self.action_space.shape
+                self.action_dim = self.action_shape[0]
 
-            self.reward_dim = self.env.unwrapped.reward_space.shape[0]
+            # Extract reward dimension
+            if hasattr(env, "reward_space"):
+                self.reward_dim = env.reward_space.shape[0]
+            elif hasattr(env, "unwrapped") and hasattr(env.unwrapped, "reward_space"):
+                self.reward_dim = env.unwrapped.reward_space.shape[0]
+            elif hasattr(env, "get_attr"):
+                # Standard gymnasium VectorEnv interface
+                try:
+                    reward_spaces = env.get_attr("reward_space")
+                    self.reward_dim = reward_spaces[0].shape[0]
+                except:
+                    # Fallback for some wrappers
+                    try:
+                        self.reward_dim = env.get_wrapper_attr("reward_space").shape[0]
+                    except:
+                        raise AttributeError("Could not find reward_space in the environment.")
+            elif hasattr(env, "get_wrapper_attr"):
+                try:
+                    self.reward_dim = env.get_wrapper_attr("reward_space").shape[0]
+                except AttributeError:
+                    raise AttributeError("Could not find reward_space in the environment.")
+            else:
+                raise AttributeError("Could not find reward_space in the environment.")
 
     @abstractmethod
     def get_config(self) -> dict:
@@ -308,7 +336,14 @@ class MOAgent(ABC):
             None
         """
         self.experiment_name = experiment_name
-        env_id = self.env.spec.id if not isinstance(self.env, MOSyncVectorEnv) else self.env.envs[0].spec.id
+        env_id = self.env.spec.id if hasattr(self.env, "spec") and self.env.spec is not None else "VectorEnv"
+        if hasattr(self.env, "envs"):
+            env_id = self.env.envs[0].spec.id
+        elif hasattr(self.env, "get_wrapper_attr"):
+            try:
+                env_id = self.env.get_wrapper_attr("spec").id
+            except:
+                pass
         self.full_experiment_name = f"{env_id}__{experiment_name}__{self.seed}__{int(time.time())}"
         import wandb
 

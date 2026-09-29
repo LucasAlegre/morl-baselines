@@ -224,7 +224,7 @@ def log_episode_info(
     weights: Optional[np.ndarray],
     global_timestep: int,
     id: Optional[int] = None,
-    verbose: bool = True,
+    verbose: bool = False,
 ):
     """Logs information of the last episode from the info dict (automatically filled by the RecordStatisticsWrapper).
 
