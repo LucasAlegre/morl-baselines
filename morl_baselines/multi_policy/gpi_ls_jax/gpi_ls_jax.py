@@ -333,7 +333,7 @@ class GPILS(MOAgent, MOPolicy):
         )
 
         self.q_state = restored["q_net_state"]
-        self.weight_support = [w for w in restored["M"].values()]
+        self.weight_support = restored["M"]
 
     def _sample_batch_experiences(self):
         return self.replay_buffer.sample(self.batch_size * self.gradient_updates)
