@@ -159,8 +159,9 @@ def log_all_multi_policy_metrics(
     Logged metrics:
     - hypervolume
     - expected utility metric (EUM)
-    - Pareto front table
-    - Pareto front image (2D/3D only)
+    - Pareto front table (``eval/front``)
+    - Pareto front image under ``eval/pareto_front`` (2D/3D only; skipped for
+      other reward dimensions or an empty filtered front)
     If a reference front is provided, also logs:
     - Inverted generational distance (IGD)
     - Maximum utility loss (MUL)
@@ -196,8 +197,10 @@ def log_all_multi_policy_metrics(
     # Log a static visualization of the Pareto front for 2D/3D problems
     if reward_dim in (2, 3) and len(filtered_front) > 0:
         fig = plot_pareto_front(filtered_front, ref_point=hv_ref_point)
-        wandb.log({"eval/pareto_front": wandb.Image(fig)})
-        plt.close(fig)
+        try:
+            wandb.log({"eval/pareto_front": wandb.Image(fig)})
+        finally:
+            plt.close(fig)
 
     # If PF is known, log the additional metrics
     if ref_front is not None:

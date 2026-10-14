@@ -24,6 +24,8 @@ For both these metrics, we propose to generate a number of equally spaced weight
 
 Finally, the PF can also be logged as a wandb table for a posteriori analysis. Keyword: `eval/front`.
 
+For 2D and 3D problems only, a static Pareto front figure is also logged as a wandb image under `eval/pareto_front` (skipped for other objective counts or an empty front).
+
 Here is the function that logs all the metrics:
 ```{eval-rst}
 .. autofunction:: morl_baselines.common.utils.log_all_multi_policy_metrics

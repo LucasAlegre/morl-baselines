@@ -17,16 +17,28 @@ def plot_pareto_front(
     For 2D fronts, points are sorted by the first objective and connected with a line.
     For 3D fronts, points are shown as a scatter plot with a 3D projection.
 
+    A 1D array of length 2 or 3 is accepted as a single point and reshaped to
+    ``(1, n_obj)``. Empty fronts with shape ``(0, 2)`` or ``(0, 3)`` produce an
+    empty axes (no points/line) and still return a Figure.
+
     Args:
-        front: Pareto front points of shape (n_points, n_objectives) with 2 or 3 objectives.
-        ref_point: Optional reference point to mark on the plot (e.g. hypervolume reference).
-        labels: Optional axis labels for each objective. Defaults to ``Objective i``.
+        front: Pareto front points of shape ``(n_points, n_objectives)`` with 2
+            or 3 objectives. A single point may be passed as a 1D array of
+            length 2 or 3.
+        ref_point: Optional reference point to mark on the plot (e.g.
+            hypervolume reference). Must have shape ``(n_obj,)`` matching the
+            front dimensionality when provided.
+        labels: Optional axis labels for each objective. Defaults to
+            ``Objective i``. Length must equal ``n_obj``.
 
     Returns:
-        matplotlib Figure containing the plot.
+        matplotlib Figure containing the plot. The caller is responsible for
+        closing the figure (e.g. ``plt.close(fig)``) to free resources.
 
     Raises:
-        ValueError: If the front does not have 2 or 3 objectives.
+        ValueError: If the front does not have 2 or 3 objectives, if ``labels``
+            length does not match ``n_obj``, or if ``ref_point`` shape is not
+            ``(n_obj,)``.
     """
     points = np.asarray(front, dtype=np.float64)
     if points.ndim == 1:
@@ -43,6 +55,13 @@ def plot_pareto_front(
     elif len(labels) != n_obj:
         raise ValueError(f"labels length ({len(labels)}) must match number of objectives ({n_obj})")
 
+    if ref_point is not None:
+        ref_point = np.asarray(ref_point, dtype=np.float64)
+        if ref_point.shape != (n_obj,):
+            raise ValueError(
+                f"ref_point must have shape ({n_obj},), got {ref_point.shape}"
+            )
+
     fig = plt.figure()
     if n_obj == 2:
         ax = fig.add_subplot(111)
@@ -50,7 +69,6 @@ def plot_pareto_front(
         sorted_pts = points[order]
         ax.plot(sorted_pts[:, 0], sorted_pts[:, 1], "-o", label="Pareto front")
         if ref_point is not None:
-            ref_point = np.asarray(ref_point, dtype=np.float64)
             ax.scatter(
                 ref_point[0],
                 ref_point[1],
@@ -68,7 +86,6 @@ def plot_pareto_front(
         ax = fig.add_subplot(111, projection="3d")
         ax.scatter(points[:, 0], points[:, 1], points[:, 2], label="Pareto front")
         if ref_point is not None:
-            ref_point = np.asarray(ref_point, dtype=np.float64)
             ax.scatter(
                 ref_point[0],
                 ref_point[1],
