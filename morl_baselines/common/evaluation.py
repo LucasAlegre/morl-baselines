@@ -4,6 +4,7 @@ import os
 import random
 from typing import List, Optional, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch as th
 import wandb
@@ -17,6 +18,7 @@ from morl_baselines.common.performance_indicators import (
     igd,
     maximum_utility_loss,
 )
+from morl_baselines.common.plots import plot_pareto_front
 from morl_baselines.common.weights import equally_spaced_weights
 
 
@@ -157,6 +159,9 @@ def log_all_multi_policy_metrics(
     Logged metrics:
     - hypervolume
     - expected utility metric (EUM)
+    - Pareto front table (``eval/front``)
+    - Pareto front image under ``eval/pareto_front`` (2D/3D only; skipped for
+      other reward dimensions or an empty filtered front)
     If a reference front is provided, also logs:
     - Inverted generational distance (IGD)
     - Maximum utility loss (MUL)
@@ -188,6 +193,14 @@ def log_all_multi_policy_metrics(
         data=[p.tolist() for p in filtered_front],
     )
     wandb.log({"eval/front": front})
+
+    # Log a static visualization of the Pareto front for 2D/3D problems
+    if reward_dim in (2, 3) and len(filtered_front) > 0:
+        fig = plot_pareto_front(filtered_front, ref_point=hv_ref_point)
+        try:
+            wandb.log({"eval/pareto_front": wandb.Image(fig)})
+        finally:
+            plt.close(fig)
 
     # If PF is known, log the additional metrics
     if ref_front is not None:
